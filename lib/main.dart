@@ -12,7 +12,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AI Chat App',
+      title: 'Edge Chat App',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
@@ -55,28 +55,16 @@ class _AppInitializationWrapperState extends State<AppInitializationWrapper> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SizedBox(
-                    width: 60,
-                    height: 60,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3,
-                    ),
-                  ),
+                  SizedBox(width: 60, height: 60, child: CircularProgressIndicator(strokeWidth: 3)),
                   SizedBox(height: 24),
                   Text(
                     'Initializing AI Model...',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
                   ),
                   SizedBox(height: 8),
                   Text(
                     'This may take a moment',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
                   ),
                 ],
               ),
@@ -92,26 +80,16 @@ class _AppInitializationWrapperState extends State<AppInitializationWrapper> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 64,
-                    ),
+                    const Icon(Icons.error_outline, color: Colors.red, size: 64),
                     const SizedBox(height: 16),
                     Text(
                       'Initialization Failed',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       _appState.globalError!,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[700],
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
@@ -128,9 +106,7 @@ class _AppInitializationWrapperState extends State<AppInitializationWrapper> {
                         _appState.clearError();
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => HomeScreen(),
-                          ),
+                          MaterialPageRoute(builder: (context) => HomeScreen()),
                         );
                       },
                       icon: const Icon(Icons.arrow_forward),
@@ -140,10 +116,7 @@ class _AppInitializationWrapperState extends State<AppInitializationWrapper> {
                       const SizedBox(height: 16),
                       Text(
                         'Retry attempt ${_appState.initializationRetryCount} of ${_appState.maxRetries}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ],

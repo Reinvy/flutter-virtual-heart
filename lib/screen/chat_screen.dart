@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -72,7 +73,7 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       if (await PdfService.hasStoredPdfForChat(widget.chatId)) {
         final pdfInfo = await PdfService.loadPdfDataForChat(widget.chatId);
-        
+
         if (pdfInfo != null) {
           setState(() {
             _pdfContext = pdfInfo['text'];
@@ -519,7 +520,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                         ),
 
-                      Text(
+                      GptMarkdown(
                         text,
                         style: TextStyle(
                           color: isUser
@@ -693,7 +694,10 @@ class _ChatScreenState extends State<ChatScreen> {
             // Jika file PDF, ekstrak teks
             if (fileName.toLowerCase().endsWith('.pdf')) {
               try {
-                String extractedText = await PdfService.extractTextFromPdfForChat(widget.chatId, file);
+                String extractedText = await PdfService.extractTextFromPdfForChat(
+                  widget.chatId,
+                  file,
+                );
 
                 setState(() {
                   _document = fileName;
@@ -724,9 +728,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       duration: const Duration(seconds: 3),
                       behavior: SnackBarBehavior.floating,
                       margin: const EdgeInsets.all(16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                   );
                 }
@@ -763,9 +765,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       duration: const Duration(seconds: 4),
                       behavior: SnackBarBehavior.floating,
                       margin: const EdgeInsets.all(16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                   );
                 }
@@ -802,9 +802,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   duration: const Duration(seconds: 4),
                   behavior: SnackBarBehavior.floating,
                   margin: const EdgeInsets.all(16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               );
             }
@@ -815,7 +813,7 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           _isIngesting = false;
         });
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -859,9 +857,7 @@ class _ChatScreenState extends State<ChatScreen> {
             duration: const Duration(seconds: 4),
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
         );
       }
@@ -902,7 +898,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _currentPdfName = null;
       });
       _saveDocuments();
-      
+
       // Clear PDF data for this specific chat
       PdfService.clearPdfDataForChat(widget.chatId);
 
@@ -1162,10 +1158,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       if (_currentPdfName != null)
                         Text(
                           _currentPdfName!,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                         ),
                     ],
                   ),
@@ -1206,10 +1199,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         onPressed: _showPdfContextSettings,
                         icon: Icon(Icons.settings, color: Theme.of(context).primaryColor, size: 16),
                         tooltip: 'PDF Context Settings',
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
-                        ),
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         padding: EdgeInsets.zero,
                       ),
                     const SizedBox(width: 4),
@@ -1219,10 +1209,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         onPressed: _removeDocument,
                         icon: Icon(Icons.delete_outline, color: Colors.red[600], size: 16),
                         tooltip: 'Remove PDF',
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
-                        ),
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         padding: EdgeInsets.zero,
                       ),
                     const SizedBox(width: 4),
@@ -1236,12 +1223,13 @@ class _ChatScreenState extends State<ChatScreen> {
                                 height: 16,
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : Icon(Icons.upload_file, color: Theme.of(context).primaryColor, size: 16),
+                            : Icon(
+                                Icons.upload_file,
+                                color: Theme.of(context).primaryColor,
+                                size: 16,
+                              ),
                         tooltip: 'Upload PDF',
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
-                        ),
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         padding: EdgeInsets.zero,
                       ),
                   ],
@@ -1465,10 +1453,10 @@ class _ChatScreenState extends State<ChatScreen> {
               });
               _saveMessages();
               _saveDocuments();
-              
+
               // Clear PDF data for this specific chat
               await PdfService.clearPdfDataForChat(widget.chatId);
-              
+
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Chat cleared'), duration: Duration(seconds: 2)),
