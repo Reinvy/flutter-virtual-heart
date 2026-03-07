@@ -1,0 +1,263 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:1350341759699591298",
+      "lastPropertyId": "13:6709580531882755079",
+      "name": "AppSettings",
+      "properties": [
+        {
+          "id": "1:5951494993453566956",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:5981516936745489600",
+          "name": "ttsEnabled",
+          "type": 1
+        },
+        {
+          "id": "3:3355489328205059676",
+          "name": "ttsAutoPlay",
+          "type": 1
+        },
+        {
+          "id": "4:3142537317428394312",
+          "name": "notificationMorningEnabled",
+          "type": 1
+        },
+        {
+          "id": "5:6739626639594125326",
+          "name": "notificationMorningTime",
+          "type": 9
+        },
+        {
+          "id": "6:2861864452468532432",
+          "name": "notificationCheckinEnabled",
+          "type": 1
+        },
+        {
+          "id": "7:1038559318550111818",
+          "name": "modelVariant",
+          "type": 9
+        },
+        {
+          "id": "8:6244975944666690606",
+          "name": "isAgeVerified",
+          "type": 1
+        },
+        {
+          "id": "9:7909570167327583732",
+          "name": "isOnboardingDone",
+          "type": 1
+        },
+        {
+          "id": "10:165515503526454251",
+          "name": "isPersonaSetup",
+          "type": 1
+        },
+        {
+          "id": "11:2064035449531545925",
+          "name": "conversationSummary",
+          "type": 9
+        },
+        {
+          "id": "12:967219086682500198",
+          "name": "themeIndex",
+          "type": 6
+        },
+        {
+          "id": "13:6709580531882755079",
+          "name": "languageIndex",
+          "type": 6
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "2:652775646265387197",
+      "lastPropertyId": "7:4607935164879383317",
+      "name": "MemoryFact",
+      "properties": [
+        {
+          "id": "1:5943922320221182431",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:1859302000144843362",
+          "name": "key",
+          "type": 9
+        },
+        {
+          "id": "3:7242056929911849249",
+          "name": "value",
+          "type": 9
+        },
+        {
+          "id": "4:127071453946853270",
+          "name": "sourceSnippet",
+          "type": 9
+        },
+        {
+          "id": "5:1644449446059291086",
+          "name": "createdAt",
+          "type": 10
+        },
+        {
+          "id": "6:1944899004224334314",
+          "name": "lastReferencedAt",
+          "type": 10
+        },
+        {
+          "id": "7:4607935164879383317",
+          "name": "categoryIndex",
+          "type": 6
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "3:4461514350763041745",
+      "lastPropertyId": "6:3781894061313651537",
+      "name": "Message",
+      "properties": [
+        {
+          "id": "1:4117000769873978623",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:2606113049341228464",
+          "name": "content",
+          "type": 9
+        },
+        {
+          "id": "3:6717205724508880273",
+          "name": "isVoice",
+          "type": 1
+        },
+        {
+          "id": "4:5549793917685428431",
+          "name": "mood",
+          "type": 9
+        },
+        {
+          "id": "5:5486096339294011554",
+          "name": "timestamp",
+          "type": 10
+        },
+        {
+          "id": "6:3781894061313651537",
+          "name": "roleIndex",
+          "type": 6
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "4:1681218851533749567",
+      "lastPropertyId": "5:5259259496755635928",
+      "name": "MoodState",
+      "properties": [
+        {
+          "id": "1:2525625664663015003",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:6147467560791500160",
+          "name": "intensity",
+          "type": 8
+        },
+        {
+          "id": "3:2441961025983340281",
+          "name": "lastUpdatedAt",
+          "type": 10
+        },
+        {
+          "id": "4:7239691196893597823",
+          "name": "lastInteractionAt",
+          "type": 10
+        },
+        {
+          "id": "5:5259259496755635928",
+          "name": "currentIndex",
+          "type": 6
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "5:4531824928226325680",
+      "lastPropertyId": "9:2622669689795699599",
+      "name": "PersonaConfig",
+      "properties": [
+        {
+          "id": "1:4925084284497469399",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:6680708818558912691",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "3:6896264915400620916",
+          "name": "nicknameForUser",
+          "type": 9
+        },
+        {
+          "id": "4:7502621820046240674",
+          "name": "avatarId",
+          "type": 9
+        },
+        {
+          "id": "5:7624276163652642807",
+          "name": "voiceId",
+          "type": 9
+        },
+        {
+          "id": "6:5222404844728441914",
+          "name": "createdAt",
+          "type": 10
+        },
+        {
+          "id": "7:8356063760909240275",
+          "name": "genderIndex",
+          "type": 6
+        },
+        {
+          "id": "8:7458515308193277673",
+          "name": "personalityPresetIndex",
+          "type": 6
+        },
+        {
+          "id": "9:2622669689795699599",
+          "name": "hobbies",
+          "type": 30
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "5:4531824928226325680",
+  "lastIndexId": "0:0",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [],
+  "retiredRelationUids": [],
+  "version": 1
+}
