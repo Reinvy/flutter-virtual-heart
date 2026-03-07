@@ -62,6 +62,8 @@ class PersonaSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final subtleColor = isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
     final db = ref.read(objectBoxServiceProvider);
     final personas = db.personaBox.getAll();
     final persona = personas.isNotEmpty ? personas.first : null;
@@ -102,7 +104,7 @@ class PersonaSection extends ConsumerWidget {
                             '${personalityLabels[persona.personalityPreset] ?? ''}',
                             style: Theme.of(
                               context,
-                            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                            ).textTheme.bodyMedium?.copyWith(color: subtleColor),
                           ),
                         ],
                         if (persona?.nicknameForUser.isNotEmpty == true) ...[
@@ -110,7 +112,7 @@ class PersonaSection extends ConsumerWidget {
                           Text(
                             'Memanggilmu: "${persona!.nicknameForUser}"',
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textSecondary,
+                              color: subtleColor,
                               fontStyle: FontStyle.italic,
                             ),
                           ),
@@ -125,7 +127,7 @@ class PersonaSection extends ConsumerWidget {
               dense: true,
               leading: const Icon(Icons.edit_rounded, color: AppColors.primary),
               title: const Text('Edit Persona'),
-              trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+              trailing: Icon(Icons.chevron_right_rounded, color: subtleColor),
               onTap: () => _showEditSheet(context),
             ),
             ListTile(
@@ -231,7 +233,9 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.textSecondary.withValues(alpha: 0.3),
+                color: (isDark ? AppColors.textSecondary : AppColors.textSecondaryLight).withValues(
+                  alpha: 0.3,
+                ),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -383,10 +387,14 @@ class SheetLabel extends StatelessWidget {
   const SheetLabel(this.text, {super.key});
 
   @override
-  Widget build(BuildContext context) => Text(
-    text,
-    style: Theme.of(
-      context,
-    ).textTheme.titleMedium?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
-  );
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
 }

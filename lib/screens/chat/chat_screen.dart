@@ -161,7 +161,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(persona?.name ?? 'VirtualHeart', style: AppTextStyles.personaName()),
+            Text(
+              persona?.name ?? 'VirtualHeart',
+              style: AppTextStyles.personaName(color: Theme.of(context).colorScheme.onSurface),
+            ),
             const MoodIndicator(),
           ],
         ),

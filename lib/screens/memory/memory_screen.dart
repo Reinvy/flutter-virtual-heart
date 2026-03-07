@@ -145,21 +145,23 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final subtleColor = isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.psychology_outlined, size: 64, color: AppColors.textSecondary),
+          Icon(Icons.psychology_outlined, size: 64, color: subtleColor),
           const SizedBox(height: 16),
           Text(
             'Belum ada memori tersimpan',
-            style: theme.textTheme.titleMedium?.copyWith(color: AppColors.textSecondary),
+            style: theme.textTheme.titleMedium?.copyWith(color: subtleColor),
           ),
           const SizedBox(height: 8),
           Text(
             'AI akan mengingat fakta penting tentang kamu\nseiring percakapan berlanjut.',
             textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+            style: theme.textTheme.bodyMedium?.copyWith(color: subtleColor),
           ),
         ],
       ),

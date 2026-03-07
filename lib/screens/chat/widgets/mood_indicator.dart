@@ -32,9 +32,12 @@ class MoodIndicator extends ConsumerWidget {
     final emoji = _emoji[mood.current] ?? '😊';
     final label = _label[mood.current] ?? 'bahagia';
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Text(
       '$emoji $label',
-      style: AppTextStyles.moodIndicator(color: AppColors.textSecondary),
+      style: AppTextStyles.moodIndicator(
+        color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+      ),
     );
   }
 }

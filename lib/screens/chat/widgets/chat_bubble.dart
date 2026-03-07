@@ -244,7 +244,12 @@ class _SpeakerButton extends StatelessWidget {
         child: Icon(
           isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined,
           size: 20,
-          color: isSpeaking ? AppColors.primary : AppColors.textSecondary.withAlpha(180),
+          color: isSpeaking
+              ? AppColors.primary
+              : (Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.textSecondary
+                        : AppColors.textSecondaryLight)
+                    .withAlpha(180),
         ),
       ),
     );

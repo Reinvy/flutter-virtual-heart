@@ -92,6 +92,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final isLast = _currentPage == _pages.length - 1;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: SafeArea(
@@ -107,7 +108,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   onPressed: isLast ? null : _finish,
                   child: Text(
                     'Lewati',
-                    style: AppTextStyles.button(color: AppColors.textSecondary),
+                    style: AppTextStyles.button(
+                      color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+                    ),
                   ),
                 ),
               ),
@@ -137,7 +140,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   decoration: BoxDecoration(
                     color: i == _currentPage
                         ? AppColors.primary
-                        : AppColors.textSecondary.withAlpha(80),
+                        : (isDark ? AppColors.textSecondary : AppColors.textSecondaryLight)
+                              .withAlpha(80),
                     borderRadius: BorderRadius.circular(AppSizes.radiusFull),
                   ),
                 ),
@@ -220,7 +224,11 @@ class _PageContent extends StatelessWidget {
 
           const SizedBox(height: AppSizes.xl),
 
-          Text(page.title, style: AppTextStyles.headingLarge(), textAlign: TextAlign.center)
+          Text(
+                page.title,
+                style: AppTextStyles.headingLarge(color: Theme.of(context).colorScheme.onSurface),
+                textAlign: TextAlign.center,
+              )
               .animate(target: isActive ? 1 : 0)
               .fadeIn(duration: 400.ms, delay: 100.ms)
               .slideY(begin: 0.15, end: 0, duration: 400.ms, delay: 100.ms),
@@ -229,7 +237,11 @@ class _PageContent extends StatelessWidget {
 
           Text(
                 page.body,
-                style: AppTextStyles.bodyMedium(color: AppColors.textSecondary),
+                style: AppTextStyles.bodyMedium(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.textSecondary
+                      : AppColors.textSecondaryLight,
+                ),
                 textAlign: TextAlign.center,
               )
               .animate(target: isActive ? 1 : 0)

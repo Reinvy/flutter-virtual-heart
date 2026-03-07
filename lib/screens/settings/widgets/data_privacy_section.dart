@@ -116,7 +116,12 @@ class DataPrivacySection extends ConsumerWidget {
           children: [
             ListTile(
               dense: true,
-              leading: const Icon(Icons.storage_rounded, color: AppColors.textSecondary),
+              leading: Icon(
+                Icons.storage_rounded,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.textSecondary
+                    : AppColors.textSecondaryLight,
+              ),
               title: const Text('Penyimpanan Lokal'),
               subtitle: const Text(
                 'Semua data tersimpan di perangkat ini.\n'
@@ -138,7 +143,12 @@ class DataPrivacySection extends ConsumerWidget {
               leading: const Icon(Icons.download_rounded, color: AppColors.primary),
               title: const Text('Ekspor Chat (.txt)'),
               subtitle: const Text('Simpan riwayat percakapan ke file teks'),
-              trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+              trailing: Icon(
+                Icons.chevron_right_rounded,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.textSecondary
+                    : AppColors.textSecondaryLight,
+              ),
               onTap: () => _exportChat(context, ref),
             ),
           ],

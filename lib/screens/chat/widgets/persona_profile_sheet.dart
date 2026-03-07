@@ -92,10 +92,11 @@ class PersonaProfileSheet extends ConsumerWidget {
       minChildSize: 0.4,
       maxChildSize: 0.85,
       builder: (context, scrollController) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return Container(
-          decoration: const BoxDecoration(
-            color: AppColors.surfaceAlt,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusXl)),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceAlt : AppColors.surfaceAltLight,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSizes.radiusXl)),
           ),
           child: ListView(
             controller: scrollController,
@@ -105,15 +106,15 @@ class PersonaProfileSheet extends ConsumerWidget {
               const SizedBox(height: AppSizes.md),
               _buildAvatar(),
               const SizedBox(height: AppSizes.md),
-              _buildNameSection(),
+              _buildNameSection(context),
               const SizedBox(height: AppSizes.lg),
-              _buildMoodSection(mood),
+              _buildMoodSection(mood, context),
               const SizedBox(height: AppSizes.lg),
               if ((persona?.hobbies ?? []).isNotEmpty) ...[
                 _buildHobbiesSection(),
                 const SizedBox(height: AppSizes.lg),
               ],
-              _buildPersonalitySection(),
+              _buildPersonalitySection(context),
               const SizedBox(height: AppSizes.xl),
               _buildEditButton(context),
             ],
@@ -152,7 +153,10 @@ class PersonaProfileSheet extends ConsumerWidget {
 
   // ── Name + nickname ───────────────────────────────────────────────────────
 
-  Widget _buildNameSection() {
+  Widget _buildNameSection(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    final subtleColor = isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
     final genderLabel = (persona?.gender == PersonaGender.boyfriend) ? 'Boyfriend' : 'Girlfriend';
     final nickname = persona?.nicknameForUser ?? '';
 
@@ -160,20 +164,20 @@ class PersonaProfileSheet extends ConsumerWidget {
       children: [
         Text(
           persona?.name ?? 'VirtualHeart',
-          style: AppTextStyles.headingLarge(),
+          style: AppTextStyles.headingLarge(color: textColor),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppSizes.xs),
         Text(
           genderLabel,
-          style: AppTextStyles.bodyMedium(color: AppColors.textSecondary),
+          style: AppTextStyles.bodyMedium(color: subtleColor),
           textAlign: TextAlign.center,
         ),
         if (nickname.isNotEmpty) ...[
           const SizedBox(height: AppSizes.xs),
           Text(
             'Memanggilmu "$nickname"',
-            style: AppTextStyles.bodyMedium(color: AppColors.textSecondary),
+            style: AppTextStyles.bodyMedium(color: subtleColor),
             textAlign: TextAlign.center,
           ),
         ],
@@ -183,7 +187,9 @@ class PersonaProfileSheet extends ConsumerWidget {
 
   // ── Mood ──────────────────────────────────────────────────────────────────
 
-  Widget _buildMoodSection(MoodState mood) {
+  Widget _buildMoodSection(MoodState mood, BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final subtleColor = isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
     final info = _moodInfo[mood.current] ?? (emoji: '😊', label: 'Bahagia');
     final color = _moodColors[mood.current] ?? AppColors.primary;
     final intensityPct = (mood.intensity * 100).round();
@@ -203,10 +209,7 @@ class PersonaProfileSheet extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Mood Sekarang',
-                  style: AppTextStyles.moodIndicator(color: AppColors.textSecondary),
-                ),
+                Text('Mood Sekarang', style: AppTextStyles.moodIndicator(color: subtleColor)),
                 const SizedBox(height: AppSizes.xs),
                 Text(info.label, style: AppTextStyles.headingSmall(color: color)),
               ],
@@ -253,7 +256,11 @@ class PersonaProfileSheet extends ConsumerWidget {
 
   // ── Personality ───────────────────────────────────────────────────────────
 
-  Widget _buildPersonalitySection() {
+  Widget _buildPersonalitySection(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = Theme.of(context).colorScheme.onSurface;
+    final subtleColor = isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
+    final cardBg = isDark ? AppColors.surface : AppColors.surfaceLight;
     final preset = persona?.personalityPreset ?? PersonalityPreset.gentle;
     final info =
         _personalityInfo[preset] ??
@@ -268,7 +275,7 @@ class PersonaProfileSheet extends ConsumerWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(AppSizes.md),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: cardBg,
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
           child: Row(
@@ -279,12 +286,9 @@ class PersonaProfileSheet extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(info.label, style: AppTextStyles.settingsLabel()),
+                    Text(info.label, style: AppTextStyles.settingsLabel(color: textColor)),
                     const SizedBox(height: AppSizes.xs),
-                    Text(
-                      info.description,
-                      style: AppTextStyles.bodyMedium(color: AppColors.textSecondary),
-                    ),
+                    Text(info.description, style: AppTextStyles.bodyMedium(color: subtleColor)),
                   ],
                 ),
               ),
@@ -329,7 +333,11 @@ class _DragHandle extends StatelessWidget {
         width: 40,
         height: 4,
         decoration: BoxDecoration(
-          color: AppColors.textSecondary.withAlpha(100),
+          color:
+              (Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.textSecondary
+                      : AppColors.textSecondaryLight)
+                  .withAlpha(100),
           borderRadius: BorderRadius.circular(AppSizes.radiusFull),
         ),
       ),

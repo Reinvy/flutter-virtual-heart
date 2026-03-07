@@ -29,9 +29,11 @@ class LanguageSection extends ConsumerWidget {
                 children: [
                   Text(
                     'Bahasa yang digunakan AI saat membalas',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.textSecondary
+                          : AppColors.textSecondaryLight,
+                    ),
                   ),
                   const SizedBox(height: AppSizes.sm),
                   SegmentedButton<AppLanguage>(

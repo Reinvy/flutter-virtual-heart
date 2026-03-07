@@ -76,7 +76,12 @@ class NotificationsSection extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: AppSizes.sm),
-                    Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.textSecondary
+                          : AppColors.textSecondaryLight,
+                    ),
                   ],
                 ),
                 onTap: () => _pickTime(context, ref),
