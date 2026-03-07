@@ -48,6 +48,7 @@ class _ChatBubbleState extends State<ChatBubble> {
   @override
   Widget build(BuildContext context) {
     final isUser = widget.message.role == MessageRole.user;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final maxWidth = MediaQuery.of(context).size.width * AppSizes.bubbleMaxWidthFraction;
 
     return GestureDetector(
@@ -73,7 +74,9 @@ class _ChatBubbleState extends State<ChatBubble> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: isUser ? null : AppColors.aiBubble,
+                            color: isUser
+                                ? null
+                                : (isDark ? AppColors.aiBubble : AppColors.aiBubbleLight),
                             gradient: isUser
                                 ? const LinearGradient(
                                     colors: [AppColors.userBubble, AppColors.secondary],
@@ -142,13 +145,17 @@ class _BubbleContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = message.content.isEmpty ? '...' : message.content;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // User bubbles always use light text (dark gradient bg).
+    // AI bubbles use light text on dark bg, dark text on light bg.
+    final textColor = (isUser || isDark) ? AppColors.textPrimary : AppColors.textPrimaryLight;
 
     if (isUser) {
-      return Text(text, style: AppTextStyles.bubbleText(color: AppColors.textPrimary));
+      return Text(text, style: AppTextStyles.bubbleText(color: textColor));
     }
 
     // AI response rendered as Markdown.
-    return GptMarkdown(text, style: AppTextStyles.bubbleText(color: AppColors.textPrimary));
+    return GptMarkdown(text, style: AppTextStyles.bubbleText(color: textColor));
   }
 }
 

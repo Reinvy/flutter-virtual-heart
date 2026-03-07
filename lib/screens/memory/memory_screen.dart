@@ -75,7 +75,6 @@ class MemoryScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surfaceAlt,
         title: const Text('Reset Semua Memori?'),
         content: const Text(
           'Semua fakta yang diingat AI akan dihapus permanen. '
@@ -252,7 +251,6 @@ class _FactTile extends StatelessWidget {
         return await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            backgroundColor: AppColors.surfaceAlt,
             title: const Text('Hapus fakta ini?'),
             content: Text('"${fact.key}: ${fact.value}"'),
             actions: [
@@ -270,7 +268,7 @@ class _FactTile extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border(left: BorderSide(color: accentColor, width: 3)),
         ),
@@ -279,13 +277,13 @@ class _FactTile extends StatelessWidget {
           title: Text(
             fact.key,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary,
+              color: theme.colorScheme.onSurface.withAlpha(153),
               fontWeight: FontWeight.w600,
             ),
           ),
           subtitle: Text(
             fact.value,
-            style: theme.textTheme.bodyLarge?.copyWith(color: AppColors.textPrimary),
+            style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurface),
           ),
           trailing: fact.sourceSnippet != null
               ? Tooltip(

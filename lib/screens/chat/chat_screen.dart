@@ -90,7 +90,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: _buildAppBar(context, persona),
       body: Column(
         children: [
@@ -118,7 +117,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   PreferredSizeWidget _buildAppBar(BuildContext context, PersonaConfig? persona) {
     return AppBar(
-      backgroundColor: AppColors.surface,
       elevation: 0,
       automaticallyImplyLeading: false,
       leading: GestureDetector(
@@ -141,7 +139,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.settings_outlined, color: AppColors.textSecondary),
+          icon: Icon(
+            Icons.settings_outlined,
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
+          ),
           onPressed: () => context.push(AppRoutes.settings),
         ),
       ],
@@ -326,7 +327,11 @@ class _EmptyChat extends StatelessWidget {
           const SizedBox(height: AppSizes.sm),
           Text(
             'Mulai percakapanmu...',
-            style: AppTextStyles.bodyMedium(color: AppColors.textSecondary),
+            style: AppTextStyles.bodyMedium(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.textSecondary
+                  : AppColors.textSecondaryLight,
+            ),
             textAlign: TextAlign.center,
           ),
         ],

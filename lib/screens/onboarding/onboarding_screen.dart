@@ -95,7 +95,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final isLast = _currentPage == _pages.length - 1;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [

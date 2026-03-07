@@ -24,7 +24,6 @@ class ModelDownloadScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: SafeArea(
         child: modelState.when(
           loading: () => const _LoadingBody(),
@@ -75,7 +74,11 @@ class _LoadingBody extends StatelessWidget {
 
             Text(
               'Sedang menyiapkan otak pasangan virtualmu...\nProses ini mungkin memakan 1–2 menit.',
-              style: AppTextStyles.bodyMedium(color: AppColors.textSecondary),
+              style: AppTextStyles.bodyMedium(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.textSecondary
+                    : AppColors.textSecondaryLight,
+              ),
               textAlign: TextAlign.center,
             ).animate().fadeIn(duration: 600.ms, delay: 400.ms),
 
@@ -85,7 +88,7 @@ class _LoadingBody extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(AppSizes.radiusFull),
               child: LinearProgressIndicator(
-                backgroundColor: AppColors.surface,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                 minHeight: 6,
               ),
@@ -134,7 +137,11 @@ class _ErrorBody extends StatelessWidget {
 
             Text(
               'Gagal memuat model AI. Pastikan perangkatmu memiliki RAM ≥ 4 GB dan coba lagi.',
-              style: AppTextStyles.bodyMedium(color: AppColors.textSecondary),
+              style: AppTextStyles.bodyMedium(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppColors.textSecondary
+                    : AppColors.textSecondaryLight,
+              ),
               textAlign: TextAlign.center,
             ).animate().fadeIn(duration: 500.ms, delay: 250.ms),
 

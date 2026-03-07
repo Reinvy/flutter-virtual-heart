@@ -10,6 +10,7 @@ class TypingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: AppSizes.xs),
       child: Row(
@@ -28,9 +29,9 @@ class TypingIndicator extends StatelessWidget {
           const SizedBox(width: AppSizes.sm),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 12),
-            decoration: const BoxDecoration(
-              color: AppColors.aiBubble,
-              borderRadius: BorderRadius.only(
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.aiBubble : AppColors.aiBubbleLight,
+              borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(4),
                 topRight: Radius.circular(AppSizes.radiusLg),
                 bottomLeft: Radius.circular(AppSizes.radiusLg),
@@ -60,10 +61,12 @@ class _Dot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dotColor = isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
     return Container(
           width: 7,
           height: 7,
-          decoration: const BoxDecoration(color: AppColors.textSecondary, shape: BoxShape.circle),
+          decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
         )
         .animate(delay: delay, onPlay: (c) => c.repeat(reverse: true))
         .moveY(begin: 0, end: -6, duration: 380.ms, curve: Curves.easeInOut);

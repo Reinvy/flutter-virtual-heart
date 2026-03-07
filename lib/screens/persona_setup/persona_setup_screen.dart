@@ -155,7 +155,6 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Form(
           key: _formKey,
@@ -408,7 +407,6 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
       hintStyle: AppTextStyles.inputHint(),
       prefixIcon: Icon(icon, color: AppColors.textSecondary, size: AppSizes.iconMd),
       filled: true,
-      fillColor: AppColors.surface,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
         borderSide: BorderSide.none,
@@ -446,13 +444,15 @@ class _GenderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? AppColors.surface : AppColors.surfaceLight;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: AppSizes.md),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary.withAlpha(30) : AppColors.surface,
+          color: selected ? AppColors.primary.withAlpha(30) : surfaceColor,
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           border: Border.all(color: selected ? AppColors.primary : Colors.transparent, width: 1.5),
         ),
@@ -525,7 +525,10 @@ class _AvatarTile extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: option.baseColor,
-                    border: Border.all(color: AppColors.background, width: 1.5),
+                    border: Border.all(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      width: 1.5,
+                    ),
                   ),
                   child: const Icon(Icons.check, color: Colors.white, size: 11),
                 ),
@@ -554,13 +557,15 @@ class _PersonalityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? AppColors.surface : AppColors.surfaceLight;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(AppSizes.md),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withAlpha(30) : AppColors.surface,
+          color: isSelected ? AppColors.primary.withAlpha(30) : surfaceColor,
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           border: Border.all(
             color: isSelected ? AppColors.primary : Colors.transparent,
@@ -603,18 +608,18 @@ class _HobbyChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? AppColors.surface : AppColors.surfaceLight;
+    final borderColor = isDark ? AppColors.surfaceAlt : const Color(0xFFE8DFF0);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withAlpha(40) : AppColors.surface,
+          color: isSelected ? AppColors.primary.withAlpha(40) : surfaceColor,
           borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.surfaceAlt,
-            width: 1.5,
-          ),
+          border: Border.all(color: isSelected ? AppColors.primary : borderColor, width: 1.5),
         ),
         child: Text(
           label,

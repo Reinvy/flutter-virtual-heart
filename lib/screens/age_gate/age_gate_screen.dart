@@ -16,7 +16,6 @@ class AgeGateScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSizes.xl),
@@ -42,7 +41,11 @@ class AgeGateScreen extends ConsumerWidget {
               Text(
                 'VirtualHeart hanya untuk pengguna berusia 18 tahun ke atas. '
                 'Konten dalam aplikasi ini bersifat dewasa dan romantis.',
-                style: AppTextStyles.bodyMedium(color: AppColors.textSecondary),
+                style: AppTextStyles.bodyMedium(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.textSecondary
+                      : AppColors.textSecondaryLight,
+                ),
                 textAlign: TextAlign.center,
               ).animate().fadeIn(duration: 500.ms, delay: 250.ms),
 
@@ -114,7 +117,6 @@ class AgeGateScreen extends ConsumerWidget {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
         title: Text('Tidak Dapat Melanjutkan', style: AppTextStyles.headingSmall()),
         content: Text(
           'Aplikasi ini hanya untuk pengguna dewasa (18+). '

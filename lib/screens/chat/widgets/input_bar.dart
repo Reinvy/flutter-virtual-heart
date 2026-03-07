@@ -62,10 +62,15 @@ class _InputBarState extends State<InputBar> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? AppColors.surface : AppColors.surfaceLight;
+    final textColor = isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
+    final hintColor = isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
+    final fieldFill = isDark ? AppColors.aiBubble : AppColors.aiBubbleLight;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: AppSizes.sm),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: surfaceColor,
         border: Border(top: BorderSide(color: AppColors.secondary.withAlpha(51), width: 1)),
       ),
       child: SafeArea(
@@ -94,10 +99,10 @@ class _InputBarState extends State<InputBar> {
                   maxLines: null,
                   keyboardType: TextInputType.multiline,
                   textInputAction: TextInputAction.newline,
-                  style: AppTextStyles.bubbleText(),
+                  style: AppTextStyles.bubbleText(color: textColor),
                   decoration: InputDecoration(
                     hintText: 'Ceritakan harimu...',
-                    hintStyle: AppTextStyles.inputHint(),
+                    hintStyle: AppTextStyles.inputHint(color: hintColor),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: AppSizes.md,
                       vertical: 10,
@@ -107,7 +112,7 @@ class _InputBarState extends State<InputBar> {
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor: AppColors.aiBubble,
+                    fillColor: fieldFill,
                   ),
                   onSubmitted: (_) => _handleSend(),
                 ),
@@ -141,6 +146,8 @@ class _IconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final active = onTap != null;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final defaultIconColor = isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
     return SizedBox(
       width: 44,
       height: 44,
@@ -151,9 +158,7 @@ class _IconButton extends StatelessWidget {
           onTap: onTap,
           child: Icon(
             icon,
-            color: active
-                ? (iconColor ?? AppColors.textSecondary)
-                : AppColors.textSecondary.withAlpha(102),
+            color: active ? (iconColor ?? defaultIconColor) : defaultIconColor.withAlpha(102),
             size: AppSizes.iconMd,
           ),
         ),
