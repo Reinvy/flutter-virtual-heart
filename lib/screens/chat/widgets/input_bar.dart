@@ -8,11 +8,22 @@ import '../../../core/constants/text_styles.dart';
 ///
 /// [onSend] is called with the trimmed text when the user taps send or
 /// submits the field. The bar is disabled (grayed out) when [enabled] is false.
+/// [isListening] shows the mic as active (primary colour) while STT is running.
+/// [onMicTap] is called when the mic button is tapped — start/stop logic is
+/// handled by the parent; pass `null` to show the mic as unavailable.
 class InputBar extends StatefulWidget {
-  const InputBar({super.key, required this.onSend, this.enabled = true});
+  const InputBar({
+    super.key,
+    required this.onSend,
+    this.enabled = true,
+    this.isListening = false,
+    this.onMicTap,
+  });
 
   final void Function(String text) onSend;
   final bool enabled;
+  final bool isListening;
+  final VoidCallback? onMicTap;
 
   @override
   State<InputBar> createState() => _InputBarState();
@@ -36,13 +47,17 @@ class _InputBarState extends State<InputBar> {
     widget.onSend(text);
   }
 
-  void _showMicUnavailable() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Fitur microphone akan tersedia di versi berikutnya'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+  void _handleMicTap() {
+    if (widget.onMicTap != null) {
+      widget.onMicTap!();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Speech recognition tidak tersedia di perangkat ini'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   @override
@@ -58,10 +73,11 @@ class _InputBarState extends State<InputBar> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // Microphone button (STT — Phase 3.3)
+            // Microphone button (STT)
             _IconButton(
-              icon: Icons.mic_none_rounded,
-              onTap: widget.enabled ? _showMicUnavailable : null,
+              icon: widget.isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
+              iconColor: widget.isListening ? AppColors.primary : null,
+              onTap: widget.enabled ? _handleMicTap : null,
             ),
             const SizedBox(width: AppSizes.sm),
             // Text field
@@ -116,10 +132,11 @@ class _InputBarState extends State<InputBar> {
 // ── Icon button ────────────────────────────────────────────────────────────────
 
 class _IconButton extends StatelessWidget {
-  const _IconButton({required this.icon, this.onTap});
+  const _IconButton({required this.icon, this.onTap, this.iconColor});
 
   final IconData icon;
   final VoidCallback? onTap;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +151,9 @@ class _IconButton extends StatelessWidget {
           onTap: onTap,
           child: Icon(
             icon,
-            color: active ? AppColors.textSecondary : AppColors.textSecondary.withAlpha(102),
+            color: active
+                ? (iconColor ?? AppColors.textSecondary)
+                : AppColors.textSecondary.withAlpha(102),
             size: AppSizes.iconMd,
           ),
         ),

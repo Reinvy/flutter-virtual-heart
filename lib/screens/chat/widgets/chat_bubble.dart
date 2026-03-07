@@ -16,12 +16,27 @@ import '../../../data/models/persona_config.dart';
 ///
 /// Tap anywhere on the bubble to reveal/hide the timestamp.
 /// Pass [isStreaming] = `true` while the AI response is still being generated.
+/// Pass [onSpeak] to show a TTS speaker button on AI bubbles; [isSpeaking]
+/// indicates whether this message is currently being spoken.
 class ChatBubble extends StatefulWidget {
-  const ChatBubble({super.key, required this.message, this.persona, this.isStreaming = false});
+  const ChatBubble({
+    super.key,
+    required this.message,
+    this.persona,
+    this.isStreaming = false,
+    this.onSpeak,
+    this.isSpeaking = false,
+  });
 
   final Message message;
   final PersonaConfig? persona;
   final bool isStreaming;
+
+  /// Called when the user taps the speaker button. `null` hides the button.
+  final VoidCallback? onSpeak;
+
+  /// Whether this specific message is currently being spoken via TTS.
+  final bool isSpeaking;
 
   @override
   State<ChatBubble> createState() => _ChatBubbleState();
@@ -52,33 +67,40 @@ class _ChatBubbleState extends State<ChatBubble> {
                       _PersonaAvatar(persona: widget.persona),
                       const SizedBox(width: AppSizes.sm),
                     ],
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: maxWidth),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isUser ? null : AppColors.aiBubble,
-                          gradient: isUser
-                              ? const LinearGradient(
-                                  colors: [AppColors.userBubble, AppColors.secondary],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                )
-                              : null,
-                          borderRadius: BorderRadius.only(
-                            topLeft: const Radius.circular(AppSizes.radiusLg),
-                            topRight: Radius.circular(isUser ? 4 : AppSizes.radiusLg),
-                            bottomLeft: Radius.circular(isUser ? AppSizes.radiusLg : 4),
-                            bottomRight: const Radius.circular(AppSizes.radiusLg),
+                    Flexible(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: maxWidth),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isUser ? null : AppColors.aiBubble,
+                            gradient: isUser
+                                ? const LinearGradient(
+                                    colors: [AppColors.userBubble, AppColors.secondary],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  )
+                                : null,
+                            borderRadius: BorderRadius.only(
+                              topLeft: const Radius.circular(AppSizes.radiusLg),
+                              topRight: Radius.circular(isUser ? 4 : AppSizes.radiusLg),
+                              bottomLeft: Radius.circular(isUser ? AppSizes.radiusLg : 4),
+                              bottomRight: const Radius.circular(AppSizes.radiusLg),
+                            ),
                           ),
-                        ),
-                        child: _BubbleContent(
-                          message: widget.message,
-                          isUser: isUser,
-                          isStreaming: widget.isStreaming,
+                          child: _BubbleContent(
+                            message: widget.message,
+                            isUser: isUser,
+                            isStreaming: widget.isStreaming,
+                          ),
                         ),
                       ),
                     ),
+                    // TTS speaker button for AI bubbles
+                    if (!isUser && widget.onSpeak != null) ...[
+                      const SizedBox(width: AppSizes.xs),
+                      _SpeakerButton(isSpeaking: widget.isSpeaking, onTap: widget.onSpeak),
+                    ],
                   ],
                 ),
                 // Timestamp (hidden by default, revealed on tap)
@@ -164,6 +186,32 @@ class _PersonaAvatar extends StatelessWidget {
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       alignment: Alignment.center,
       child: Text(initial, style: AppTextStyles.button(color: Colors.white).copyWith(fontSize: 14)),
+    );
+  }
+}
+
+// ── Speaker button ─────────────────────────────────────────────────────────────
+
+/// Small TTS play/stop toggle displayed beside AI chat bubbles.
+class _SpeakerButton extends StatelessWidget {
+  const _SpeakerButton({required this.isSpeaking, this.onTap});
+
+  final bool isSpeaking;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Icon(
+          isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined,
+          size: 20,
+          color: isSpeaking ? AppColors.primary : AppColors.textSecondary.withAlpha(180),
+        ),
+      ),
     );
   }
 }

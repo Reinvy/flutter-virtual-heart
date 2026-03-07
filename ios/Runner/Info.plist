@@ -45,5 +45,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Microphone / Speech-to-Text permissions -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>VirtualHeart membutuhkan akses mikrofon untuk fitur pesan suara.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>VirtualHeart membutuhkan pengenalan suara agar kamu bisa berbicara langsung dengan pasangan virtualmu.</string>
 </dict>
 </plist>

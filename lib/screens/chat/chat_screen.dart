@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,8 +10,11 @@ import '../../core/constants/app_sizes.dart';
 import '../../core/constants/text_styles.dart';
 import '../../data/models/message.dart';
 import '../../data/models/persona_config.dart';
+import '../../providers/app_settings_provider.dart';
 import '../../providers/objectbox_provider.dart';
 import '../../providers/router_provider.dart';
+import '../../services/stt_service.dart';
+import '../../services/tts_service.dart';
 import 'chat_provider.dart';
 import 'widgets/chat_bubble.dart';
 import 'widgets/input_bar.dart';
@@ -25,10 +30,22 @@ class ChatScreen extends ConsumerStatefulWidget {
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _scrollController = ScrollController();
+  final _ttsService = TtsService();
+  final _sttService = SttService();
+
+  /// ID of the [Message] currently being spoken (-1 = none).
+  int _speakingMessageId = -1;
+
+  /// Whether the mic is actively listening.
+  bool _isListening = false;
+
+  StreamSubscription<String>? _sttSubscription;
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _sttSubscription?.cancel();
+    _ttsService.stop();
     super.dispose();
   }
 
@@ -58,6 +75,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           prev?.streamingBuffer != next.streamingBuffer) {
         _scrollToBottom();
       }
+
+      // Auto-play TTS when AI finishes responding.
+      if (!next.isTyping && prev?.isTyping == true && next.messages.isNotEmpty) {
+        final last = next.messages.last;
+        if (last.role == MessageRole.assistant) {
+          final settings = ref.read(appSettingsProvider);
+          if (settings.ttsEnabled && settings.ttsAutoPlay) {
+            _speakMessage(last, persona);
+          }
+        }
+      }
     });
 
     return Scaffold(
@@ -75,6 +103,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           InputBar(
             enabled: !chatState.isTyping,
+            isListening: _isListening,
+            onMicTap: _handleMicTap,
             onSend: (text) {
               HapticFeedback.lightImpact();
               ref.read(chatProvider.notifier).sendMessage(text);
@@ -108,6 +138,77 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           onPressed: () => context.push(AppRoutes.settings),
         ),
       ],
+    );
+  }
+
+  // ── TTS ───────────────────────────────────────────────────────────────────
+
+  Future<void> _speakMessage(Message message, PersonaConfig? persona) async {
+    final settings = ref.read(appSettingsProvider);
+    if (!settings.ttsEnabled) return;
+
+    // Tap again to stop the currently playing message.
+    if (_speakingMessageId == message.id) {
+      await _ttsService.stop();
+      if (mounted) setState(() => _speakingMessageId = -1);
+      return;
+    }
+
+    setState(() => _speakingMessageId = message.id);
+    await _ttsService.speak(
+      message.content,
+      gender: persona?.gender ?? PersonaGender.girlfriend,
+      onDone: () {
+        if (mounted) setState(() => _speakingMessageId = -1);
+      },
+    );
+  }
+
+  // ── STT ───────────────────────────────────────────────────────────────────
+
+  Future<void> _handleMicTap() async {
+    if (_isListening) {
+      await _sttService.stopListening();
+      await _sttSubscription?.cancel();
+      _sttSubscription = null;
+      if (mounted) setState(() => _isListening = false);
+      return;
+    }
+
+    final ok = await _sttService.initialize();
+    if (!ok) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Speech recognition tidak tersedia di perangkat ini'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() => _isListening = true);
+    HapticFeedback.lightImpact();
+
+    String lastTranscript = '';
+    final stream = _sttService.startListening();
+
+    _sttSubscription = stream.listen(
+      (transcript) => lastTranscript = transcript,
+      onDone: () {
+        if (mounted) setState(() => _isListening = false);
+        if (lastTranscript.trim().isNotEmpty) {
+          HapticFeedback.lightImpact();
+          ref.read(chatProvider.notifier).sendMessage(lastTranscript.trim());
+        }
+        _sttSubscription = null;
+      },
+      onError: (_) {
+        if (mounted) setState(() => _isListening = false);
+        _sttSubscription = null;
+      },
+      cancelOnError: true,
     );
   }
 
@@ -146,7 +247,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           return const TypingIndicator();
         }
 
-        return ChatBubble(key: ValueKey(messages[i].id), message: messages[i], persona: persona);
+        return ChatBubble(
+          key: ValueKey(messages[i].id),
+          message: messages[i],
+          persona: persona,
+          onSpeak: messages[i].role == MessageRole.assistant
+              ? () => _speakMessage(messages[i], persona)
+              : null,
+          isSpeaking: _speakingMessageId == messages[i].id,
+        );
       },
     );
   }
