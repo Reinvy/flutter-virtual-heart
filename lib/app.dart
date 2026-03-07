@@ -1,35 +1,22 @@
 import 'package:flutter/material.dart';
-import 'core/constants/app_colors.dart';
-import 'core/constants/text_styles.dart';
-import 'core/theme/app_theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// TODO Phase 1.3: Replace with MaterialApp.router + go_router + ProviderScope
-class VirtualHeartApp extends StatelessWidget {
+import 'core/theme/app_theme.dart';
+import 'providers/router_provider.dart';
+
+class VirtualHeartApp extends ConsumerWidget {
   const VirtualHeartApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+    return MaterialApp.router(
       title: 'VirtualHeart',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.dark,
-      home: Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.favorite, color: AppColors.heartRed, size: 64),
-              const SizedBox(height: 16),
-              Text('VirtualHeart', style: AppTextStyles.appName()),
-              const SizedBox(height: 8),
-              Text('Phase 1.1 — Theme Ready', style: AppTextStyles.moodIndicator()),
-            ],
-          ),
-        ),
-      ),
+      routerConfig: router,
     );
   }
 }
