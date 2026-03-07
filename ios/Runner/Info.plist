@@ -50,5 +50,8 @@
 	<string>VirtualHeart membutuhkan akses mikrofon untuk fitur pesan suara.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>VirtualHeart membutuhkan pengenalan suara agar kamu bisa berbicara langsung dengan pasangan virtualmu.</string>
+	<!-- Notification permission -->
+	<key>UIBackgroundModes</key>
+	<array/>
 </dict>
 </plist>
