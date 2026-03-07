@@ -21,7 +21,8 @@ class AppearanceSection extends ConsumerWidget {
         sectionCard(
           context: context,
           children: [
-            Padding(
+            Container(
+              width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: AppSizes.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
