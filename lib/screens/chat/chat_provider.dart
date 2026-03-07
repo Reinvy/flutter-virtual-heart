@@ -5,6 +5,7 @@ import '../../data/models/message.dart';
 import '../../data/models/persona_config.dart';
 import '../../providers/mood_provider.dart';
 import '../../providers/objectbox_provider.dart';
+import '../../services/ai/content_safety.dart';
 import '../../services/ai/memory_extractor.dart';
 import '../../services/ai/model_service.dart';
 import '../../services/ai/prompt_builder.dart';
@@ -58,6 +59,23 @@ class ChatNotifier extends Notifier<ChatState> {
       streamingBuffer: '',
     );
 
+    // 1b. Pre-processing: content safety gate on user input.
+    final inputCheck = ContentSafety.filterInput(text.trim());
+    if (inputCheck.isBlocked) {
+      final safetyMsg = Message(
+        role: MessageRole.assistant,
+        content: inputCheck.redirectResponse!,
+        timestamp: DateTime.now(),
+      );
+      db.messageBox.put(safetyMsg);
+      state = state.copyWith(
+        messages: [...state.messages, safetyMsg],
+        isTyping: false,
+        streamingBuffer: '',
+      );
+      return;
+    }
+
     final buffer = StringBuffer();
     try {
       // 2. Assemble prompt from persona, mood, memory and conversation history.
@@ -88,10 +106,16 @@ class ChatNotifier extends Notifier<ChatState> {
         state = state.copyWith(streamingBuffer: buffer.toString());
       }
 
-      // 4. Persist completed AI message and update UI.
+      // 4a. Post-processing: content safety gate on AI output.
+      final outputCheck = ContentSafety.validateOutput(buffer.toString());
+      final finalContent = outputCheck.isBlocked
+          ? outputCheck.redirectResponse!
+          : buffer.toString();
+
+      // 4b. Persist completed AI message and update UI.
       final aiMsg = Message(
         role: MessageRole.assistant,
-        content: buffer.toString(),
+        content: finalContent,
         timestamp: DateTime.now(),
       );
       db.messageBox.put(aiMsg);
@@ -103,7 +127,8 @@ class ChatNotifier extends Notifier<ChatState> {
       );
 
       // 5. Fire-and-forget: memory extraction + mood update.
-      Future.microtask(() => _postProcess(db, text.trim(), buffer.toString()));
+      //    Use sanitised content so extractors never see blocked material.
+      Future.microtask(() => _postProcess(db, text.trim(), finalContent));
     } catch (_) {
       state = state.copyWith(isTyping: false, streamingBuffer: '');
     }
