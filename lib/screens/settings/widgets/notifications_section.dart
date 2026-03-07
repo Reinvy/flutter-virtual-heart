@@ -24,7 +24,7 @@ class NotificationsSection extends ConsumerWidget {
     final picked = await showTimePicker(
       context: context,
       initialTime: initial,
-      helpText: 'Waktu Pesan Pagi',
+      helpText: 'Morning Message Time',
     );
 
     if (picked == null || !context.mounted) return;
@@ -41,15 +41,15 @@ class NotificationsSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader(context, 'Notifikasi', Icons.notifications_outlined),
+        sectionHeader(context, 'Notifications', Icons.notifications_outlined),
         sectionCard(
           context: context,
           children: [
             SwitchListTile(
               dense: true,
               secondary: const Icon(Icons.wb_sunny_outlined),
-              title: const Text('Pesan Pagi'),
-              subtitle: const Text('Sapaan romantis setiap pagi'),
+              title: const Text('Morning Message'),
+              subtitle: const Text('Romantic greeting every morning'),
               value: settings.notificationMorningEnabled,
               activeThumbColor: AppColors.primary,
               activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
@@ -64,7 +64,7 @@ class NotificationsSection extends ConsumerWidget {
               ListTile(
                 dense: true,
                 leading: const Icon(Icons.access_time_rounded),
-                title: const Text('Waktu Pesan Pagi'),
+                title: const Text('Morning Message Time'),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -89,8 +89,8 @@ class NotificationsSection extends ConsumerWidget {
             SwitchListTile(
               dense: true,
               secondary: const Icon(Icons.timer_outlined),
-              title: const Text('Ingatkan saat tidak aktif'),
-              subtitle: const Text('Notifikasi jika >6 jam tidak buka app'),
+              title: const Text('Remind when inactive'),
+              subtitle: const Text('Notification if app not opened for >6 hours'),
               value: settings.notificationCheckinEnabled,
               activeThumbColor: AppColors.primary,
               activeTrackColor: AppColors.primary.withValues(alpha: 0.5),

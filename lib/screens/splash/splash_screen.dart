@@ -81,7 +81,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 const SizedBox(height: AppSizes.sm),
 
                 Text(
-                  'Teman hatimu, selalu di sini.',
+                  'Your heart\'s companion, always here.',
                   style: AppTextStyles.moodIndicator(),
                 ).animate().fadeIn(duration: 600.ms, delay: 600.ms),
               ],

@@ -17,7 +17,7 @@ class AppearanceSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader(context, 'Tampilan', Icons.palette_outlined),
+        sectionHeader(context, 'Appearance', Icons.palette_outlined),
         sectionCard(
           context: context,
           children: [
@@ -27,23 +27,23 @@ class AppearanceSection extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Tema', style: Theme.of(context).textTheme.bodyLarge),
+                  Text('Theme', style: Theme.of(context).textTheme.bodyLarge),
                   const SizedBox(height: AppSizes.sm),
                   SegmentedButton<AppTheme>(
                     segments: const [
                       ButtonSegment(
                         value: AppTheme.dark,
-                        label: Text('Gelap'),
+                        label: Text('Dark'),
                         icon: Icon(Icons.dark_mode_rounded),
                       ),
                       ButtonSegment(
                         value: AppTheme.light,
-                        label: Text('Terang'),
+                        label: Text('Light'),
                         icon: Icon(Icons.light_mode_rounded),
                       ),
                       ButtonSegment(
                         value: AppTheme.system,
-                        label: Text('Sistem'),
+                        label: Text('System'),
                         icon: Icon(Icons.phone_android_rounded),
                       ),
                     ],

@@ -19,17 +19,17 @@ class DataPrivacySection extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Hapus Semua Percakapan?'),
+        title: const Text('Delete All Conversations?'),
         content: const Text(
-          'Semua riwayat chat akan dihapus secara permanen.\n'
-          'Aksi ini tidak bisa dibatalkan.',
+          'All chat history will be permanently deleted.\n'
+          'This action cannot be undone.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: AppColors.heartRed),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Hapus'),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -41,7 +41,7 @@ class DataPrivacySection extends ConsumerWidget {
     if (context.mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Semua percakapan telah dihapus')));
+      ).showSnackBar(const SnackBar(content: Text('All conversations deleted')));
     }
   }
 
@@ -53,7 +53,7 @@ class DataPrivacySection extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Tidak ada percakapan untuk diekspor')));
+        ).showSnackBar(const SnackBar(content: Text('No conversations to export')));
       }
       return;
     }
@@ -63,13 +63,13 @@ class DataPrivacySection extends ConsumerWidget {
     final personaName = (persona?.name.isNotEmpty == true) ? persona!.name : 'AI';
     final userNickname = (persona?.nicknameForUser.isNotEmpty == true)
         ? persona!.nicknameForUser
-        : 'Kamu';
+        : 'You';
 
     final fmt = DateFormat('dd/MM/yyyy HH:mm');
     final fmtShort = DateFormat('dd/MM HH:mm');
     final buffer = StringBuffer()
-      ..writeln('VirtualHeart — Ekspor Chat')
-      ..writeln('Tanggal ekspor: ${fmt.format(DateTime.now())}')
+      ..writeln('VirtualHeart — Chat Export')
+      ..writeln('Export date: ${fmt.format(DateTime.now())}')
       ..writeln('Persona: $personaName')
       ..writeln('=' * 40)
       ..writeln();
@@ -91,7 +91,7 @@ class DataPrivacySection extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Chat diekspor ke: $fileName'),
+            content: Text('Chat exported to: $fileName'),
             duration: const Duration(seconds: 5),
           ),
         );
@@ -100,7 +100,7 @@ class DataPrivacySection extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Gagal mengekspor chat')));
+        ).showSnackBar(const SnackBar(content: Text('Failed to export chat')));
       }
     }
   }
@@ -110,7 +110,7 @@ class DataPrivacySection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader(context, 'Data & Privasi', Icons.lock_outline_rounded),
+        sectionHeader(context, 'Data & Privacy', Icons.lock_outline_rounded),
         sectionCard(
           context: context,
           children: [
@@ -122,10 +122,10 @@ class DataPrivacySection extends ConsumerWidget {
                     ? AppColors.textSecondary
                     : AppColors.textSecondaryLight,
               ),
-              title: const Text('Penyimpanan Lokal'),
+              title: const Text('Local Storage'),
               subtitle: const Text(
-                'Semua data tersimpan di perangkat ini.\n'
-                'Tidak ada data yang dikirim ke server.',
+                'All data is stored on this device.\n'
+                'No data is ever sent to any server.',
               ),
               isThreeLine: true,
             ),
@@ -133,7 +133,7 @@ class DataPrivacySection extends ConsumerWidget {
               dense: true,
               leading: const Icon(Icons.delete_outline_rounded, color: AppColors.heartRed),
               title: const Text(
-                'Hapus Semua Percakapan',
+                'Delete All Conversations',
                 style: TextStyle(color: AppColors.heartRed),
               ),
               onTap: () => _confirmDeleteAll(context, ref),
@@ -141,8 +141,8 @@ class DataPrivacySection extends ConsumerWidget {
             ListTile(
               dense: true,
               leading: const Icon(Icons.download_rounded, color: AppColors.primary),
-              title: const Text('Ekspor Chat (.txt)'),
-              subtitle: const Text('Simpan riwayat percakapan ke file teks'),
+              title: const Text('Export Chat (.txt)'),
+              subtitle: const Text('Save conversation history to a text file'),
               trailing: Icon(
                 Icons.chevron_right_rounded,
                 color: Theme.of(context).brightness == Brightness.dark

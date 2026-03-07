@@ -66,14 +66,14 @@ class _LoadingBody extends StatelessWidget {
             const SizedBox(height: AppSizes.xl),
 
             Text(
-              'Memuat Kecerdasan Buatan',
+              'Loading AI',
               style: AppTextStyles.headingLarge(),
             ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
 
             const SizedBox(height: AppSizes.sm),
 
             Text(
-              'Sedang menyiapkan otak pasangan virtualmu...\nProses ini mungkin memakan 1–2 menit.',
+              'Preparing your virtual partner\'s brain...\nThis may take 1–2 minutes.',
               style: AppTextStyles.bodyMedium(
                 color: Theme.of(context).brightness == Brightness.dark
                     ? AppColors.textSecondary
@@ -129,14 +129,14 @@ class _ErrorBody extends StatelessWidget {
             const SizedBox(height: AppSizes.lg),
 
             Text(
-              'Oops, Ada Masalah',
+              'Oops, Something Went Wrong',
               style: AppTextStyles.headingLarge(),
             ).animate().fadeIn(duration: 500.ms, delay: 150.ms),
 
             const SizedBox(height: AppSizes.md),
 
             Text(
-              'Gagal memuat model AI. Pastikan perangkatmu memiliki RAM ≥ 4 GB dan coba lagi.',
+              'Failed to load AI model. Make sure your device has ≥ 4 GB of RAM and try again.',
               style: AppTextStyles.bodyMedium(
                 color: Theme.of(context).brightness == Brightness.dark
                     ? AppColors.textSecondary
@@ -159,7 +159,7 @@ class _ErrorBody extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppSizes.radiusFull),
                   ),
                 ),
-                child: Text('Coba Lagi', style: AppTextStyles.button()),
+                child: Text('Try Again', style: AppTextStyles.button()),
               ),
             ).animate().fadeIn(duration: 500.ms, delay: 400.ms),
           ],
@@ -180,11 +180,11 @@ class _LoadingTips extends StatefulWidget {
 
 class _LoadingTipsState extends State<_LoadingTips> {
   static const _tips = [
-    '💕 Pasangan virtualmu sedang belajar tentangmu...',
-    '🌸 Mempersiapkan kepribadian yang sempurna untukmu...',
-    '✨ AI berjalan sepenuhnya di perangkatmu — privasi terjaga',
-    '🔮 Hampir siap untuk menemanimu...',
-    '💝 Melatih kemampuan bicara yang hangat dan intim...',
+    '💕 Your virtual partner is getting to know you...',
+    '🌸 Preparing the perfect personality for you...',
+    '✨ AI runs entirely on your device — your privacy is protected',
+    '🔮 Almost ready to accompany you...',
+    '💝 Crafting warm and intimate conversation skills...',
   ];
 
   int _index = 0;

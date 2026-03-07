@@ -18,7 +18,7 @@ class LanguageSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader(context, 'Bahasa AI', Icons.translate_rounded),
+        sectionHeader(context, 'AI Language', Icons.translate_rounded),
         sectionCard(
           context: context,
           children: [
@@ -29,7 +29,7 @@ class LanguageSection extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Bahasa yang digunakan AI saat membalas',
+                    'Language used by AI when replying',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).brightness == Brightness.dark
                           ? AppColors.textSecondary
@@ -40,9 +40,9 @@ class LanguageSection extends ConsumerWidget {
                   SegmentedButton<AppLanguage>(
                     showSelectedIcon: false,
                     segments: const [
-                      ButtonSegment(value: AppLanguage.indonesian, label: Text('Indonesia')),
+                      ButtonSegment(value: AppLanguage.indonesian, label: Text('Indonesian')),
                       ButtonSegment(value: AppLanguage.english, label: Text('English')),
-                      ButtonSegment(value: AppLanguage.mixed, label: Text('Campur')),
+                      ButtonSegment(value: AppLanguage.mixed, label: Text('Mixed')),
                     ],
                     selected: {settings.language},
                     onSelectionChanged: (s) {

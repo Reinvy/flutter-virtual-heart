@@ -30,26 +30,26 @@ const List<_OnboardingPage> _pages = [
   _OnboardingPage(
     icon: Icons.favorite,
     iconColor: AppColors.heartRed,
-    title: 'Teman Hatimu',
+    title: 'Your Heart\'s Companion',
     body:
-        'VirtualHeart hadir sebagai teman setia yang selalu siap mendengar, '
-        'mendukung, dan menemanimu kapan saja.',
+        'VirtualHeart is here as a loyal companion who is always ready to listen, '
+        'support, and be with you anytime.',
   ),
   _OnboardingPage(
     icon: Icons.psychology_outlined,
     iconColor: AppColors.secondary,
-    title: 'Cerdas & Pribadi',
+    title: 'Smart & Private',
     body:
-        'AI kami berjalan sepenuhnya di perangkatmu — privasi terjaga, '
-        'tidak ada data yang dikirim ke server mana pun.',
+        'Our AI runs entirely on your device — your privacy is preserved, '
+        'no data is ever sent to any server.',
   ),
   _OnboardingPage(
     icon: Icons.auto_awesome,
     iconColor: AppColors.primary,
-    title: 'Sesuaikan Segalanya',
+    title: 'Customize Everything',
     body:
-        'Pilih nama, kepribadian, dan tampilan pasangan virtualmu. '
-        'Rasakan pengalaman yang benar-benar personal.',
+        'Choose the name, personality, and appearance of your virtual partner. '
+        'Experience something truly personal.',
   ),
 ];
 
@@ -107,7 +107,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 child: TextButton(
                   onPressed: isLast ? null : _finish,
                   child: Text(
-                    'Lewati',
+                    'Skip',
                     style: AppTextStyles.button(
                       color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
                     ),
@@ -168,7 +168,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 250),
                     child: Text(
-                      isLast ? 'Mulai Sekarang' : 'Lanjut',
+                      isLast ? 'Get Started' : 'Next',
                       key: ValueKey(isLast),
                       style: AppTextStyles.button(),
                     ),

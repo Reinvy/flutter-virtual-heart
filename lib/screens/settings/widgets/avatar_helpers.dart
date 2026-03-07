@@ -31,10 +31,10 @@ const boyfriendAvatars = <AvatarOpt>[
 ];
 
 const personalityLabels = <PersonalityPreset, String>{
-  PersonalityPreset.gentle: 'Lembut 🌸',
-  PersonalityPreset.cheerful: 'Ceria ✨',
-  PersonalityPreset.mature: 'Dewasa 🌙',
-  PersonalityPreset.mysterious: 'Misterius 🔮',
+  PersonalityPreset.gentle: 'Gentle 🌸',
+  PersonalityPreset.cheerful: 'Cheerful ✨',
+  PersonalityPreset.mature: 'Mature 🌙',
+  PersonalityPreset.mysterious: 'Mysterious 🔮',
 };
 
 const genderLabels = <PersonaGender, String>{

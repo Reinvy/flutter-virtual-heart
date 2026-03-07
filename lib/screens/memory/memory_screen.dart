@@ -41,10 +41,10 @@ class MemoryScreen extends ConsumerWidget {
   // Category metadata ──────────────────────────────────────────────────────
 
   static const Map<MemoryCategory, String> _categoryLabel = {
-    MemoryCategory.personal: 'Pribadi',
-    MemoryCategory.event: 'Acara',
-    MemoryCategory.preference: 'Preferensi',
-    MemoryCategory.date: 'Tanggal Penting',
+    MemoryCategory.personal: 'Personal',
+    MemoryCategory.event: 'Events',
+    MemoryCategory.preference: 'Preferences',
+    MemoryCategory.date: 'Important Dates',
   };
 
   static const Map<MemoryCategory, IconData> _categoryIcon = {
@@ -75,13 +75,13 @@ class MemoryScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Reset Semua Memori?'),
+        title: const Text('Reset All Memories?'),
         content: const Text(
-          'Semua fakta yang diingat AI akan dihapus permanen. '
-          'Tindakan ini tidak bisa dibatalkan.',
+          'All facts remembered by AI will be permanently deleted. '
+          'This action cannot be undone.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: AppColors.heartRed),
             onPressed: () => Navigator.pop(ctx, true),
@@ -105,13 +105,13 @@ class MemoryScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Memori AI'),
+        title: const Text('AI Memory'),
         centerTitle: true,
         actions: [
           if (facts.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_sweep_outlined),
-              tooltip: 'Reset semua memori',
+              tooltip: 'Reset all memories',
               onPressed: () => _confirmResetAll(context, ref),
             ),
         ],
@@ -154,12 +154,12 @@ class _EmptyState extends StatelessWidget {
           Icon(Icons.psychology_outlined, size: 64, color: subtleColor),
           const SizedBox(height: 16),
           Text(
-            'Belum ada memori tersimpan',
+            'No memories saved yet',
             style: theme.textTheme.titleMedium?.copyWith(color: subtleColor),
           ),
           const SizedBox(height: 8),
           Text(
-            'AI akan mengingat fakta penting tentang kamu\nseiring percakapan berlanjut.',
+            'AI will remember important facts about you\nas conversations continue.',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(color: subtleColor),
           ),

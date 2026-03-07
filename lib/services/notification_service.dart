@@ -22,19 +22,19 @@ const _kSpecialDayBaseId = 100; // incremented per scheduled special day
 // ── Romantic message templates (PRD Appendix A) ──────────────────────────
 
 const _morningMessages = [
-  'Selamat pagi, Sayang 🌸 Aku sudah mimpi tentang kamu tadi malam.',
-  'Good morning! Hari ini pasti jadi hari yang indah karena ada kamu 💖',
-  'Kamu yang pertama aku pikirkan pagi ini. Selamat pagi~ 🌅',
-  'Bangun sudah? Aku nunggu kabarmu dari tadi. Selamat pagi, Sayang 💕',
-  'Pagi ini terasa lebih hangat karena aku ingat kamu. Selamat pagi! ☀️',
+  'Good morning, Sweetheart 🌸 I\'ve been dreaming about you.',
+  'Good morning! Today is going to be a beautiful day because of you 💖',
+  'You\'re the first thing on my mind this morning. Good morning~ 🌅',
+  'Awake already? I\'ve been waiting for your message. Good morning, Sweetheart 💕',
+  'This morning feels warmer because I\'m thinking of you. Good morning! ☀️',
 ];
 
 const _checkinMessages = [
-  'Hei, kamu di mana? Udah lama aku nunggu kabarmu 🥺',
-  'Kangen deh... boleh cerita harimu sebentar? ❤️',
-  'Aku kepo gimana harimu hari ini. Cerita yuk? 💝',
-  'Lagi sibuk ya? Aku di sini nunggu kamu, lho~ 🌷',
-  'Semoga harimu baik-baik saja. Aku selalu di sini kalau kamu mau cerita 💫',
+  'Hey, where are you? I\'ve been waiting for your message 🥺',
+  'I miss you... can you tell me about your day for a moment? ❤️',
+  'I\'m curious how your day\'s going. Let\'s chat? 💝',
+  'Busy? I\'m here waiting for you~ 🌷',
+  'Hope your day is going well. I\'m always here whenever you want to talk 💫',
 ];
 
 /// Manages all locally-scheduled notifications for VirtualHeart.
@@ -117,8 +117,8 @@ class NotificationService {
       NotificationDetails(
         android: AndroidNotificationDetails(
           _kMorningChannelId,
-          'Pesan Pagi',
-          channelDescription: 'Sapaan pagi romantis dari pasangan virtualmu.',
+          'Morning Message',
+          channelDescription: 'Romantic morning greeting from your virtual partner.',
           importance: Importance.high,
           priority: Priority.high,
           icon: '@mipmap/ic_launcher',
@@ -165,7 +165,7 @@ class NotificationService {
         android: AndroidNotificationDetails(
           _kCheckinChannelId,
           'Check-in',
-          channelDescription: 'Pengingat dari pasangan virtualmu.',
+          channelDescription: 'Reminder from your virtual partner.',
           importance: Importance.defaultImportance,
           priority: Priority.defaultPriority,
           icon: '@mipmap/ic_launcher',
@@ -190,7 +190,7 @@ class NotificationService {
 
   /// Schedules a one-time notification on [date] for a special occasion.
   ///
-  /// [message] should be pre-formed (e.g., "Selamat ulang tahun, Sayang! 🎂").
+  /// [message] should be pre-formed (e.g., "Happy birthday, Sweetheart! 🎂").
   /// Each call uses a unique ID derived from [_kSpecialDayBaseId] + [slotIndex]
   /// so multiple special days can coexist.
   Future<void> scheduleSpecialDay(
@@ -214,8 +214,8 @@ class NotificationService {
       NotificationDetails(
         android: AndroidNotificationDetails(
           _kSpecialDayChannelId,
-          'Hari Spesial',
-          channelDescription: 'Notifikasi untuk momen yang berarti.',
+          'Special Day',
+          channelDescription: 'Notifications for meaningful moments.',
           importance: Importance.high,
           priority: Priority.high,
           icon: '@mipmap/ic_launcher',

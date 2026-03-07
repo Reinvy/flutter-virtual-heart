@@ -46,33 +46,33 @@ class PersonaProfileSheet extends ConsumerWidget {
   static const Map<PersonalityPreset, ({String label, String emoji, String description})>
   _personalityInfo = {
     PersonalityPreset.gentle: (
-      label: 'Lembut',
+      label: 'Gentle',
       emoji: '🌸',
-      description: 'Penyayang, hangat, dan selalu ada untukmu',
+      description: 'Caring, warm, and always there for you',
     ),
     PersonalityPreset.cheerful: (
-      label: 'Ceria',
+      label: 'Cheerful',
       emoji: '✨',
-      description: 'Penuh semangat, suka bercanda, dan menghibur',
+      description: 'Full of energy, loves joking, and uplifting',
     ),
     PersonalityPreset.mature: (
-      label: 'Dewasa',
+      label: 'Mature',
       emoji: '🌙',
-      description: 'Bijak, tenang, dan dapat diandalkan',
+      description: 'Wise, calm, and dependable',
     ),
     PersonalityPreset.mysterious: (
-      label: 'Misterius',
+      label: 'Mysterious',
       emoji: '🔮',
-      description: 'Intrigin, penuh teka-teki, dan memukau',
+      description: 'Intriguing, full of puzzles, and captivating',
     ),
   };
 
   static const Map<MoodType, ({String emoji, String label})> _moodInfo = {
-    MoodType.happy: (emoji: '😊', label: 'Bahagia'),
-    MoodType.longing: (emoji: '🥺', label: 'Merindukanmu'),
+    MoodType.happy: (emoji: '😊', label: 'Happy'),
+    MoodType.longing: (emoji: '🥺', label: 'Missing You'),
     MoodType.playful: (emoji: '😄', label: 'Playful'),
-    MoodType.sad: (emoji: '😢', label: 'Sedih'),
-    MoodType.excited: (emoji: '🤩', label: 'Bersemangat'),
+    MoodType.sad: (emoji: '😢', label: 'Sad'),
+    MoodType.excited: (emoji: '🤩', label: 'Excited'),
   };
 
   static const Map<MoodType, Color> _moodColors = {
@@ -176,7 +176,7 @@ class PersonaProfileSheet extends ConsumerWidget {
         if (nickname.isNotEmpty) ...[
           const SizedBox(height: AppSizes.xs),
           Text(
-            'Memanggilmu "$nickname"',
+            'Calls you "$nickname"',
             style: AppTextStyles.bodyMedium(color: subtleColor),
             textAlign: TextAlign.center,
           ),
@@ -209,7 +209,7 @@ class PersonaProfileSheet extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Mood Sekarang', style: AppTextStyles.moodIndicator(color: subtleColor)),
+                Text('Current Mood', style: AppTextStyles.moodIndicator(color: subtleColor)),
                 const SizedBox(height: AppSizes.xs),
                 Text(info.label, style: AppTextStyles.headingSmall(color: color)),
               ],
@@ -243,7 +243,7 @@ class PersonaProfileSheet extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Hobi & Minat', style: AppTextStyles.headingSmall(color: AppColors.primary)),
+        Text('Hobbies & Interests', style: AppTextStyles.headingSmall(color: AppColors.primary)),
         const SizedBox(height: AppSizes.sm),
         Wrap(
           spacing: AppSizes.sm,
@@ -264,12 +264,12 @@ class PersonaProfileSheet extends ConsumerWidget {
     final preset = persona?.personalityPreset ?? PersonalityPreset.gentle;
     final info =
         _personalityInfo[preset] ??
-        (label: 'Lembut', emoji: '🌸', description: 'Penyayang, hangat, dan selalu ada untukmu');
+        (label: 'Gentle', emoji: '🌸', description: 'Caring, warm, and always there for you');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Kepribadian', style: AppTextStyles.headingSmall(color: AppColors.primary)),
+        Text('Personality', style: AppTextStyles.headingSmall(color: AppColors.primary)),
         const SizedBox(height: AppSizes.sm),
         Container(
           width: double.infinity,

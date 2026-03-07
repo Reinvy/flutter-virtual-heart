@@ -29,7 +29,7 @@ class SettingsScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: AppSizes.iconMd),
           onPressed: () => context.pop(),
         ),
-        title: Text('Pengaturan', style: Theme.of(context).textTheme.headlineSmall),
+        title: Text('Settings', style: Theme.of(context).textTheme.headlineSmall),
         centerTitle: true,
       ),
       body: ListView(

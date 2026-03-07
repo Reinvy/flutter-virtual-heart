@@ -101,7 +101,7 @@ class _InputBarState extends State<InputBar> {
                   textInputAction: TextInputAction.newline,
                   style: AppTextStyles.bubbleText(color: textColor),
                   decoration: InputDecoration(
-                    hintText: 'Ceritakan harimu...',
+                    hintText: 'Tell me about your day...',
                     hintStyle: AppTextStyles.inputHint(color: hintColor),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: AppSizes.md,

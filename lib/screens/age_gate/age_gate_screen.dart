@@ -31,7 +31,7 @@ class AgeGateScreen extends ConsumerWidget {
               const SizedBox(height: AppSizes.lg),
 
               Text(
-                'Verifikasi Usia',
+                'Age Verification',
                 style: AppTextStyles.headingLarge(),
                 textAlign: TextAlign.center,
               ).animate().fadeIn(duration: 500.ms, delay: 150.ms),
@@ -39,8 +39,8 @@ class AgeGateScreen extends ConsumerWidget {
               const SizedBox(height: AppSizes.md),
 
               Text(
-                'VirtualHeart hanya untuk pengguna berusia 18 tahun ke atas. '
-                'Konten dalam aplikasi ini bersifat dewasa dan romantis.',
+                'VirtualHeart is only for users aged 18 and above. '
+                'Content in this app is adult and romantic in nature.',
                 style: AppTextStyles.bodyMedium(
                   color: Theme.of(context).brightness == Brightness.dark
                       ? AppColors.textSecondary
@@ -64,7 +64,7 @@ class AgeGateScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(AppSizes.radiusFull),
                     ),
                   ),
-                  child: Text('Ya, saya berusia ≥ 18 tahun', style: AppTextStyles.button()),
+                  child: Text('Yes, I am 18 or older', style: AppTextStyles.button()),
                 ),
               ).animate().fadeIn(duration: 500.ms, delay: 400.ms),
 
@@ -84,7 +84,7 @@ class AgeGateScreen extends ConsumerWidget {
                     ),
                   ),
                   child: Text(
-                    'Tidak, keluar dari aplikasi',
+                    'No, exit the app',
                     style: AppTextStyles.button(color: AppColors.textSecondary),
                   ),
                 ),
@@ -93,7 +93,7 @@ class AgeGateScreen extends ConsumerWidget {
               const SizedBox(height: AppSizes.xxl),
 
               Text(
-                'Dengan melanjutkan, kamu menyetujui Syarat & Ketentuan\ndan Kebijakan Privasi VirtualHeart.',
+                'By continuing, you agree to the Terms & Conditions\nand Privacy Policy of VirtualHeart.',
                 style: AppTextStyles.timestamp(),
                 textAlign: TextAlign.center,
               ).animate().fadeIn(duration: 500.ms, delay: 600.ms),
@@ -116,10 +116,10 @@ class AgeGateScreen extends ConsumerWidget {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Tidak Dapat Melanjutkan', style: AppTextStyles.headingSmall()),
+        title: Text('Cannot Continue', style: AppTextStyles.headingSmall()),
         content: Text(
-          'Aplikasi ini hanya untuk pengguna dewasa (18+). '
-          'Kamu tidak dapat menggunakan VirtualHeart.',
+          'This app is for adults (18+) only. '
+          'You cannot use VirtualHeart.',
           style: AppTextStyles.bodyMedium(color: AppColors.textSecondary),
         ),
         actions: [
@@ -128,7 +128,7 @@ class AgeGateScreen extends ConsumerWidget {
               Navigator.of(ctx).pop();
               SystemNavigator.pop();
             },
-            child: Text('Tutup Aplikasi', style: AppTextStyles.button(color: AppColors.primary)),
+            child: Text('Close App', style: AppTextStyles.button(color: AppColors.primary)),
           ),
         ],
       ),

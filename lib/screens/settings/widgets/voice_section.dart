@@ -17,15 +17,15 @@ class VoiceSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader(context, 'Suara', Icons.record_voice_over_rounded),
+        sectionHeader(context, 'Voice', Icons.record_voice_over_rounded),
         sectionCard(
           context: context,
           children: [
             SwitchListTile(
               dense: true,
               secondary: const Icon(Icons.volume_up_rounded),
-              title: const Text('Aktifkan Text-to-Speech'),
-              subtitle: const Text('AI akan membacakan pesannya'),
+              title: const Text('Enable Text-to-Speech'),
+              subtitle: const Text('AI will read its messages aloud'),
               value: settings.ttsEnabled,
               activeThumbColor: AppColors.primary,
               activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
@@ -39,7 +39,7 @@ class VoiceSection extends ConsumerWidget {
                 dense: true,
                 secondary: const Icon(Icons.play_circle_outline_rounded),
                 title: const Text('Auto-play'),
-                subtitle: const Text('Langsung bacakan setiap balasan AI'),
+                subtitle: const Text('Automatically read every AI response'),
                 value: settings.ttsAutoPlay,
                 activeThumbColor: AppColors.primary,
                 activeTrackColor: AppColors.primary.withValues(alpha: 0.5),

@@ -220,7 +220,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Speech recognition tidak tersedia di perangkat ini'),
+            content: Text('Speech recognition is not available on this device'),
             duration: Duration(seconds: 2),
           ),
         );
@@ -377,13 +377,13 @@ class _EmptyChat extends StatelessWidget {
           const Icon(Icons.favorite_rounded, color: AppColors.heartRed, size: 48),
           const SizedBox(height: AppSizes.md),
           Text(
-            'Halo, ${personaName ?? 'Sayang'}!',
+            'Hi, ${personaName ?? 'Sweetheart'}!',
             style: AppTextStyles.headingLarge(),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSizes.sm),
           Text(
-            'Mulai percakapanmu...',
+            'Start your conversation...',
             style: AppTextStyles.bodyMedium(
               color: Theme.of(context).brightness == Brightness.dark
                   ? AppColors.textSecondary

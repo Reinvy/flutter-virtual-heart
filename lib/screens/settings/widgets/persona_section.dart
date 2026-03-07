@@ -33,11 +33,11 @@ class PersonaSection extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Reset Persona?'),
         content: const Text(
-          'Semua data persona, memori, dan mood akan dihapus.\n'
-          'Kamu perlu menyetel ulang pasangan virtualmu dari awal.',
+          'All persona data, memories, and mood will be deleted.\n'
+          'You will need to set up your virtual partner from scratch.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: AppColors.heartRed),
             onPressed: () => Navigator.of(ctx).pop(true),
@@ -94,7 +94,7 @@ class PersonaSection extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          persona?.name.isNotEmpty == true ? persona!.name : 'Belum disetel',
+                          persona?.name.isNotEmpty == true ? persona!.name : 'Not set',
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                         if (persona != null) ...[
@@ -110,7 +110,7 @@ class PersonaSection extends ConsumerWidget {
                         if (persona?.nicknameForUser.isNotEmpty == true) ...[
                           const SizedBox(height: 2),
                           Text(
-                            'Memanggilmu: "${persona!.nicknameForUser}"',
+                            'Calls you: "${persona!.nicknameForUser}"',
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: subtleColor,
                               fontStyle: FontStyle.italic,
@@ -189,7 +189,7 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
     if (_nameCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Nama persona tidak boleh kosong')));
+      ).showSnackBar(const SnackBar(content: Text('Persona name cannot be empty')));
       return;
     }
     HapticFeedback.mediumImpact();
@@ -245,7 +245,6 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
               child: Row(
                 children: [
                   Text('Edit Persona', style: Theme.of(context).textTheme.headlineSmall),
-                  const Spacer(),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close_rounded),
@@ -259,7 +258,7 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
                 controller: scrollCtrl,
                 padding: const EdgeInsets.all(AppSizes.md),
                 children: [
-                  SheetLabel('Gender Persona'),
+                  SheetLabel('Persona Gender'),
                   const SizedBox(height: AppSizes.sm),
                   SegmentedButton<PersonaGender>(
                     segments: const [
@@ -286,29 +285,29 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
                     },
                   ),
                   const SizedBox(height: AppSizes.lg),
-                  SheetLabel('Nama Persona'),
+                  SheetLabel('Persona Name'),
                   const SizedBox(height: AppSizes.sm),
                   TextFormField(
                     controller: _nameCtrl,
                     decoration: const InputDecoration(
-                      hintText: 'Contoh: Luna, Aria, Rei...',
+                      hintText: 'E.g.: Luna, Aria, Rei...',
                       prefixIcon: Icon(Icons.badge_outlined),
                     ),
                     textCapitalization: TextCapitalization.words,
                   ),
                   const SizedBox(height: AppSizes.lg),
-                  SheetLabel('Cara Memanggil Kamu'),
+                  SheetLabel('How They Call You'),
                   const SizedBox(height: AppSizes.sm),
                   TextFormField(
                     controller: _nicknameCtrl,
                     decoration: const InputDecoration(
-                      hintText: 'Contoh: Sayang, Kak, Tuan...',
+                      hintText: 'E.g.: Honey, Babe, Dear...',
                       prefixIcon: Icon(Icons.person_outline),
                     ),
                     textCapitalization: TextCapitalization.words,
                   ),
                   const SizedBox(height: AppSizes.lg),
-                  SheetLabel('Kepribadian'),
+                  SheetLabel('Personality'),
                   const SizedBox(height: AppSizes.sm),
                   Wrap(
                     spacing: AppSizes.sm,
@@ -326,7 +325,7 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
                     }).toList(),
                   ),
                   const SizedBox(height: AppSizes.lg),
-                  SheetLabel('Pilih Avatar'),
+                  SheetLabel('Choose Avatar'),
                   const SizedBox(height: AppSizes.sm),
                   SizedBox(
                     height: 68,
@@ -369,7 +368,7 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
                           height: 22,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('Simpan Perubahan'),
+                      : const Text('Save Changes'),
                 ),
               ),
             ),

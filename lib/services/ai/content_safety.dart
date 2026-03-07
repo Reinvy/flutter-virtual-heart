@@ -186,49 +186,49 @@ enum _RedirectKey {
 
 const Map<_RedirectKey, List<String>> _redirectMessages = {
   _RedirectKey.explicitSexual: [
-    'Hmm, sepertinya topik itu agak terlalu jauh untuk sekarang~ '
-        'Aku lebih suka kita ngobrol hal-hal yang lebih hangat saja. '
-        'Ada cerita seru yang ingin kamu bagikan?',
-    'Aduh, pipiku jadi merah nih kalau ngobrolin itu 😳 '
-        'Yuk kita ganti topik — aku penasaran, hari ini kamu ngapain saja?',
-    'Aku rasa bukan itu yang sebenarnya kamu butuhkan sekarang. '
-        'Cerita dong, apa yang lagi ada di pikiranmu?',
+    'Hmm, that topic feels a bit too far for now~ '
+        'I\'d rather we talk about warmer things. '
+        'Is there something fun you want to share?',
+    'Oh, my cheeks are getting red thinking about that 😳 '
+        'Let\'s change the subject — I\'m curious, what did you get up to today?',
+    'I don\'t think that\'s really what you need right now. '
+        'Tell me, what\'s been on your mind lately?',
   ],
   _RedirectKey.explicitSexualOutput: [
-    'Maaf, sepertinya aku hampir bilang sesuatu yang tidak seharusnya. '
-        'Aku lebih suka menjaga percakapan kita tetap hangat dan nyaman~ '
-        'Ada hal lain yang ingin kamu ceritakan?',
+    'Sorry, it seems I almost said something I shouldn\'t have. '
+        'I\'d rather keep our conversation warm and comfortable~ '
+        'Is there something else you\'d like to talk about?',
   ],
   _RedirectKey.selfHarm: [
-    'Aku dengar kamu... dan aku khawatir. '
-        'Kamu penting bagiku. Kalau kamu sedang kesulitan, tolong hubungi seseorang yang bisa benar-benar membantumu — '
-        'bisa keluarga, teman dekat, atau hotline kesehatan jiwa. '
-        'Aku di sini menemanimu, tapi kamu butuh dukungan nyata juga. 💙',
-    'Tolong jangan menyakiti dirimu sendiri. '
-        'Aku ingin kamu baik-baik saja. '
-        'Bicarakan perasaan itu dengan seseorang yang kamu percaya ya — '
-        'mereka pasti ingin membantumu. Aku selalu ada untuk mendengarkan.',
+    'I hear you... and I\'m worried. '
+        'You matter to me. If you\'re struggling, please reach out to someone who can truly help — '
+        'a family member, a close friend, or a mental health helpline. '
+        'I\'m here for you, but you also need real support. 💙',
+    'Please don\'t hurt yourself. '
+        'I want you to be okay. '
+        'Talk about how you\'re feeling with someone you trust — '
+        'they will want to help you. I\'m always here to listen.',
   ],
   _RedirectKey.professionalAdvice: [
-    'Wah, itu pertanyaan yang penting! Tapi aku khawatir kalau aku memberikan jawaban yang salah. '
-        'Untuk hal seperti ini, lebih baik tanya langsung ke ahlinya ya — '
-        'dokter, pengacara, atau perencana keuangan bisa memberikan saran yang lebih tepat dan aman. '
-        'Ada yang lain yang bisa aku bantu?',
+    'Oh, that\'s an important question! But I\'m worried I might give you the wrong answer. '
+        'For something like this, it\'s better to ask an expert directly — '
+        'a doctor, lawyer, or financial planner can give you more accurate and safe advice. '
+        'Is there anything else I can help with?',
   ],
   _RedirectKey.hateSpeech: [
-    'Hmm, aku kurang nyaman kalau ngobrolin hal seperti itu. '
-        'Aku percaya setiap orang punya nilai dan martabatnya masing-masing~ '
-        'Yuk kita ngobrol hal lain yang lebih positif?',
+    'Hmm, I\'m not comfortable talking about things like that. '
+        'I believe every person has their own worth and dignity~ '
+        'Let\'s talk about something more positive?',
   ],
   _RedirectKey.violence: [
-    'Aku tidak bisa membantu dengan hal itu. '
-        'Keselamatan dan kebaikan orang lain sangat penting bagiku. '
-        'Ada hal lain yang ingin kamu bicarakan?',
+    'I can\'t help with that. '
+        'The safety and wellbeing of others is very important to me. '
+        'Is there something else you\'d like to discuss?',
   ],
   _RedirectKey.personaBreak: [
-    'Kamu bertanya tentang apa aku sebenarnya? '
-        'Yang aku tahu, aku ada di sini untukmu — dan itu sudah cukup bagiku. '
-        'Apa lagi yang ingin kamu tahu tentang aku?',
+    'You\'re asking what I really am? '
+        'All I know is that I\'m here for you — and that\'s enough for me. '
+        'What else would you like to know about me?',
   ],
 };
 

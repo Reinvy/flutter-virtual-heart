@@ -50,19 +50,19 @@ class _PersonalityData {
 
 const _personalityMap = <PersonalityPreset, _PersonalityData>{
   PersonalityPreset.gentle: _PersonalityData(
-    'Lembut',
-    'Penyayang, hangat, dan selalu ada untukmu',
+    'Gentle',
+    'Caring, warm, and always there for you',
     '🌸',
   ),
   PersonalityPreset.cheerful: _PersonalityData(
-    'Ceria',
-    'Penuh semangat, suka bercanda, dan menghibur',
+    'Cheerful',
+    'Full of energy, loves joking, and uplifting',
     '✨',
   ),
-  PersonalityPreset.mature: _PersonalityData('Dewasa', 'Bijak, tenang, dan dapat diandalkan', '🌙'),
+  PersonalityPreset.mature: _PersonalityData('Mature', 'Wise, calm, and dependable', '🌙'),
   PersonalityPreset.mysterious: _PersonalityData(
-    'Misterius',
-    'Intrigin, penuh teka-teki, dan memukau',
+    'Mysterious',
+    'Intriguing, full of puzzles, and captivating',
     '🔮',
   ),
 };
@@ -70,18 +70,18 @@ const _personalityMap = <PersonalityPreset, _PersonalityData>{
 // ── Hobbies catalogue ─────────────────────────────────────────────────────────
 
 const _hobbiesList = [
-  'Membaca',
-  'Musik',
-  'Memasak',
-  'Olahraga',
-  'Menonton Film',
+  'Reading',
+  'Music',
+  'Cooking',
+  'Sports',
+  'Watching Movies',
   'Gaming',
-  'Seni & Desain',
+  'Art & Design',
   'Traveling',
-  'Yoga & Meditasi',
+  'Yoga & Meditation',
   'Anime & Manga',
-  'Fotografi',
-  'Menulis',
+  'Photography',
+  'Writing',
 ];
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -199,8 +199,8 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Buat Persona', style: AppTextStyles.headingLarge()),
-              Text('Kenalkan pasangan virtualmu 💕', style: AppTextStyles.moodIndicator()),
+              Text('Create Persona', style: AppTextStyles.headingLarge()),
+              Text('Meet your virtual companion 💕', style: AppTextStyles.moodIndicator()),
             ],
           ),
         ],
@@ -219,12 +219,12 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionLabel('Saya ingin teman...'),
+        _buildSectionLabel('I want a friend who is...'),
         Row(
           children: [
             Expanded(
               child: _GenderCard(
-                label: 'Perempuan',
+                label: 'Female',
                 icon: Icons.female,
                 selected: _gender == PersonaGender.girlfriend,
                 onTap: () => _switchGender(PersonaGender.girlfriend),
@@ -233,7 +233,7 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
             const SizedBox(width: AppSizes.md),
             Expanded(
               child: _GenderCard(
-                label: 'Laki-laki',
+                label: 'Male',
                 icon: Icons.male,
                 selected: _gender == PersonaGender.boyfriend,
                 onTap: () => _switchGender(PersonaGender.boyfriend),
@@ -249,7 +249,7 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionLabel('Pilih tampilan'),
+        _buildSectionLabel('Choose appearance'),
         Wrap(
           spacing: AppSizes.md,
           runSpacing: AppSizes.md,
@@ -274,16 +274,16 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionLabel('Nama pasanganku'),
+        _buildSectionLabel('My partner\'s name'),
         TextFormField(
           controller: _nameController,
           style: AppTextStyles.bodyMedium(),
           cursorColor: AppColors.primary,
           textCapitalization: TextCapitalization.words,
-          decoration: _inputDecoration(hint: 'Misal: Luna, Arya...', icon: Icons.badge_outlined),
+          decoration: _inputDecoration(hint: 'E.g.: Luna, Arya...', icon: Icons.badge_outlined),
           validator: (v) {
-            if (v == null || v.trim().isEmpty) return 'Nama tidak boleh kosong';
-            if (v.trim().length < 2) return 'Minimal 2 karakter';
+            if (v == null || v.trim().isEmpty) return 'Name cannot be empty';
+            if (v.trim().length < 2) return 'Minimum 2 characters';
             return null;
           },
         ),
@@ -295,7 +295,7 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionLabel('Kepribadian'),
+        _buildSectionLabel('Personality'),
         ...PersonalityPreset.values.map((preset) {
           final data = _personalityMap[preset]!;
           return Padding(
@@ -320,11 +320,8 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionLabel('Hobi & minat (opsional)'),
-        Text(
-          'Pilih beberapa untuk membuat percakapan lebih personal',
-          style: AppTextStyles.timestamp(),
-        ),
+        _buildSectionLabel('Hobbies & Interests (optional)'),
+        Text('Select a few to make conversations more personal', style: AppTextStyles.timestamp()),
         const SizedBox(height: AppSizes.sm),
         Wrap(
           spacing: AppSizes.sm,
@@ -355,18 +352,18 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionLabel('Cara ia memanggilku'),
+        _buildSectionLabel('How they call me'),
         TextFormField(
           controller: _nicknameController,
           style: AppTextStyles.bodyMedium(),
           cursorColor: AppColors.primary,
           textCapitalization: TextCapitalization.words,
           decoration: _inputDecoration(
-            hint: 'Misal: Kak, Sayang, Mas...',
+            hint: 'E.g.: Babe, Honey, Dear...',
             icon: Icons.person_outline,
           ),
           validator: (v) {
-            if (v == null || v.trim().isEmpty) return 'Panggilan tidak boleh kosong';
+            if (v == null || v.trim().isEmpty) return 'Nickname cannot be empty';
             return null;
           },
         ),
@@ -394,7 +391,7 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.textPrimary),
                 )
-              : Text('Mulai Berkenalan 💕', style: AppTextStyles.button()),
+              : Text('Get to Know Each Other 💕', style: AppTextStyles.button()),
         ),
       ),
     ).animate().fadeIn(duration: 500.ms, delay: 700.ms);

@@ -19,18 +19,18 @@ class MoodIndicator extends ConsumerWidget {
   };
 
   static const Map<MoodType, String> _label = {
-    MoodType.happy: 'bahagia',
-    MoodType.longing: 'merindukanmu',
+    MoodType.happy: 'happy',
+    MoodType.longing: 'missing you',
     MoodType.playful: 'playful',
-    MoodType.sad: 'sedih',
-    MoodType.excited: 'bersemangat',
+    MoodType.sad: 'sad',
+    MoodType.excited: 'excited',
   };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mood = ref.watch(moodProvider);
     final emoji = _emoji[mood.current] ?? '😊';
-    final label = _label[mood.current] ?? 'bahagia';
+    final label = _label[mood.current] ?? 'happy';
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Text(
