@@ -48,4 +48,36 @@ class AppSettings {
     themeIndex = theme.index;
     languageIndex = language.index;
   }
+
+  /// Returns a new [AppSettings] instance with selected fields overridden.
+  /// Preserves the ObjectBox [id] so [put()] updates the existing record.
+  AppSettings copyWith({
+    AppTheme? theme,
+    AppLanguage? language,
+    bool? ttsEnabled,
+    bool? ttsAutoPlay,
+    bool? notificationMorningEnabled,
+    String? notificationMorningTime,
+    bool? notificationCheckinEnabled,
+    String? modelVariant,
+    bool? isAgeVerified,
+    bool? isOnboardingDone,
+    bool? isPersonaSetup,
+    String? conversationSummary,
+  }) {
+    return AppSettings(
+      theme: theme ?? this.theme,
+      language: language ?? this.language,
+      ttsEnabled: ttsEnabled ?? this.ttsEnabled,
+      ttsAutoPlay: ttsAutoPlay ?? this.ttsAutoPlay,
+      notificationMorningEnabled: notificationMorningEnabled ?? this.notificationMorningEnabled,
+      notificationMorningTime: notificationMorningTime ?? this.notificationMorningTime,
+      notificationCheckinEnabled: notificationCheckinEnabled ?? this.notificationCheckinEnabled,
+      modelVariant: modelVariant ?? this.modelVariant,
+      isAgeVerified: isAgeVerified ?? this.isAgeVerified,
+      isOnboardingDone: isOnboardingDone ?? this.isOnboardingDone,
+      isPersonaSetup: isPersonaSetup ?? this.isPersonaSetup,
+      conversationSummary: conversationSummary ?? this.conversationSummary,
+    )..id = id;
+  }
 }

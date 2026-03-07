@@ -85,8 +85,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   void _finish() {
     final settings = ref.read(appSettingsProvider);
-    settings.isOnboardingDone = true;
-    ref.read(appSettingsProvider.notifier).save(settings);
+    ref.read(appSettingsProvider.notifier).save(settings.copyWith(isOnboardingDone: true));
     context.go(AppRoutes.personaSetup);
   }
 

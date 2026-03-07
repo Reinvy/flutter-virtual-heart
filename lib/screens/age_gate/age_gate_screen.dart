@@ -107,8 +107,7 @@ class AgeGateScreen extends ConsumerWidget {
   void _confirm(BuildContext context, WidgetRef ref) {
     HapticFeedback.lightImpact();
     final settings = ref.read(appSettingsProvider);
-    settings.isAgeVerified = true;
-    ref.read(appSettingsProvider.notifier).save(settings);
+    ref.read(appSettingsProvider.notifier).save(settings.copyWith(isAgeVerified: true));
     context.go(AppRoutes.onboarding);
   }
 

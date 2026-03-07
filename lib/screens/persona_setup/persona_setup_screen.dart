@@ -143,8 +143,7 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
       db.personaBox.put(persona);
 
       final settings = ref.read(appSettingsProvider);
-      settings.isPersonaSetup = true;
-      ref.read(appSettingsProvider.notifier).save(settings);
+      ref.read(appSettingsProvider.notifier).save(settings.copyWith(isPersonaSetup: true));
 
       if (mounted) context.go(AppRoutes.modelDownload);
     } finally {

@@ -12,10 +12,15 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   }
 
   /// Persists [updated] to ObjectBox and updates state.
+  /// Using [updateShouldNotify] always-true ensures listeners rebuild even
+  /// when the caller passes the same mutated object reference.
   void save(AppSettings updated) {
     ref.read(objectBoxServiceProvider).appSettingsBox.put(updated);
     state = updated;
   }
+
+  @override
+  bool updateShouldNotify(AppSettings previous, AppSettings next) => true;
 
   /// Re-reads settings from ObjectBox (e.g. after external write).
   void refresh() {
