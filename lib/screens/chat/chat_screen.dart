@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,8 +10,10 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../core/constants/text_styles.dart';
 import '../../data/models/message.dart';
+import '../../data/models/mood_state.dart';
 import '../../data/models/persona_config.dart';
 import '../../providers/app_settings_provider.dart';
+import '../../providers/mood_provider.dart';
 import '../../providers/objectbox_provider.dart';
 import '../../providers/router_provider.dart';
 import '../../services/stt_service.dart';
@@ -42,6 +45,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   StreamSubscription<String>? _sttSubscription;
 
+  /// Whether the sparkle effect has already fired this session.
+  bool _sparkleShown = false;
+
+  /// Whether to currently display the sparkle overlay.
+  bool _showSparkle = false;
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -69,6 +78,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final persona = personas.isNotEmpty ? personas.first : null;
 
     final chatState = ref.watch(chatProvider);
+    final currentMood = ref.watch(moodProvider).current;
 
     // Scroll down whenever a new message arrives or streaming updates.
     ref.listen(chatProvider, (prev, next) {
@@ -81,6 +91,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (!next.isTyping && prev?.isTyping == true && next.messages.isNotEmpty) {
         final last = next.messages.last;
         if (last.role == MessageRole.assistant) {
+          // Sparkle overlay on the first AI response of the session.
+          if (!_sparkleShown) {
+            setState(() {
+              _sparkleShown = true;
+              _showSparkle = true;
+            });
+            Future.delayed(const Duration(milliseconds: 1800), () {
+              if (mounted) setState(() => _showSparkle = false);
+            });
+          }
           final settings = ref.read(appSettingsProvider);
           if (settings.ttsEnabled && settings.ttsAutoPlay) {
             _speakMessage(last, persona);
@@ -90,32 +110,41 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
 
     return Scaffold(
-      appBar: _buildAppBar(context, persona),
-      body: Column(
+      appBar: _buildAppBar(context, persona, currentMood),
+      body: Stack(
         children: [
-          Expanded(
-            child: _buildMessageList(
-              chatState.messages,
-              chatState.isTyping,
-              chatState.streamingBuffer,
-              persona,
-            ),
+          Column(
+            children: [
+              Expanded(
+                child: _buildMessageList(
+                  chatState.messages,
+                  chatState.isTyping,
+                  chatState.streamingBuffer,
+                  persona,
+                ),
+              ),
+              InputBar(
+                enabled: !chatState.isTyping,
+                isListening: _isListening,
+                onMicTap: _handleMicTap,
+                onSend: (text) {
+                  HapticFeedback.lightImpact();
+                  ref.read(chatProvider.notifier).sendMessage(text);
+                },
+              ),
+            ],
           ),
-          InputBar(
-            enabled: !chatState.isTyping,
-            isListening: _isListening,
-            onMicTap: _handleMicTap,
-            onSend: (text) {
-              HapticFeedback.lightImpact();
-              ref.read(chatProvider.notifier).sendMessage(text);
-            },
-          ),
+          if (_showSparkle) const IgnorePointer(child: SizedBox.expand(child: _SparkleOverlay())),
         ],
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, PersonaConfig? persona) {
+  PreferredSizeWidget _buildAppBar(
+    BuildContext context,
+    PersonaConfig? persona,
+    MoodType currentMood,
+  ) {
     return AppBar(
       elevation: 0,
       automaticallyImplyLeading: false,
@@ -123,7 +152,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         onTap: () => showPersonaProfileSheet(context, persona),
         child: Padding(
           padding: const EdgeInsets.all(AppSizes.sm),
-          child: _AppBarAvatar(persona: persona),
+          child: _AppBarAvatar(persona: persona, moodType: currentMood),
         ),
       ),
       title: GestureDetector(
@@ -272,9 +301,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 // ── AppBar avatar ─────────────────────────────────────────────────────────────
 
 class _AppBarAvatar extends StatelessWidget {
-  const _AppBarAvatar({this.persona});
+  const _AppBarAvatar({this.persona, this.moodType});
 
   final PersonaConfig? persona;
+  final MoodType? moodType;
 
   static const Map<String, Color> _colors = {
     'gf_1': Color(0xFFC2507A),
@@ -291,15 +321,39 @@ class _AppBarAvatar extends StatelessWidget {
     'bf_6': Color(0xFF5D9E8C),
   };
 
+  static String _moodEmoji(MoodType mood) => switch (mood) {
+    MoodType.happy => '😊',
+    MoodType.longing => '🥺',
+    MoodType.playful => '😄',
+    MoodType.sad => '😔',
+    MoodType.excited => '🤩',
+  };
+
   @override
   Widget build(BuildContext context) {
     final color = _colors[persona?.avatarId] ?? AppColors.primary;
     final initial = (persona?.name.isNotEmpty ?? false) ? persona!.name[0].toUpperCase() : '♥';
 
-    return Container(
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      alignment: Alignment.center,
-      child: Text(initial, style: AppTextStyles.button(color: Colors.white).copyWith(fontSize: 16)),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          alignment: Alignment.center,
+          child: Text(
+            initial,
+            style: AppTextStyles.button(color: Colors.white).copyWith(fontSize: 16),
+          ),
+        ),
+        if (moodType != null)
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Text(_moodEmoji(moodType!), style: const TextStyle(fontSize: 12, height: 1))
+                .animate(onPlay: (c) => c.repeat(reverse: true))
+                .scaleXY(begin: 0.85, end: 1.05, duration: 1400.ms, curve: Curves.easeInOut),
+          ),
+      ],
     );
   }
 }
@@ -336,6 +390,76 @@ class _EmptyChat extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Sparkle overlay ───────────────────────────────────────────────────────────
+
+/// Full-screen sparkle / star particle overlay shown on the first AI response
+/// of a session (flutter_animate, pointer-ignored).
+class _SparkleOverlay extends StatelessWidget {
+  const _SparkleOverlay();
+
+  // [left_fraction, bottom_fraction, icon_size, delay_ms]
+  static const List<List<double>> _configs = [
+    [0.10, 0.30, 10, 0],
+    [0.28, 0.38, 7, 80],
+    [0.50, 0.32, 12, 160],
+    [0.68, 0.42, 8, 40],
+    [0.82, 0.28, 9, 220],
+    [0.22, 0.48, 11, 120],
+    [0.73, 0.22, 7, 280],
+    [0.40, 0.52, 13, 60],
+    [0.60, 0.18, 8, 200],
+    [0.14, 0.20, 10, 340],
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return Stack(
+      children: [
+        for (int i = 0; i < _configs.length; i++) _SparkleParticle(index: i, screenSize: size),
+      ],
+    );
+  }
+}
+
+class _SparkleParticle extends StatelessWidget {
+  const _SparkleParticle({required this.index, required this.screenSize});
+
+  final int index;
+  final Size screenSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final cfg = _SparkleOverlay._configs[index];
+    final color = index % 3 == 0
+        ? const Color(0xFFFFD700)
+        : index % 3 == 1
+        ? AppColors.primary
+        : AppColors.heartRed;
+
+    return Positioned(
+      left: screenSize.width * cfg[0],
+      bottom: screenSize.height * cfg[1],
+      child:
+          Icon(
+                index.isEven ? Icons.star_rounded : Icons.auto_awesome_rounded,
+                size: cfg[2],
+                color: color,
+              )
+              .animate(delay: Duration(milliseconds: cfg[3].toInt()))
+              .scale(
+                begin: const Offset(0.1, 0.1),
+                end: const Offset(1, 1),
+                duration: 350.ms,
+                curve: Curves.elasticOut,
+              )
+              .then()
+              .moveY(begin: 0, end: -60, duration: 750.ms, curve: Curves.easeOut)
+              .fadeOut(duration: 600.ms),
     );
   }
 }

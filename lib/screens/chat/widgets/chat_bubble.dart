@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 
 import '../../../core/constants/app_colors.dart';
@@ -7,7 +8,9 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../data/models/message.dart';
+import '../../../data/models/mood_state.dart';
 import '../../../data/models/persona_config.dart';
+import '../../../providers/mood_provider.dart';
 
 /// Renders a single chat message as a user or AI bubble.
 ///
@@ -162,7 +165,8 @@ class _BubbleContent extends StatelessWidget {
 // ── Persona avatar ─────────────────────────────────────────────────────────────
 
 /// Small circular avatar displayed beside AI chat bubbles.
-class _PersonaAvatar extends StatelessWidget {
+/// Watches [moodProvider] and overlays a mood emoji badge.
+class _PersonaAvatar extends ConsumerWidget {
   const _PersonaAvatar({this.persona});
 
   final PersonaConfig? persona;
@@ -182,17 +186,41 @@ class _PersonaAvatar extends StatelessWidget {
     'bf_6': Color(0xFF5D9E8C),
   };
 
+  static String _moodEmoji(MoodType mood) => switch (mood) {
+    MoodType.happy => '😊',
+    MoodType.longing => '🥺',
+    MoodType.playful => '😄',
+    MoodType.sad => '😔',
+    MoodType.excited => '🤩',
+  };
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final color = _colors[persona?.avatarId] ?? AppColors.primary;
     final initial = (persona?.name.isNotEmpty ?? false) ? persona!.name[0].toUpperCase() : '♥';
+    final moodType = ref.watch(moodProvider).current;
 
-    return Container(
-      width: AppSizes.avatarSm,
-      height: AppSizes.avatarSm,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      alignment: Alignment.center,
-      child: Text(initial, style: AppTextStyles.button(color: Colors.white).copyWith(fontSize: 14)),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: AppSizes.avatarSm,
+          height: AppSizes.avatarSm,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          alignment: Alignment.center,
+          child: Text(
+            initial,
+            style: AppTextStyles.button(color: Colors.white).copyWith(fontSize: 14),
+          ),
+        ),
+        Positioned(
+          right: -4,
+          bottom: -4,
+          child: Text(_moodEmoji(moodType), style: const TextStyle(fontSize: 10, height: 1))
+              .animate(onPlay: (c) => c.repeat(reverse: true))
+              .scaleXY(begin: 0.85, end: 1.05, duration: 1500.ms, curve: Curves.easeInOut),
+        ),
+      ],
     );
   }
 }

@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -33,6 +33,30 @@ class _RouterRefreshNotifier extends ChangeNotifier {
     ref.listen(appSettingsProvider, (_, __) => notifyListeners());
     ref.listen(modelReadyProvider, (_, __) => notifyListeners());
   }
+}
+
+/// Creates a [CustomTransitionPage] with a subtle fade + slight horizontal
+/// slide entrance. Used for all named routes to create a consistent, polished
+/// feel throughout the app.
+CustomTransitionPage<void> _buildPage(GoRouterState state, Widget child) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 280),
+    reverseTransitionDuration: const Duration(milliseconds: 220),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.05, 0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
+          child: child,
+        ),
+      );
+    },
+  );
 }
 
 /// Provides the app-wide [GoRouter] instance.
@@ -85,20 +109,38 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: AppRoutes.splash, builder: (context, state) => const SplashScreen()),
-      GoRoute(path: AppRoutes.ageGate, builder: (context, state) => const AgeGateScreen()),
-      GoRoute(path: AppRoutes.onboarding, builder: (context, state) => const OnboardingScreen()),
+      GoRoute(
+        path: AppRoutes.splash,
+        pageBuilder: (context, state) => _buildPage(state, const SplashScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.ageGate,
+        pageBuilder: (context, state) => _buildPage(state, const AgeGateScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.onboarding,
+        pageBuilder: (context, state) => _buildPage(state, const OnboardingScreen()),
+      ),
       GoRoute(
         path: AppRoutes.personaSetup,
-        builder: (context, state) => const PersonaSetupScreen(),
+        pageBuilder: (context, state) => _buildPage(state, const PersonaSetupScreen()),
       ),
       GoRoute(
         path: AppRoutes.modelDownload,
-        builder: (context, state) => const ModelDownloadScreen(),
+        pageBuilder: (context, state) => _buildPage(state, const ModelDownloadScreen()),
       ),
-      GoRoute(path: AppRoutes.chat, builder: (context, state) => const ChatScreen()),
-      GoRoute(path: AppRoutes.memory, builder: (context, state) => const MemoryScreen()),
-      GoRoute(path: AppRoutes.settings, builder: (context, state) => const SettingsScreen()),
+      GoRoute(
+        path: AppRoutes.chat,
+        pageBuilder: (context, state) => _buildPage(state, const ChatScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.memory,
+        pageBuilder: (context, state) => _buildPage(state, const MemoryScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.settings,
+        pageBuilder: (context, state) => _buildPage(state, const SettingsScreen()),
+      ),
     ],
   );
 });
