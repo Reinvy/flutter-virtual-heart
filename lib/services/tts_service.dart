@@ -70,13 +70,12 @@ class TtsService {
     _onComplete = onDone;
 
     // Prefer Indonesian; fall back to English if unavailable.
-    final langAvailable = await _tts.isLanguageAvailable('id-ID');
-    await _tts.setLanguage(langAvailable == true ? 'id-ID' : 'en-US');
+    await _tts.setLanguage('en-US');
 
     // Tune pitch/rate per gender for a more natural voice.
     if (gender == PersonaGender.girlfriend) {
-      await _tts.setPitch(1.15);
-      await _tts.setSpeechRate(0.50);
+      await _tts.setPitch(1.6);
+      await _tts.setSpeechRate(0.4);
     } else {
       await _tts.setPitch(0.88);
       await _tts.setSpeechRate(0.47);
