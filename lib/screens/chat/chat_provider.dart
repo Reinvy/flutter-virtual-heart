@@ -97,17 +97,11 @@ class ChatNotifier extends Notifier<ChatState> {
           ? state.messages.sublist(0, state.messages.length - 1)
           : <Message>[];
 
-      // final fullPrompt = PromptBuilder.buildFullPrompt(systemPrompt, history, text.trim());
+      final fullPrompt = PromptBuilder.buildFullPrompt(systemPrompt, history, text.trim());
 
       // 3. Stream AI response token-by-token.
       await for (final token
-          in ref
-              .read(modelServiceProvider.notifier)
-              .generateResponseStream(
-                text.trim(),
-                systemInstruction: systemPrompt,
-                history: history,
-              )) {
+          in ref.read(modelServiceProvider.notifier).generateResponseStream(fullPrompt)) {
         buffer.write(token);
         state = state.copyWith(streamingBuffer: buffer.toString());
       }

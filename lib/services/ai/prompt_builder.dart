@@ -49,6 +49,7 @@ class PromptBuilder {
     final intensityPct = (mood.intensity * 100).toStringAsFixed(0);
 
     final buf = StringBuffer();
+    buf.writeln('[INSTRUCTION]');
     buf.writeln(
       'Your name is ${persona.name}, a virtual $genderDesc who is '
       '${persona.nicknameForUser}\'s companion.',
@@ -88,6 +89,30 @@ class PromptBuilder {
     return buf.toString().trimRight();
   }
 
+  /// Builds the full prompt by concatenating [systemPrompt], recent conversation
+  /// history, and the latest user input.
+  /// Pass the returned string to the model's `generateResponse` or `generateResponseStream`.
+  static String buildFullPrompt(
+    String systemPrompt,
+    List<Message> recentMessages,
+    String latestUserInput,
+  ) {
+    final buf = StringBuffer();
+    buf.writeln(systemPrompt);
+    buf.writeln('-------------------------');
+    final msgs = recentMessages.length > maxRecentMessages
+        ? recentMessages.sublist(recentMessages.length - maxRecentMessages)
+        : recentMessages;
+    for (final msg in msgs) {
+      final label = msg.role == MessageRole.user ? 'User' : 'Assistant';
+      buf.writeln('[$label]');
+      buf.writeln(msg.content);
+    }
+    buf.writeln('[User]');
+    buf.writeln(latestUserInput);
+    return buf.toString().trimRight();
+  }
+
   // -------------------------------------------------------------------------
   // Summarization
   // -------------------------------------------------------------------------
@@ -113,7 +138,7 @@ class PromptBuilder {
 
     final capped = messages.length > 60 ? messages.sublist(messages.length - 60) : messages;
     for (final msg in capped) {
-      final label = msg.role == MessageRole.user ? 'User' : 'AI';
+      final label = msg.role == MessageRole.user ? 'User' : 'Assistant';
       buf.writeln('$label: ${msg.content}');
     }
 

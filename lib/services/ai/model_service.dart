@@ -67,7 +67,7 @@ class ModelServiceNotifier extends AsyncNotifier<bool> {
     final model = _model;
     if (model == null) throw StateError('Model not initialized');
 
-    final chat = await model.createChat(temperature: 0.7, randomSeed: 42, topK: 40, topP: 0.9);
+    final chat = await model.createChat(temperature: 0.9, randomSeed: 1, topK: 50, topP: 0.95);
 
     await chat.clearHistory();
 
