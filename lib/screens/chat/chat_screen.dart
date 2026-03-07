@@ -19,6 +19,7 @@ import 'chat_provider.dart';
 import 'widgets/chat_bubble.dart';
 import 'widgets/input_bar.dart';
 import 'widgets/mood_indicator.dart';
+import 'widgets/persona_profile_sheet.dart';
 import 'widgets/typing_indicator.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
@@ -120,17 +121,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       backgroundColor: AppColors.surface,
       elevation: 0,
       automaticallyImplyLeading: false,
-      leading: Padding(
-        padding: const EdgeInsets.all(AppSizes.sm),
-        child: _AppBarAvatar(persona: persona),
+      leading: GestureDetector(
+        onTap: () => showPersonaProfileSheet(context, persona),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSizes.sm),
+          child: _AppBarAvatar(persona: persona),
+        ),
       ),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(persona?.name ?? 'VirtualHeart', style: AppTextStyles.personaName()),
-          const MoodIndicator(),
-        ],
+      title: GestureDetector(
+        onTap: () => showPersonaProfileSheet(context, persona),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(persona?.name ?? 'VirtualHeart', style: AppTextStyles.personaName()),
+            const MoodIndicator(),
+          ],
+        ),
       ),
       actions: [
         IconButton(
