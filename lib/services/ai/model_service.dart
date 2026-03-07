@@ -9,7 +9,8 @@ import '../../providers/model_ready_provider.dart';
 /// error) otherwise.  Consumers read [modelServiceProvider] to track readiness
 /// and call [generateResponseStream] / [generateResponse] for inference.
 class ModelServiceNotifier extends AsyncNotifier<bool> {
-  static const String _modelAssetPath = 'models/Gemma3-1B-IT_multi-prefill-seq_q4_ekv2048.task';
+  static const String _modelAssetPath =
+      'models/Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.task';
 
   /// Soft cap on the number of characters supplied as context per request.
   static const int maxContextChars = 6000;
@@ -62,6 +63,8 @@ class ModelServiceNotifier extends AsyncNotifier<bool> {
     if (model == null) throw StateError('Model not initialized');
 
     final chat = await model.createChat(temperature: 0.7, randomSeed: 42, topK: 40, topP: 0.9);
+
+    await chat.clearHistory();
 
     await chat.addQueryChunk(gemma.Message.text(text: fullPrompt, isUser: true));
 

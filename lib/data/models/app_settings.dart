@@ -14,7 +14,7 @@ class AppSettings {
   bool notificationMorningEnabled = false;
   String notificationMorningTime = '08:00';
   bool notificationCheckinEnabled = false;
-  String modelVariant = 'gemma3-1b';
+  String modelVariant = 'qwen2.5-1.5b';
   bool isAgeVerified = false;
   bool isOnboardingDone = false;
   bool isPersonaSetup = false;
@@ -39,7 +39,7 @@ class AppSettings {
     this.notificationMorningEnabled = false,
     this.notificationMorningTime = '08:00',
     this.notificationCheckinEnabled = false,
-    this.modelVariant = 'gemma3-1b',
+    this.modelVariant = 'qwen2.5-1.5b',
     this.isAgeVerified = false,
     this.isOnboardingDone = false,
     this.isPersonaSetup = false,

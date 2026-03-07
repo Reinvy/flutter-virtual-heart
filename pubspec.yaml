@@ -1,5 +1,5 @@
 name: virtual_heart
-description: "VirtualHeart — On-device AI romantic companion app powered by Gemma 3 1B."
+description: "VirtualHeart — On-device AI romantic companion app powered by Small Language Model (SLM)."
 publish_to: "none"
 
 version: 1.0.0+1
@@ -61,7 +61,6 @@ flutter:
 
   assets:
     - assets/models/
-    - assets/models/Gemma3-1B-IT_multi-prefill-seq_q4_ekv2048.task
   #   - family: Trajan Pro
   #     fonts:
   #       - asset: fonts/TrajanPro.ttf
