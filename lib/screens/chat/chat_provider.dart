@@ -123,6 +123,23 @@ class ChatNotifier extends Notifier<ChatState> {
       // Best-effort — ignore extraction errors.
     }
 
+    // Summarize conversation every N messages to keep context window fresh.
+    try {
+      final allMessages = db.messageBox.getAll();
+      if (allMessages.isNotEmpty && allMessages.length % PromptBuilder.summarizationInterval == 0) {
+        allMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        final prompt = PromptBuilder.buildSummarizationPrompt(allMessages);
+        final summary = await ref.read(modelServiceProvider.notifier).generateResponse(prompt);
+        if (summary.isNotEmpty) {
+          final settings = db.getOrCreateSettings();
+          settings.conversationSummary = summary.trim();
+          db.appSettingsBox.put(settings);
+        }
+      }
+    } catch (_) {
+      // Best-effort — ignore summarization errors.
+    }
+
     // Update mood based on the AI response sentiment.
     ref.read(moodServiceProvider).updateMoodFromConversation(aiResponse);
     ref.read(moodProvider.notifier).refresh();

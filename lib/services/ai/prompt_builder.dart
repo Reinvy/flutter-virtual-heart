@@ -122,4 +122,38 @@ class PromptBuilder {
 
     return buf.toString();
   }
+
+  // -------------------------------------------------------------------------
+  // Summarization
+  // -------------------------------------------------------------------------
+
+  /// Returns the number of messages that triggers a new summarization.
+  static const int summarizationInterval = 30;
+
+  /// Builds a prompt that instructs the model to produce a compact summary of
+  /// [messages].
+  ///
+  /// Pass the returned string to the model's `generateResponse` and store the
+  /// result as `AppSettings.conversationSummary`.  The summary is then injected
+  /// back into [buildSystemPrompt] as the `[CONTEXT SUMMARY]` block.
+  ///
+  /// At most the last 60 messages are included to keep the prompt size bounded.
+  static String buildSummarizationPrompt(List<Message> messages) {
+    final buf = StringBuffer();
+    buf.writeln('Buat ringkasan singkat dari percakapan berikut dalam 3–5 kalimat.');
+    buf.writeln('Fokus pada topik utama, perasaan yang diungkapkan, dan fakta penting.');
+    buf.writeln('Gunakan bahasa Indonesia. Tulis HANYA ringkasannya, tanpa kalimat pengantar.');
+    buf.writeln();
+    buf.writeln('Percakapan:');
+
+    final capped = messages.length > 60 ? messages.sublist(messages.length - 60) : messages;
+    for (final msg in capped) {
+      final label = msg.role == MessageRole.user ? 'User' : 'AI';
+      buf.writeln('$label: ${msg.content}');
+    }
+
+    buf.writeln();
+    buf.write('Ringkasan:');
+    return buf.toString();
+  }
 }
