@@ -1,5 +1,6 @@
 import 'package:flutter_gemma/flutter_gemma.dart' as gemma;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:virtual_heart/data/models/message.dart';
 
 import '../../providers/model_ready_provider.dart';
 
@@ -30,11 +31,11 @@ class ModelServiceNotifier extends AsyncNotifier<bool> {
         final plugin = gemma.FlutterGemmaPlugin.instance;
 
         await gemma.FlutterGemma.installModel(
-          modelType: gemma.ModelType.gemmaIt,
+          modelType: gemma.ModelType.qwen,
         ).fromAsset(_modelAssetPath).install();
 
         _model = await plugin.createModel(
-          modelType: gemma.ModelType.gemmaIt,
+          modelType: gemma.ModelType.qwen,
           preferredBackend: gemma.PreferredBackend.cpu,
           maxTokens: 2048,
         );
@@ -58,7 +59,11 @@ class ModelServiceNotifier extends AsyncNotifier<bool> {
   /// A fresh [gemma.InferenceChat] is created per call so that consecutive
   /// requests do not share native session state.  [fullPrompt] should be built
   /// by [PromptBuilder.buildFullPrompt].
-  Stream<String> generateResponseStream(String fullPrompt) async* {
+  Stream<String> generateResponseStream(
+    String fullPrompt, {
+    String? systemInstruction,
+    List<Message>? history,
+  }) async* {
     final model = _model;
     if (model == null) throw StateError('Model not initialized');
 
@@ -66,19 +71,43 @@ class ModelServiceNotifier extends AsyncNotifier<bool> {
 
     await chat.clearHistory();
 
-    await chat.addQueryChunk(gemma.Message.text(text: fullPrompt, isUser: true));
+    if (systemInstruction != null && history != null) {
+      await chat.addQueryChunk(gemma.Message.text(text: systemInstruction, isUser: true));
+      for (final message in history) {
+        await chat.addQueryChunk(
+          gemma.Message.text(text: message.content, isUser: message.role == MessageRole.user),
+        );
+      }
+      await chat.addQueryChunk(gemma.Message.text(text: fullPrompt, isUser: true));
 
-    await for (final chunk in chat.generateChatResponseAsync()) {
-      if (chunk is gemma.TextResponse) {
-        yield chunk.token;
+      await for (final chunk in chat.generateChatResponseAsync()) {
+        if (chunk is gemma.TextResponse) {
+          yield chunk.token;
+        }
+      }
+    } else {
+      await chat.addQueryChunk(gemma.Message.text(text: fullPrompt, isUser: true));
+
+      await for (final chunk in chat.generateChatResponseAsync()) {
+        if (chunk is gemma.TextResponse) {
+          yield chunk.token;
+        }
       }
     }
   }
 
   /// Collects all streamed tokens and returns the complete response string.
-  Future<String> generateResponse(String fullPrompt) async {
+  Future<String> generateResponse(
+    String fullPrompt, {
+    String? systemInstruction,
+    List<Message>? history,
+  }) async {
     final buffer = StringBuffer();
-    await for (final token in generateResponseStream(fullPrompt)) {
+    await for (final token in generateResponseStream(
+      fullPrompt,
+      systemInstruction: systemInstruction,
+      history: history,
+    )) {
       buffer.write(token);
     }
     return buffer.toString();

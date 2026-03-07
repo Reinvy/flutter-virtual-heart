@@ -38,6 +38,7 @@ class LanguageSection extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSizes.sm),
                   SegmentedButton<AppLanguage>(
+                    showSelectedIcon: false,
                     segments: const [
                       ButtonSegment(value: AppLanguage.indonesian, label: Text('Indonesia')),
                       ButtonSegment(value: AppLanguage.english, label: Text('English')),

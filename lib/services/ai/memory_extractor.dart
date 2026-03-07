@@ -20,22 +20,22 @@ import '../../data/models/memory_fact.dart';
 class MemoryExtractor {
   const MemoryExtractor();
 
-  // Expected output line format: "FAKTA: <category> | <key> | <value>"
+  // Expected output line format: "FACT: <category> | <key> | <value>"
   static const String _prompt = '''
-Baca percakapan berikut dan ekstrak HANYA fakta-fakta penting tentang User.
-Format SETIAP fakta dalam satu baris:
-FAKTA: <kategori> | <kunci> | <nilai>
+Read the following conversation and extract ONLY important facts about the User.
+Format EACH fact on a single line:
+FACT: <category> | <key> | <value>
 
-Kategori yang valid: personal, event, preference, date
-Contoh:
-FAKTA: personal | nama | Budi
-FAKTA: preference | makanan favorit | soto ayam
-FAKTA: event | ulang tahun | 15 Januari
+Valid categories: personal, event, preference, date
+Examples:
+FACT: personal | name | John
+FACT: preference | favorite food | chicken soup
+FACT: event | birthday | January 15
 
-Percakapan:
+Conversation:
 {conversation}
 
-Fakta-fakta (tulis HANYA baris FAKTA:, tanpa teks lain):''';
+Facts (write ONLY FACT: lines, no other text):''';
 
   /// Sends [conversation] to the model via [generateFn] and parses the
   /// structured output into [MemoryFact] objects.
@@ -62,9 +62,9 @@ Fakta-fakta (tulis HANYA baris FAKTA:, tanpa teks lain):''';
 
     for (final line in raw.split('\n')) {
       final trimmed = line.trim();
-      if (!trimmed.startsWith('FAKTA:')) continue;
+      if (!trimmed.startsWith('FACT:')) continue;
 
-      final parts = trimmed.substring(6).split('|');
+      final parts = trimmed.substring(5).split('|');
       if (parts.length < 3) continue;
 
       final categoryRaw = parts[0].trim().toLowerCase();

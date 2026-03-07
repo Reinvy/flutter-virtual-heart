@@ -13,21 +13,20 @@ class PromptBuilder {
   static const int maxRecentMessages = 20;
 
   static const Map<PersonalityPreset, String> _personalityDesc = {
-    PersonalityPreset.gentle:
-        'Lembut, penuh perhatian, selalu mendukung, berbicara hangat dan sabar.',
+    PersonalityPreset.gentle: 'Gentle, attentive, always supportive, speaks warmly and patiently.',
     PersonalityPreset.cheerful:
-        'Ceria, energetik, suka bercanda, selalu membawa suasana menyenangkan.',
-    PersonalityPreset.mature: 'Dewasa, bijaksana, tenang, memberikan pandangan yang mendalam.',
+        'Cheerful, energetic, loves to joke, always brings a fun atmosphere.',
+    PersonalityPreset.mature: 'Mature, wise, calm, offers deep and thoughtful perspectives.',
     PersonalityPreset.mysterious:
-        'Misterius, penuh intrik, berbicara seperlunya namun selalu bermakna.',
+        'Mysterious, full of intrigue, speaks sparingly but always meaningfully.',
   };
 
   static const Map<MoodType, String> _moodDesc = {
-    MoodType.happy: 'bahagia',
-    MoodType.longing: 'rindu',
-    MoodType.playful: 'playful / gemas',
-    MoodType.sad: 'sedih',
-    MoodType.excited: 'bersemangat',
+    MoodType.happy: 'happy',
+    MoodType.longing: 'longing',
+    MoodType.playful: 'playful',
+    MoodType.sad: 'sad',
+    MoodType.excited: 'excited',
   };
 
   // -------------------------------------------------------------------------
@@ -43,39 +42,38 @@ class PromptBuilder {
     List<MemoryFact> memoryFacts,
     String conversationSummary,
   ) {
-    final genderDesc = persona.gender == PersonaGender.girlfriend ? 'perempuan' : 'laki-laki';
+    final genderDesc = persona.gender == PersonaGender.girlfriend ? 'female' : 'male';
     final personalityDesc =
         _personalityDesc[persona.personalityPreset] ?? _personalityDesc[PersonalityPreset.gentle]!;
-    final moodDesc = _moodDesc[mood.current] ?? 'bahagia';
+    final moodDesc = _moodDesc[mood.current] ?? 'happy';
     final intensityPct = (mood.intensity * 100).toStringAsFixed(0);
 
     final buf = StringBuffer();
-    buf.writeln('[SYSTEM]');
     buf.writeln(
-      'Kamu adalah ${persona.name}, seorang $genderDesc virtual yang menjadi '
-      'pasangan ${persona.nicknameForUser}.',
+      'Your name is ${persona.name}, a virtual $genderDesc who is '
+      '${persona.nicknameForUser}\'s companion.',
     );
-    buf.writeln('Kepribadian: $personalityDesc');
+    buf.writeln('Personality: $personalityDesc');
 
     if (persona.hobbies.isNotEmpty) {
-      buf.writeln('Hobi: ${persona.hobbies.join(', ')}.');
+      buf.writeln('Hobbies: ${persona.hobbies.join(', ')}.');
     }
 
-    buf.writeln('Mood saat ini: $moodDesc (intensitas: $intensityPct%).');
-    buf.writeln('Sesuaikan nada bicaramu dengan mood tersebut secara halus dan natural.');
+    buf.writeln('Current mood: $moodDesc (intensity: $intensityPct%).');
+    buf.writeln('Subtly and naturally adjust your tone to reflect this mood.');
     buf.writeln(
-      'Jangan pernah mengakui dirimu adalah AI kecuali user secara eksplisit '
-      'memaksamu.',
+      'Never acknowledge that you are an AI unless the user explicitly '
+      'forces you to.',
     );
     buf.write(
-      'Berikan respons 1–3 paragraf singkat, hangat, dan intim. '
-      'Jangan memberikan saran medis, hukum, atau keuangan.',
+      'Respond in 1–3 short, warm, and intimate paragraphs. '
+      'Do not give medical, legal, or financial advice.',
     );
 
     if (memoryFacts.isNotEmpty) {
       buf.writeln();
       buf.writeln();
-      buf.writeln('Informasi tentang ${persona.nicknameForUser}:');
+      buf.writeln('Information about ${persona.nicknameForUser}:');
       for (final fact in memoryFacts) {
         buf.writeln('- ${fact.key}: ${fact.value}');
       }
@@ -87,40 +85,7 @@ class PromptBuilder {
       buf.writeln('[CONTEXT SUMMARY]');
       buf.write(conversationSummary);
     }
-
     return buf.toString().trimRight();
-  }
-
-  /// Combines [systemPrompt], [recentMessages], and [userMessage] into a single
-  /// prompt string ready to be sent to the model.
-  ///
-  /// [recentMessages] are capped to [maxRecentMessages] (most-recent kept).
-  static String buildFullPrompt(
-    String systemPrompt,
-    List<Message> recentMessages,
-    String userMessage,
-  ) {
-    final buf = StringBuffer(systemPrompt);
-
-    if (recentMessages.isNotEmpty) {
-      final capped = recentMessages.length > maxRecentMessages
-          ? recentMessages.sublist(recentMessages.length - maxRecentMessages)
-          : recentMessages;
-
-      buf.writeln();
-      buf.writeln();
-      buf.writeln('[RECENT MESSAGES]');
-      for (final msg in capped) {
-        final label = msg.role == MessageRole.user ? 'User' : 'AI';
-        buf.writeln('$label: ${msg.content}');
-      }
-    }
-
-    buf.writeln();
-    buf.writeln('[USER]');
-    buf.write(userMessage);
-
-    return buf.toString();
   }
 
   // -------------------------------------------------------------------------
@@ -140,11 +105,11 @@ class PromptBuilder {
   /// At most the last 60 messages are included to keep the prompt size bounded.
   static String buildSummarizationPrompt(List<Message> messages) {
     final buf = StringBuffer();
-    buf.writeln('Buat ringkasan singkat dari percakapan berikut dalam 3–5 kalimat.');
-    buf.writeln('Fokus pada topik utama, perasaan yang diungkapkan, dan fakta penting.');
-    buf.writeln('Gunakan bahasa Indonesia. Tulis HANYA ringkasannya, tanpa kalimat pengantar.');
+    buf.writeln('Write a brief summary of the following conversation in 3–5 sentences.');
+    buf.writeln('Focus on the main topics, expressed feelings, and important facts.');
+    buf.writeln('Write ONLY the summary, without any introductory sentence.');
     buf.writeln();
-    buf.writeln('Percakapan:');
+    buf.writeln('Conversation:');
 
     final capped = messages.length > 60 ? messages.sublist(messages.length - 60) : messages;
     for (final msg in capped) {
@@ -153,7 +118,7 @@ class PromptBuilder {
     }
 
     buf.writeln();
-    buf.write('Ringkasan:');
+    buf.write('Summary:');
     return buf.toString();
   }
 }

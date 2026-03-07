@@ -97,11 +97,17 @@ class ChatNotifier extends Notifier<ChatState> {
           ? state.messages.sublist(0, state.messages.length - 1)
           : <Message>[];
 
-      final fullPrompt = PromptBuilder.buildFullPrompt(systemPrompt, history, text.trim());
+      // final fullPrompt = PromptBuilder.buildFullPrompt(systemPrompt, history, text.trim());
 
       // 3. Stream AI response token-by-token.
       await for (final token
-          in ref.read(modelServiceProvider.notifier).generateResponseStream(fullPrompt)) {
+          in ref
+              .read(modelServiceProvider.notifier)
+              .generateResponseStream(
+                text.trim(),
+                systemInstruction: systemPrompt,
+                history: history,
+              )) {
         buffer.write(token);
         state = state.copyWith(streamingBuffer: buffer.toString());
       }
@@ -128,7 +134,7 @@ class ChatNotifier extends Notifier<ChatState> {
 
       // 5. Fire-and-forget: memory extraction + mood update.
       //    Use sanitised content so extractors never see blocked material.
-      Future.microtask(() => _postProcess(db, text.trim(), finalContent));
+      // Future.microtask(() => _postProcess(db, text.trim(), finalContent));
     } catch (_) {
       state = state.copyWith(isTyping: false, streamingBuffer: '');
     }
