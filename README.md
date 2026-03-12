@@ -64,11 +64,11 @@ The AI companion adapts its personality, remembers past conversations, expresses
 - Built with `flutter_local_notifications` + timezone support
 
 ### ⚙️ Comprehensive Settings
-- Toggle **Dark / Light** theme
-- Switch response language: **Indonesian**, **English**, or **Mixed**
-- Enable / disable **TTS** and auto-play AI responses
-- Edit companion persona at any time
-- **Data privacy** controls: clear chat history, clear memories
+- **Appearance**: Toggle Dark / Light theme
+- **Language**: Switch system and AI response language (Indonesian, English, or Mixed)
+- **Voice**: Enable / disable TTS and auto-play AI responses
+- **Persona**: Edit companion profile and preferences at any time
+- **Data Privacy**: Clear chat history or wipe memory completely
 - View privacy policy
 
 ### 🔒 Privacy-First Architecture
@@ -80,7 +80,7 @@ The AI companion adapts its personality, remembers past conversations, expresses
 
 ## 🏗️ Architecture
 
-```
+```text
 lib/
 ├── main.dart                  # Entry point — initializes Gemma & ObjectBox
 ├── app.dart                   # Root widget — MaterialApp, Riverpod, GoRouter
@@ -92,12 +92,7 @@ lib/
 │
 ├── data/
 │   ├── database/              # ObjectBox service (init, box access)
-│   └── models/                # ObjectBox entities
-│       ├── app_settings.dart  # Onboarding flags, preferences
-│       ├── message.dart       # Chat message entity
-│       ├── memory_fact.dart   # Extracted conversation facts
-│       ├── mood_state.dart    # AI mood entity
-│       └── persona_config.dart# Virtual companion profile
+│   └── models/                # ObjectBox entities (Message, MemoryFact, MoodState, etc.)
 │
 ├── providers/                 # Riverpod providers & notifiers
 │   ├── app_settings_provider.dart
@@ -113,30 +108,26 @@ lib/
 │   ├── age_gate/              # Age verification (13+)
 │   ├── onboarding/            # 3-page feature introduction
 │   ├── persona_setup/         # Create virtual companion
-│   ├── model_download/        # LLM download & initialization progress
+│   ├── model_download/        # Installs LLM to device storage
 │   ├── chat/                  # Main chat interface + widgets
 │   ├── memory/                # View & manage memory facts
-│   └── settings/              # App preferences + subsection widgets
+│   └── settings/              # App preferences structured by sections
 │
 └── services/
-    ├── ai/
-    │   ├── model_service.dart      # LLM lifecycle (Qwen2.5-1.5B)
-    │   ├── prompt_builder.dart     # System prompt assembly
-    │   ├── memory_extractor.dart   # Fact extraction from conversation
-    │   └── content_safety.dart     # Dual-gate content filtering
-    ├── mood_service.dart           # Mood state transitions
-    ├── notification_service.dart   # Schedule morning & check-in alerts
-    ├── tts_service.dart            # Text-to-Speech wrapper
-    └── stt_service.dart            # Speech-to-Text wrapper
+    ├── ai/                    # Integrates LLM memory, safety, and prompt building
+    ├── mood_service.dart      # Mood state transitions logic
+    ├── notification_service.dart # Schedule morning & check-in alerts
+    ├── tts_service.dart       # Text-to-Speech wrapper
+    └── stt_service.dart       # Speech-to-Text wrapper
 ```
 
 ### Navigation Flow
 
-```
-Splash → Age Gate → Onboarding → Persona Setup → Model Download → Chat
+```text
+Splash → Age Gate → Onboarding → Persona Setup → Model Installation → Chat
 ```
 
-GoRouter guards redirect the user back to the appropriate screen if a required setup step has not been completed (age verification, persona creation, model download).
+GoRouter guards redirect the user back to the appropriate screen if a required setup step has not been completed (age verification, persona creation, model installation).
 
 ---
 
@@ -166,7 +157,7 @@ Before running VirtualHeart, make sure you have the following installed:
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) **3.35.5** (use [FVM](https://fvm.app/) — see `.fvmrc`)
 - Dart **3.9.0+**
 - Android Studio / Xcode (for mobile targets)
-- A physical device or emulator with **sufficient RAM** (the 1.5B model requires ~2 GB free RAM)
+- A physical device with **sufficient RAM** (the 1.5B model requires ~2 GB free RAM to run smoothly)
 
 ### Install FVM (recommended)
 
@@ -205,9 +196,15 @@ flutter pub run build_runner build --delete-conflicting-outputs
 fvm flutter pub run build_runner build --delete-conflicting-outputs
 ```
 
-### 4. Download the AI model
+### 4. Setup the AI Model (Required)
 
-The app will prompt you to download the **Qwen2.5-1.5B-Instruct** (quantized) model on first launch via the Model Download screen. Ensure the device has a stable internet connection and at least **2 GB of free storage** for the first download.
+Due to its large size (~1.5 GB), the LLM model is **not** included in the repository by default (it is ignored via `.gitignore`). This app uses the heavily optimized Qwen model adapted for MediaPipe (`Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.task`).
+
+1. Download the correct quantized `.task` file supported by `flutter_gemma`.
+2. Determine if the `assets/models/` directory already exists in your root folder. If not, create it.
+3. Place the downloaded `.task` file into the `assets/models/` directory and ensure its name matches exactly what is required in `lib/services/ai/model_service.dart`.
+
+> **Important:** The app's `ModelDownloadScreen` does **not** download the model from the internet! It unpacks and installs this local `.task` asset directly to the smartphone's internal memory during the very first launch. **It requires no internet connection**, but ensures the device has at least 2 GB of free storage.
 
 ### 5. Run the app
 
@@ -230,7 +227,7 @@ fvm flutter run
 | Windows | ⚠️ Experimental |
 | Web | ⚠️ Experimental |
 
-> **Note:** On-device LLM inference via MediaPipe is best supported on **Android** and **iOS**. Desktop/web platforms may have limited AI functionality.
+> **Note:** On-device LLM inference via MediaPipe is officially supported on **Android** and **iOS**. Desktop/web platforms may have limited AI functionality and require different underlying implementations depending on the MediaPipe plugin's capabilities.
 
 ---
 
