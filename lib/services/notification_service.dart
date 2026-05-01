@@ -146,9 +146,9 @@ class NotificationService {
   ///
   /// The caller (e.g., `AppLifecycleObserver`) is responsible for calling this
   /// when the app goes to background and cancelling it when the user returns.
-  /// Default interval: 6 hours (per PRD FR-19).
+  /// Default interval: 0 hours (per PRD FR-19).
   Future<void> scheduleCheckinNotification({
-    int hoursFromNow = 6,
+    int hoursFromNow = 0,
     String personaName = 'VirtualHeart',
   }) async {
     await _ensureInitialized();
