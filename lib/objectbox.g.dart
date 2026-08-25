@@ -14,11 +14,11 @@ import 'package:objectbox/internal.dart'
 import 'package:objectbox/objectbox.dart' as obx;
 import 'package:objectbox_flutter_libs/objectbox_flutter_libs.dart';
 
-import 'data/models/app_settings.dart';
-import 'data/models/memory_fact.dart';
-import 'data/models/message.dart';
-import 'data/models/mood_state.dart';
-import 'data/models/persona_config.dart';
+import 'models/app_settings.dart';
+import 'models/memory_fact.dart';
+import 'models/message.dart';
+import 'models/mood_state.dart';
+import 'models/persona_config.dart';
 
 export 'package:objectbox/objectbox.dart'; // so that callers only have to import this file
 

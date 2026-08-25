@@ -1,8 +1,8 @@
 import 'package:flutter_gemma/flutter_gemma.dart' as gemma;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:virtual_heart/data/models/message.dart';
+import 'package:virtual_heart/models/message.dart';
 
-import '../../providers/model_ready_provider.dart';
+import '../../features/model/model_ready_provider.dart';
 
 /// Riverpod notifier that owns the on-device LLM lifecycle.
 ///

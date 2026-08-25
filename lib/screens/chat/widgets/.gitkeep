@@ -1,5 +1,0 @@
-// TODO Phase 2.6: Implement chat widgets
-// - chat_bubble.dart       — user (right, gradient) + AI (left, avatar)
-// - typing_indicator.dart  — three bouncing dots
-// - input_bar.dart         — TextField + send + mic buttons
-// - mood_indicator.dart    — AppBar subtitle mood display

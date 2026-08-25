@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/models/memory_fact.dart';
+import '../../models/memory_fact.dart';
 
 /// Extracts [MemoryFact] items from a raw conversation snippet by sending a
 /// dedicated extraction prompt to the on-device model.

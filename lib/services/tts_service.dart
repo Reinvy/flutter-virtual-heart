@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
-import '../data/models/persona_config.dart';
+import '../models/persona_config.dart';
 
 /// Singleton wrapper around [FlutterTts].
 ///
