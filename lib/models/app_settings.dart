@@ -16,6 +16,8 @@ class AppSettings {
   String notificationMorningTime = '08:00';
   bool notificationCheckinEnabled = false;
   String modelVariant = 'qwen2.5-1.5b';
+  String modelSource = ''; // '' | 'network' | 'file'
+  String modelUrl = '';
   bool isAgeVerified = false;
   bool isOnboardingDone = false;
   bool isPersonaSetup = false;
@@ -41,6 +43,8 @@ class AppSettings {
     this.notificationMorningTime = '08:00',
     this.notificationCheckinEnabled = false,
     this.modelVariant = 'qwen2.5-1.5b',
+    this.modelSource = '',
+    this.modelUrl = '',
     this.isAgeVerified = false,
     this.isOnboardingDone = false,
     this.isPersonaSetup = false,
@@ -61,6 +65,8 @@ class AppSettings {
     String? notificationMorningTime,
     bool? notificationCheckinEnabled,
     String? modelVariant,
+    String? modelSource,
+    String? modelUrl,
     bool? isAgeVerified,
     bool? isOnboardingDone,
     bool? isPersonaSetup,
@@ -75,6 +81,8 @@ class AppSettings {
       notificationMorningTime: notificationMorningTime ?? this.notificationMorningTime,
       notificationCheckinEnabled: notificationCheckinEnabled ?? this.notificationCheckinEnabled,
       modelVariant: modelVariant ?? this.modelVariant,
+      modelSource: modelSource ?? this.modelSource,
+      modelUrl: modelUrl ?? this.modelUrl,
       isAgeVerified: isAgeVerified ?? this.isAgeVerified,
       isOnboardingDone: isOnboardingDone ?? this.isOnboardingDone,
       isPersonaSetup: isPersonaSetup ?? this.isPersonaSetup,

@@ -1,63 +1,228 @@
 import 'package:flutter_gemma/flutter_gemma.dart' as gemma;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:virtual_heart/models/message.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../features/model/model_ready_provider.dart';
+import '../../features/settings/settings_controller.dart';
+import '../../models/message.dart';
+import 'model_catalog.dart';
 
-/// Riverpod notifier that owns the on-device LLM lifecycle.
+/// Status model LLM on-device.
+class ModelStatus {
+  /// Model siap inferensi.
+  final bool ready;
+
+  /// Progress download 0..1 (hanya relevan saat download berlangsung).
+  final double progress;
+
+  /// Nama model aktif (null bila belum ada).
+  final String? modelName;
+
+  /// Pesan error ramah (null bila tidak ada).
+  final String? error;
+
+  /// Sedang mengunduh/memasang.
+  final bool installing;
+
+  const ModelStatus({
+    this.ready = false,
+    this.progress = 0,
+    this.modelName,
+    this.error,
+    this.installing = false,
+  });
+
+  ModelStatus copyWith({
+    bool? ready,
+    double? progress,
+    String? modelName,
+    String? error,
+    bool? installing,
+  }) {
+    return ModelStatus(
+      ready: ready ?? this.ready,
+      progress: progress ?? this.progress,
+      modelName: modelName ?? this.modelName,
+      error: error ?? this.error,
+      installing: installing ?? this.installing,
+    );
+  }
+}
+
+/// Riverpod notifier yang mengelola siklus hidup model LLM on-device.
 ///
-/// State is `true` when the model is ready for inference, `false` (or loading /
-/// error) otherwise.  Consumers read [modelServiceProvider] to track readiness
-/// and call [generateResponseStream] / [generateResponse] for inference.
-class ModelServiceNotifier extends AsyncNotifier<bool> {
-  static const String _modelAssetPath =
-      'models/Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.task';
-
-  /// Soft cap on the number of characters supplied as context per request.
+/// Mendukung tiga sumber:
+/// - **Network** (`installFromNetwork`) — download dari HuggingFace + progress.
+/// - **File** (`installFromFile`) — model lokal yang dipilih pengguna.
+/// - **Terpasang** (`build`) — jika model sudah terinstal, langsung dipakai.
+class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
+  /// Soft cap konteks per request.
   static const int maxContextChars = 6000;
 
   gemma.InferenceModel? _model;
+  gemma.CancelToken? _cancelToken;
 
   // -------------------------------------------------------------------------
   // Lifecycle
   // -------------------------------------------------------------------------
 
   @override
-  Future<bool> build() => _initializeWithRetry();
+  Future<ModelStatus> build() async {
+    final settings = ref.read(appSettingsProvider);
 
-  Future<bool> _initializeWithRetry({int maxRetries = 3}) async {
-    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+    // Model sudah pernah dipilih & terinstal → langsung aktifkan.
+    if (settings.modelVariant.isNotEmpty) {
       try {
+        final installed = await gemma.FlutterGemma.isModelInstalled(
+          settings.modelVariant,
+        );
+        if (installed) {
+          _model = await gemma.FlutterGemma.getActiveModel(
+            preferredBackend: gemma.PreferredBackend.cpu,
+            maxTokens: 2048,
+          );
+          ref.read(modelReadyProvider.notifier).setReady();
+          return ModelStatus(
+            ready: true,
+            modelName: settings.modelVariant,
+          );
+        }
+      } catch (_) {
+        // Model rusak → lanjut ke install ulang.
+      }
+    }
+
+    // Model default (Qwen 2.5 1.5B .litertlm) bila belum ada pilihan.
+    if (settings.modelSource.isEmpty) {
+      try {
+        await _installWithProgress(kDefaultModelOption, hfToken: null);
+        return state.value ?? const ModelStatus(ready: true);
+      } catch (e) {
+        return ModelStatus(error: _friendlyError(e));
+      }
+    }
+
+    return const ModelStatus();
+  }
+
+  // -------------------------------------------------------------------------
+  // Install dari network / file
+  // -------------------------------------------------------------------------
+
+  /// Mengunduh [option] dari HuggingFace dengan progress.
+  Future<void> installFromNetwork(ModelOption option, {String? hfToken}) async {
+    state = const AsyncLoading();
+    _cancelToken = gemma.CancelToken();
+    try {
+      await _installWithProgress(option, hfToken: hfToken);
+    } catch (e) {
+      state = AsyncError(_friendlyError(e), StackTrace.current);
+    }
+  }
+
+  /// Memasang model dari file lokal (upload pengguna).
+  Future<void> installFromFile(String path, ModelOption option) async {
+    state = const AsyncLoading();
+    try {
+      state = await AsyncValue.guard(() async {
         await gemma.FlutterGemma.installModel(
-          modelType: gemma.ModelType.qwen,
-          fileType: gemma.ModelFileType.task,
-          // .task is the default; explicit here since the engine is MediaPipe.
-        ).fromAsset(_modelAssetPath).install();
+          modelType: option.gemmaModelType,
+          fileType: option.gemmaFileType,
+        ).fromFile(path).install();
 
         _model = await gemma.FlutterGemma.getActiveModel(
           preferredBackend: gemma.PreferredBackend.cpu,
           maxTokens: 2048,
         );
 
+        await _persistSelection(option);
         ref.read(modelReadyProvider.notifier).setReady();
-        return true;
-      } catch (e) {
-        if (attempt == maxRetries) rethrow;
-        await Future.delayed(const Duration(seconds: 2));
-      }
+        return ModelStatus(ready: true, modelName: option.fileName);
+      });
+    } catch (e) {
+      state = AsyncError(_friendlyError(e), StackTrace.current);
     }
-    return false;
+  }
+
+  /// Membatalkan download yang sedang berjalan.
+  Future<void> cancelDownload() async {
+    final token = _cancelToken;
+    if (token != null && !token.isCancelled) {
+      token.cancel('User cancelled download');
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Private
+  // -------------------------------------------------------------------------
+
+  Future<void> _installWithProgress(ModelOption option, {String? hfToken}) async {
+    await gemma.FlutterGemma.installModel(
+      modelType: option.gemmaModelType,
+      fileType: option.gemmaFileType,
+    )
+        .fromNetwork(option.url, token: hfToken)
+        .withCancelToken(_cancelToken!)
+        .withProgress((progress) {
+          state = AsyncData(
+            (state.value ?? const ModelStatus()).copyWith(
+              progress: progress / 100,
+              installing: true,
+              modelName: option.name,
+            ),
+          );
+        })
+        .install();
+
+    _model = await gemma.FlutterGemma.getActiveModel(
+      preferredBackend: gemma.PreferredBackend.cpu,
+      maxTokens: 2048,
+    );
+
+    await _persistSelection(option);
+    ref.read(modelReadyProvider.notifier).setReady();
+    state = AsyncData(ModelStatus(ready: true, modelName: option.fileName));
+  }
+
+  Future<void> _persistSelection(ModelOption option) async {
+    final settings = ref.read(appSettingsProvider);
+    ref.read(appSettingsProvider.notifier).save(
+      settings.copyWith(
+        modelVariant: option.fileName,
+        modelSource: 'network',
+        modelUrl: option.url,
+      ),
+    );
+  }
+
+  /// Membaca token HuggingFace dari SharedPreferences (tidak pernah di-log).
+  Future<String?> readHfToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('hf_token');
+    return (token == null || token.isEmpty) ? null : token;
+  }
+
+  static Future<void> saveHfToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('hf_token', token.trim());
+  }
+
+  String _friendlyError(Object error) {
+    final msg = error.toString();
+    if (msg.contains('404')) return 'Model tidak ditemukan di server.';
+    if (msg.contains('401') || msg.contains('403')) {
+      return 'Akses ditolak — periksa token HuggingFace untuk model gated.';
+    }
+    if (msg.contains('429')) return 'Terlalu banyak permintaan. Coba lagi nanti.';
+    if (msg.contains('cancel')) return 'Unduhan dibatalkan.';
+    return 'Gagal memasang model. Coba lagi.';
   }
 
   // -------------------------------------------------------------------------
   // Inference
   // -------------------------------------------------------------------------
 
-  /// Streams response tokens for [fullPrompt].
-  ///
-  /// A fresh [gemma.InferenceChat] is created per call so that consecutive
-  /// requests do not share native session state.  [fullPrompt] should be built
-  /// by [PromptBuilder.buildFullPrompt].
+  /// Streaming token untuk [fullPrompt].
   Stream<String> generateResponseStream(
     String fullPrompt, {
     String? systemInstruction,
@@ -95,7 +260,7 @@ class ModelServiceNotifier extends AsyncNotifier<bool> {
     }
   }
 
-  /// Collects all streamed tokens and returns the complete response string.
+  /// Mengumpulkan semua token streaming menjadi satu string.
   Future<String> generateResponse(
     String fullPrompt, {
     String? systemInstruction,
@@ -116,15 +281,22 @@ class ModelServiceNotifier extends AsyncNotifier<bool> {
   // Reset / recovery
   // -------------------------------------------------------------------------
 
-  /// Disposes the current model and reinitializes from scratch.
+  /// Membuang model & memaksa re-install.
   Future<void> reset() async {
     _model = null;
     ref.read(modelReadyProvider.notifier).reset();
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(_initializeWithRetry);
+    state = await AsyncValue.guard(() async {
+      final settings = ref.read(appSettingsProvider);
+      if (settings.modelVariant.isNotEmpty) {
+        await gemma.FlutterGemma.uninstallModel(settings.modelVariant);
+        await gemma.FlutterGemma.clearActiveInferenceIdentity();
+      }
+      return const ModelStatus();
+    });
   }
 }
 
-final modelServiceProvider = AsyncNotifierProvider<ModelServiceNotifier, bool>(
+final modelServiceProvider = AsyncNotifierProvider<ModelServiceNotifier, ModelStatus>(
   ModelServiceNotifier.new,
 );
