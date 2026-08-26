@@ -45,6 +45,7 @@ abstract class AppStrings {
   String get personaNameHint;
   String get personaNameEmpty;
   String get personaNameMin;
+  String get personaNameMax;
   String get personaPersonality;
   String get personaHobbies;
   String get personaHobbiesHint;
@@ -88,6 +89,9 @@ abstract class AppStrings {
 
   // ── Memory (FR-11, FR-12) ───────────────────────────────────────────────
   String get memoryTitle;
+  String get memorySearchHint;
+  String get memorySearchEmptyTitle;
+  String get memorySearchEmptyBody;
   String get memoryEmptyTitle;
   String get memoryEmptyBody;
   String get memoryResetAllTitle;
@@ -150,6 +154,12 @@ abstract class AppStrings {
   String get settingsSheetHowTheyCallYou;
   String get settingsSheetPersonality;
   String get settingsSheetChooseAvatar;
+  String get settingsMicPermissionGranted;
+  String get settingsMicPermissionDenied;
+  String get settingsMicPermissionOpenSettings;
+  String get settingsNotifPermissionGranted;
+  String get settingsNotifPermissionDenied;
+  String get settingsNotifPermissionOpenSettings;
 
   // ── Relatif waktu (DateFormatter) ───────────────────────────────────────
   String get timeJustNow;
@@ -234,6 +244,8 @@ class IndonesianStrings extends AppStrings {
   @override
   String get personaNameMin => 'Minimal 2 karakter';
   @override
+  String get personaNameMax => 'Maksimal 32 karakter';
+  @override
   String get personaPersonality => 'Kepribadian';
   @override
   String get personaHobbies => 'Hobi & Minat (opsional)';
@@ -313,6 +325,14 @@ class IndonesianStrings extends AppStrings {
 
   @override
   String get memoryTitle => 'Memori AI';
+  @override
+  String get memorySearchHint => 'Cari kenangan...';
+  @override
+  String get memorySearchEmptyTitle => 'Tidak ditemukan';
+  @override
+  String get memorySearchEmptyBody =>
+      'Tidak ada kenangan yang cocok dengan pencarianmu. '
+      'Coba kata kunci lain.';
   @override
   String get memoryEmptyTitle => 'Belum ada kenangan tersimpan';
   @override
@@ -443,6 +463,18 @@ class IndonesianStrings extends AppStrings {
   String get settingsSheetPersonality => 'Kepribadian';
   @override
   String get settingsSheetChooseAvatar => 'Pilih Avatar';
+  @override
+  String get settingsMicPermissionGranted => 'Izin mikrofon aktif';
+  @override
+  String get settingsMicPermissionDenied => 'Izin mikrofon ditolak';
+  @override
+  String get settingsMicPermissionOpenSettings => 'Buka Pengaturan';
+  @override
+  String get settingsNotifPermissionGranted => 'Izin notifikasi aktif';
+  @override
+  String get settingsNotifPermissionDenied => 'Izin notifikasi ditolak';
+  @override
+  String get settingsNotifPermissionOpenSettings => 'Buka Pengaturan';
 
   @override
   String get timeJustNow => 'Baru saja';
@@ -530,6 +562,8 @@ class EnglishStrings extends AppStrings {
   @override
   String get personaNameMin => 'Minimum 2 characters';
   @override
+  String get personaNameMax => 'Maximum 32 characters';
+  @override
   String get personaPersonality => 'Personality';
   @override
   String get personaHobbies => 'Hobbies & Interests (optional)';
@@ -609,6 +643,13 @@ class EnglishStrings extends AppStrings {
 
   @override
   String get memoryTitle => 'AI Memory';
+  @override
+  String get memorySearchHint => 'Search memories...';
+  @override
+  String get memorySearchEmptyTitle => 'Nothing found';
+  @override
+  String get memorySearchEmptyBody =>
+      'No memories match your search. Try a different keyword.';
   @override
   String get memoryEmptyTitle => 'No memories saved yet';
   @override
@@ -739,6 +780,18 @@ class EnglishStrings extends AppStrings {
   String get settingsSheetPersonality => 'Personality';
   @override
   String get settingsSheetChooseAvatar => 'Choose Avatar';
+  @override
+  String get settingsMicPermissionGranted => 'Microphone permission granted';
+  @override
+  String get settingsMicPermissionDenied => 'Microphone permission denied';
+  @override
+  String get settingsMicPermissionOpenSettings => 'Open Settings';
+  @override
+  String get settingsNotifPermissionGranted => 'Notification permission granted';
+  @override
+  String get settingsNotifPermissionDenied => 'Notification permission denied';
+  @override
+  String get settingsNotifPermissionOpenSettings => 'Open Settings';
 
   @override
   String get timeJustNow => 'Just now';
