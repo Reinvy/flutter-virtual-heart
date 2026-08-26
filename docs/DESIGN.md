@@ -242,12 +242,15 @@ Komponen dibangun di `core/design/components/` (shared) dan `features/<fitur>/wi
 - **Model LLM** di-download dari HuggingFace (katalog `model_catalog.dart`) atau
   di-upload dari file lokal (`.litertlm`/`.task`/`.bin`). Layar pilihan model
   menampilkan nama, ukuran, dan badge "HF Token" untuk model gated.
-- **STT** (`flutter_gemma_speech` + moonshine-tiny): rekam PCM 16 kHz mono 16-bit
-  via `record`, transkrip on-device, hasil masuk ke input chat (bisa diedit).
-- **TTS** (`flutter_gemma_speech` + Inflect/Matcha): `synthesize` → PCM 16-bit →
-  playback via `flutter_pcm_sound`.
-- Model suara di-download terpisah (opsional); tanpa model, tombol suara menampilkan
-  pesan hangat + pintu ke layar model.
+- **Backend suara** (`Settings → Voice`): pilih **Gemma (on-device)** atau
+  **System (flutter_tts / speech_to_text)**.
+  - **Gemma**: pilih model TTS (Inflect ~8 MB / Matcha ~100 MB / Qwen3 ~1.9 GB)
+    dan STT (moonshine-tiny) — diunduh per pilihan dengan progress.
+  - **System**: suara & dikte sistem, tanpa unduhan, dukung Bahasa Indonesia.
+- **STT gemma** (`flutter_gemma_speech` + moonshine-tiny): rekam PCM 16 kHz mono
+  16-bit via `record`, transkrip on-device, hasil masuk ke input chat (bisa diedit).
+- **TTS gemma** (`flutter_gemma_speech` + Inflect/Matcha/Qwen3): `synthesize` →
+  PCM 16-bit → playback via `flutter_pcm_sound`.
 
 ---
 

@@ -164,12 +164,14 @@ memori, ringkasan percakapan, dan maks 20 pesan terakhir.
 **Prioritas:** P1
 
 **Deskripsi:** Tombol mikrofon di chat input bar; rekam suara, konversi ke teks
-**on-device** (`flutter_gemma_speech` + model moonshine-tiny), lalu isi input (bisa
-diedit) sebelum dikirim.
+**on-device** (`flutter_gemma_speech` + moonshine-tiny) atau **dikte sistem**
+(`speech_to_text` — opsional, tanpa unduhan), lalu isi input (bisa diedit)
+sebelum dikirim.
 
 **Acceptance Criteria:**
 - [ ] Izin mikrofon diminta dengan penjelasan; ditolak → tombol nonaktif + tooltip.
-- [ ] Model STT di-download dari network satu kali (progress); tanpa model → pesan hangat.
+- [ ] Backend STT bisa dipilih di Settings (Gemma on-device / System); model gemma
+      di-download satu kali (progress); system tanpa unduhan.
 - [ ] Saat merekam: indikator aktif; ketuk lagi untuk berhenti.
 - [ ] Hasil transkripsi tampil di input sebelum dikirim (bisa diedit).
 - [ ] Pesan hasil suara ditandai `isVoice` (opsional untuk UI).
@@ -182,14 +184,15 @@ diedit) sebelum dikirim.
 #### FR-07 — Voice Output (Text-to-Speech)
 **Prioritas:** P1
 
-**Deskripsi:** Membacakan respon AI dengan suara **on-device**
-(`flutter_gemma_speech` + model Inflect/Matcha). Pengaturan: aktif/nonaktif TTS,
-autoplay saat respon selesai.
+**Deskripsi:** Membacakan respon AI — **on-device** (`flutter_gemma_speech` +
+Inflect/Matcha/Qwen3) atau **suara sistem** (`flutter_tts` — opsional, tanpa
+unduhan). Pengaturan: backend, model TTS, aktif/nonaktif, autoplay.
 
 **Acceptance Criteria:**
 - [ ] Tombol play/stop di bubble/chat control; indikator sedang membaca.
 - [ ] `ttsEnabled` mematikan semua suara; `ttsAutoPlay` memutar otomatis.
-- [ ] Model TTS di-download dari network satu kali; tanpa model → pesan + pintu ke layar model.
+- [ ] Backend & model TTS bisa dipilih di Settings; model gemma di-download satu
+      kali (progress); system tanpa unduhan.
 - [ ] Mematikan/beralih layar menghentikan playback.
 
 **Edge Cases:**

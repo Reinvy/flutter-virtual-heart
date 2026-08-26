@@ -173,6 +173,15 @@ abstract class AppStrings {
   String get settingsNotifPermissionOpenSettings;
   String get speechModelTitle;
   String get speechModelBody;
+  String get settingsVoiceBackend;
+  String get settingsVoiceBackendGemma;
+  String get settingsVoiceBackendSystem;
+  String get settingsVoiceTtsModel;
+  String get settingsVoiceSttModel;
+  String get speechModelDownload;
+  String get speechModelInstalled;
+  String get speechGemmaNote;
+  String get speechSystemNote;
 
   // ── Relatif waktu (DateFormatter) ───────────────────────────────────────
   String get timeJustNow;
@@ -517,6 +526,26 @@ class IndonesianStrings extends AppStrings {
   @override
   String get speechModelBody =>
       'Unduh model suara on-device untuk dikte & suara persona.';
+  @override
+  String get settingsVoiceBackend => 'Backend Suara';
+  @override
+  String get settingsVoiceBackendGemma => 'Gemma (on-device)';
+  @override
+  String get settingsVoiceBackendSystem => 'Sistem';
+  @override
+  String get settingsVoiceTtsModel => 'Model TTS (suara)';
+  @override
+  String get settingsVoiceSttModel => 'Model STT (dikte)';
+  @override
+  String get speechModelDownload => 'Unduh';
+  @override
+  String get speechModelInstalled => 'Terpasang';
+  @override
+  String get speechGemmaNote =>
+      'Model suara diunduh ke perangkat & berjalan offline.';
+  @override
+  String get speechSystemNote =>
+      'Memakai suara & dikte sistem — tanpa unduhan model.';
 
   @override
   String get timeJustNow => 'Baru saja';
@@ -864,6 +893,26 @@ class EnglishStrings extends AppStrings {
   @override
   String get speechModelBody =>
       'Download on-device speech models for dictation & persona voice.';
+  @override
+  String get settingsVoiceBackend => 'Voice Backend';
+  @override
+  String get settingsVoiceBackendGemma => 'Gemma (on-device)';
+  @override
+  String get settingsVoiceBackendSystem => 'System';
+  @override
+  String get settingsVoiceTtsModel => 'TTS Model (voice)';
+  @override
+  String get settingsVoiceSttModel => 'STT Model (dictation)';
+  @override
+  String get speechModelDownload => 'Download';
+  @override
+  String get speechModelInstalled => 'Installed';
+  @override
+  String get speechGemmaNote =>
+      'Speech models are downloaded to the device and run offline.';
+  @override
+  String get speechSystemNote =>
+      'Uses system speech & dictation — no model downloads.';
 
   @override
   String get timeJustNow => 'Just now';
