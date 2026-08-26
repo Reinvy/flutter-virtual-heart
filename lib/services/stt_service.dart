@@ -79,11 +79,11 @@ class SttService {
           _closeController();
         }
       },
-      localeId: localeId,
       listenOptions: stt.SpeechListenOptions(
         listenMode: stt.ListenMode.confirmation,
         cancelOnError: true,
         partialResults: true,
+        localeId: localeId,
       ),
     );
   }

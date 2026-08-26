@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/l10n/app_strings.dart';
-import '../../core/utils/extensions.dart';
 import '../../models/memory_fact.dart';
 import 'memory_controller.dart';
 
@@ -199,7 +198,7 @@ class _CategorySection extends StatelessWidget {
   }
 }
 
-class _FactTile extends StatelessWidget {
+class _FactTile extends ConsumerWidget {
   const _FactTile({required this.fact, required this.accentColor, required this.onDelete});
 
   final MemoryFact fact;
@@ -207,8 +206,8 @@ class _FactTile extends StatelessWidget {
   final void Function(int id) onDelete;
 
   @override
-  Widget build(BuildContext context) {
-    final strings = context.read(appStringsProvider);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.read(appStringsProvider);
     final theme = Theme.of(context);
     return Dismissible(
       key: ValueKey(fact.id),

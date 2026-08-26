@@ -9,7 +9,6 @@ import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
-import '../../core/utils/extensions.dart';
 import '../../models/mood_state.dart';
 import '../../models/persona_config.dart';
 import '../chat/mood_provider.dart';
@@ -95,7 +94,7 @@ class PersonaProfileSheet extends ConsumerWidget {
               const SizedBox(height: AppSizes.md),
               _buildNameSection(context),
               const SizedBox(height: AppSizes.lg),
-              _buildMoodSection(mood, context),
+              _buildMoodSection(mood, context, ref),
               const SizedBox(height: AppSizes.lg),
               if ((persona?.hobbies ?? []).isNotEmpty) ...[
                 _buildHobbiesSection(),
@@ -103,7 +102,7 @@ class PersonaProfileSheet extends ConsumerWidget {
               ],
               _buildPersonalitySection(context),
               const SizedBox(height: AppSizes.xl),
-              _buildEditButton(context),
+              _buildEditButton(context, ref),
             ],
           ),
         );
@@ -154,10 +153,10 @@ class PersonaProfileSheet extends ConsumerWidget {
     );
   }
 
-  Widget _buildMoodSection(MoodState mood, BuildContext context) {
+  Widget _buildMoodSection(MoodState mood, BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final subtleColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
-    final strings = context.read(appStringsProvider);
+    final strings = ref.read(appStringsProvider);
     final info = _moodInfo[mood.current] ?? (emoji: '😊', label: strings.moodHappy);
     final color = _moodColors[mood.current] ?? AppColors.primary;
     final intensityPct = (mood.intensity * 100).round();
@@ -263,8 +262,8 @@ class PersonaProfileSheet extends ConsumerWidget {
     );
   }
 
-  Widget _buildEditButton(BuildContext context) {
-    final strings = context.read(appStringsProvider);
+  Widget _buildEditButton(BuildContext context, WidgetRef ref) {
+    final strings = ref.read(appStringsProvider);
     return PrimaryButton(
       label: strings.settingsEditPersona,
       icon: Icons.edit_outlined,

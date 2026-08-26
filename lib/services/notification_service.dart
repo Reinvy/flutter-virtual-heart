@@ -70,7 +70,7 @@ class NotificationService {
     );
     const initSettings = InitializationSettings(android: androidInit, iOS: iosInit);
 
-    await _plugin.initialize(initSettings);
+    await _plugin.initialize(settings: initSettings);
     _initialized = true;
   }
 
@@ -110,11 +110,11 @@ class NotificationService {
     final scheduledDate = _nextInstanceOf(time);
 
     await _plugin.zonedSchedule(
-      _kMorningNotifId,
-      personaName,
-      body,
-      scheduledDate,
-      NotificationDetails(
+      id: _kMorningNotifId,
+      title: personaName,
+      body: body,
+      scheduledDate: scheduledDate,
+      notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           _kMorningChannelId,
           'Morning Message',
@@ -130,14 +130,13 @@ class NotificationService {
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time, // repeat daily
     );
   }
 
   /// Cancels the morning message notification.
   Future<void> cancelMorningMessage() async {
-    await _plugin.cancel(_kMorningNotifId);
+    await _plugin.cancel(id: _kMorningNotifId);
   }
 
   // ── FR-19: Check-in Notification ──────────────────────────────────────
@@ -157,11 +156,11 @@ class NotificationService {
     final scheduledDate = tz.TZDateTime.now(tz.local).add(Duration(hours: hoursFromNow));
 
     await _plugin.zonedSchedule(
-      _kCheckinNotifId,
-      personaName,
-      body,
-      scheduledDate,
-      NotificationDetails(
+      id: _kCheckinNotifId,
+      title: personaName,
+      body: body,
+      scheduledDate: scheduledDate,
+      notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           _kCheckinChannelId,
           'Check-in',
@@ -177,13 +176,12 @@ class NotificationService {
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
   /// Cancels any pending check-in notification (call when user opens the app).
   Future<void> cancelCheckinNotification() async {
-    await _plugin.cancel(_kCheckinNotifId);
+    await _plugin.cancel(id: _kCheckinNotifId);
   }
 
   // ── FR-20: Special Day Notification ──────────────────────────────────
@@ -207,11 +205,11 @@ class NotificationService {
     if (scheduledDate.isBefore(tz.TZDateTime.now(tz.local))) return;
 
     await _plugin.zonedSchedule(
-      _kSpecialDayBaseId + slotIndex,
-      personaName,
-      message,
-      scheduledDate,
-      NotificationDetails(
+      id: _kSpecialDayBaseId + slotIndex,
+      title: personaName,
+      body: message,
+      scheduledDate: scheduledDate,
+      notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           _kSpecialDayChannelId,
           'Special Day',
@@ -227,13 +225,12 @@ class NotificationService {
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
   /// Cancels a special day notification at [slotIndex].
   Future<void> cancelSpecialDay({int slotIndex = 0}) async {
-    await _plugin.cancel(_kSpecialDayBaseId + slotIndex);
+    await _plugin.cancel(id: _kSpecialDayBaseId + slotIndex);
   }
 
   // ── Utilities ─────────────────────────────────────────────────────────

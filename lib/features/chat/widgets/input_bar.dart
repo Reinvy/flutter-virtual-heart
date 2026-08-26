@@ -1,13 +1,13 @@
 // Fitur Chat (FR-06) — input bar (text + mic + send) (docs/DESIGN.md §3.2).
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/design/tokens/app_sizes.dart';
 import '../../../core/design/tokens/text_styles.dart';
 import '../../../core/l10n/app_strings.dart';
-import '../../../core/utils/extensions.dart';
 
-class InputBar extends StatefulWidget {
+class InputBar extends ConsumerStatefulWidget {
   const InputBar({
     super.key,
     required this.onSend,
@@ -22,10 +22,10 @@ class InputBar extends StatefulWidget {
   final VoidCallback? onMicTap;
 
   @override
-  State<InputBar> createState() => _InputBarState();
+  ConsumerState<InputBar> createState() => _InputBarState();
 }
 
-class _InputBarState extends State<InputBar> {
+class _InputBarState extends ConsumerState<InputBar> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
 
@@ -47,7 +47,7 @@ class _InputBarState extends State<InputBar> {
     if (widget.onMicTap != null) {
       widget.onMicTap!();
     } else {
-      final strings = context.read(appStringsProvider);
+      final strings = ref.read(appStringsProvider);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(strings.chatSttUnavailable), duration: const Duration(seconds: 2)),
       );
@@ -56,7 +56,7 @@ class _InputBarState extends State<InputBar> {
 
   @override
   Widget build(BuildContext context) {
-    final strings = context.read(appStringsProvider);
+    final strings = ref.read(appStringsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surfaceColor = isDark ? AppColors.surfaceDark : AppColors.surface;
     final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
@@ -115,7 +115,7 @@ class _InputBarState extends State<InputBar> {
             const SizedBox(width: AppSizes.spaceXs),
             ValueListenableBuilder<TextEditingValue>(
               valueListenable: _controller,
-              builder: (_, value, __) {
+              builder: (_, value, _) {
                 final canSend = value.text.trim().isNotEmpty && widget.enabled;
                 return _SendButton(onTap: canSend ? _handleSend : null);
               },

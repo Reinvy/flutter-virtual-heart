@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 extension StringExtensions on String {
   String get capitalize => isEmpty ? this : '${this[0].toUpperCase()}${substring(1)}';
@@ -25,11 +24,4 @@ extension BuildContextExtensions on BuildContext {
   ColorScheme get colors => Theme.of(this).colorScheme;
   TextTheme get textTheme => Theme.of(this).textTheme;
   Size get screenSize => MediaQuery.sizeOf(this);
-
-  /// Membaca provider tanpa menjadi ConsumerWidget (Riverpod 2.x).
-  ///
-  /// Setara `ref.read` — untuk widget presentational yang menerima data
-  /// lewat parameter atau hanya butuh nilai sekali baca.
-  T read<T>(ProviderListenable<T> provider) =>
-      ProviderScope.containerOf(this, listen: false).read(provider);
 }

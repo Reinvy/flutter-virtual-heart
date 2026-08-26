@@ -34,8 +34,8 @@ abstract final class AppRoutes {
 /// berubah.
 class _RouterRefreshNotifier extends ChangeNotifier {
   _RouterRefreshNotifier(Ref ref) {
-    ref.listen(appSettingsProvider, (_, __) => notifyListeners());
-    ref.listen(modelReadyProvider, (_, __) => notifyListeners());
+    ref.listen(appSettingsProvider, (_, _) => notifyListeners());
+    ref.listen(modelReadyProvider, (_, _) => notifyListeners());
   }
 }
 

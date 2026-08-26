@@ -28,19 +28,18 @@ class ModelServiceNotifier extends AsyncNotifier<bool> {
   Future<bool> _initializeWithRetry({int maxRetries = 3}) async {
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        final plugin = gemma.FlutterGemmaPlugin.instance;
-
         await gemma.FlutterGemma.installModel(
           modelType: gemma.ModelType.qwen,
+          fileType: gemma.ModelFileType.task,
+          // .task is the default; explicit here since the engine is MediaPipe.
         ).fromAsset(_modelAssetPath).install();
 
-        _model = await plugin.createModel(
-          modelType: gemma.ModelType.qwen,
+        _model = await gemma.FlutterGemma.getActiveModel(
           preferredBackend: gemma.PreferredBackend.cpu,
           maxTokens: 2048,
         );
 
-        ref.read(modelReadyProvider.notifier).state = true;
+        ref.read(modelReadyProvider.notifier).setReady();
         return true;
       } catch (e) {
         if (attempt == maxRetries) rethrow;
@@ -120,7 +119,7 @@ class ModelServiceNotifier extends AsyncNotifier<bool> {
   /// Disposes the current model and reinitializes from scratch.
   Future<void> reset() async {
     _model = null;
-    ref.read(modelReadyProvider.notifier).state = false;
+    ref.read(modelReadyProvider.notifier).reset();
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(_initializeWithRetry);
   }

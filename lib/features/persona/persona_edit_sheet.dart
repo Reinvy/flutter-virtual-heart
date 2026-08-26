@@ -196,7 +196,7 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: _currentAvatars.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: AppSizes.sm),
+                      separatorBuilder: (_, _) => const SizedBox(width: AppSizes.sm),
                       itemBuilder: (_, i) {
                         final opt = _currentAvatars[i];
                         return GestureDetector(

@@ -5,8 +5,8 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Flutter-3.35.5-02569B?style=flat-square&logo=flutter&logoColor=white" alt="Flutter Version"/>
-  <img src="https://img.shields.io/badge/Dart-3.9.0-0175C2?style=flat-square&logo=dart&logoColor=white" alt="Dart Version"/>
+  <img src="https://img.shields.io/badge/Flutter-3.47.1-02569B?style=flat-square&logo=flutter&logoColor=white" alt="Flutter Version"/>
+  <img src="https://img.shields.io/badge/Dart-3.13.1-0175C2?style=flat-square&logo=dart&logoColor=white" alt="Dart Version"/>
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License"/>
   <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS-lightgrey?style=flat-square" alt="Platform"/>
   <img src="https://img.shields.io/badge/AI-On--Device-orange?style=flat-square" alt="On-Device AI"/>
@@ -135,18 +135,18 @@ GoRouter guards redirect the user back to the appropriate screen if a required s
 
 | Layer | Technology |
 |---|---|
-| **Framework** | Flutter 3.35.5 / Dart 3.9.0 |
-| **State Management** | Riverpod 2.6.1 (`AsyncNotifierProvider`) |
-| **Navigation** | GoRouter 14.8.1 with route guards |
-| **Local Database** | ObjectBox 4.0.3 (embedded NoSQL) |
-| **On-Device AI** | flutter_gemma 0.12.5 (MediaPipe LLM — Qwen2.5-1.5B-Instruct) |
-| **Text-to-Speech** | flutter_tts 4.2.0 |
-| **Speech-to-Text** | speech_to_text 7.0.0 |
-| **Notifications** | flutter_local_notifications 18.0.1 |
+| **Framework** | Flutter 3.47.1 / Dart 3.13.1 |
+| **State Management** | Riverpod 3.4.2 |
+| **Navigation** | GoRouter 18.0.0 with route guards |
+| **Local Database** | ObjectBox 5.3.2 (embedded NoSQL) |
+| **On-Device AI** | flutter_gemma 1.6.5 + flutter_gemma_mediapipe 1.0.5 (MediaPipe LLM — Qwen2.5-1.5B-Instruct) |
+| **Text-to-Speech** | flutter_tts 4.2.5 |
+| **Speech-to-Text** | speech_to_text 7.4.0 |
+| **Notifications** | flutter_local_notifications 22.3.0 |
 | **Typography** | Google Fonts — Playfair Display + Nunito |
-| **Animations** | flutter_animate 4.5.2 + Lottie 3.3.1 |
-| **Markdown Rendering** | gpt_markdown 1.1.4 |
-| **Code Generation** | build_runner + riverpod_generator + objectbox_generator |
+| **Animations** | flutter_animate 4.5.2 + Lottie 3.5.1 |
+| **Markdown Rendering** | gpt_markdown 1.2.1 |
+| **Code Generation** | build_runner + objectbox_generator |
 
 ---
 
@@ -154,8 +154,8 @@ GoRouter guards redirect the user back to the appropriate screen if a required s
 
 Before running VirtualHeart, make sure you have the following installed:
 
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) **3.35.5** (use [FVM](https://fvm.app/) — see `.fvmrc`)
-- Dart **3.9.0+**
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) **3.47.1** (use [FVM](https://fvm.app/) — see `.fvmrc`)
+- Dart **3.13.1+**
 - Android Studio / Xcode (for mobile targets)
 - A physical device with **sufficient RAM** (the 1.5B model requires ~2 GB free RAM to run smoothly)
 

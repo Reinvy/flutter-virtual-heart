@@ -12,7 +12,6 @@ import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
-import '../../core/utils/extensions.dart';
 import '../settings/settings_controller.dart';
 
 class AgeGateScreen extends ConsumerWidget {
@@ -64,7 +63,7 @@ class AgeGateScreen extends ConsumerWidget {
 
               SecondaryButton(
                 label: strings.ageGateDecline,
-                onPressed: () => _decline(context),
+                onPressed: () => _decline(context, ref),
               ).animate().fadeIn(duration: 500.ms, delay: 500.ms),
 
               const SizedBox(height: AppSizes.spaceXxl),
@@ -88,8 +87,8 @@ class AgeGateScreen extends ConsumerWidget {
     context.go(AppRoutes.onboarding);
   }
 
-  void _decline(BuildContext context) {
-    final strings = context.read(appStringsProvider);
+  void _decline(BuildContext context, WidgetRef ref) {
+    final strings = ref.read(appStringsProvider);
     HapticFeedback.mediumImpact();
     showDialog<void>(
       context: context,
