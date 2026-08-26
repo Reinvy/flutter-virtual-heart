@@ -74,6 +74,17 @@ abstract class AppStrings {
   String get modelTip3;
   String get modelTip4;
   String get modelTip5;
+  String get modelChooseTitle;
+  String get modelChooseSubtitle;
+  String get modelAvailable;
+  String get modelDownload;
+  String get modelDownloading;
+  String get modelUploadFile;
+  String get modelHfTokenHint;
+  String get modelHfTokenHelper;
+  String get modelCancel;
+  String get modelProgress;
+  String get modelFileInvalid;
 
   // ── Chat (FR-05..FR-10) ─────────────────────────────────────────────────
   String get chatEmptyGreeting;
@@ -160,6 +171,8 @@ abstract class AppStrings {
   String get settingsNotifPermissionGranted;
   String get settingsNotifPermissionDenied;
   String get settingsNotifPermissionOpenSettings;
+  String get speechModelTitle;
+  String get speechModelBody;
 
   // ── Relatif waktu (DateFormatter) ───────────────────────────────────────
   String get timeJustNow;
@@ -291,6 +304,30 @@ class IndonesianStrings extends AppStrings {
       'cukup (≥ 2 GB) dan coba lagi.';
   @override
   String get modelRetry => 'Coba Lagi';
+  @override
+  String get modelChooseTitle => 'Pilih Model AI';
+  @override
+  String get modelChooseSubtitle =>
+      'Unduh model dari internet, atau upload file model dari penyimpananmu. '
+      'Semua proses tetap berjalan di perangkat.';
+  @override
+  String get modelAvailable => 'Model Tersedia';
+  @override
+  String get modelDownload => 'Unduh Model';
+  @override
+  String get modelDownloading => 'Mengunduh...';
+  @override
+  String get modelUploadFile => 'Upload dari File';
+  @override
+  String get modelHfTokenHint => 'HuggingFace Token (opsional)';
+  @override
+  String get modelHfTokenHelper => 'Diperlukan untuk model gated (mis. Gemma).';
+  @override
+  String get modelCancel => 'Batalkan';
+  @override
+  String get modelProgress => 'Mengunduh:';
+  @override
+  String get modelFileInvalid => 'Format file tidak didukung. Gunakan .litertlm, .task, atau .bin.';
   @override
   String get modelTip1 => '💕 Pasangan virtualmu sedang mengenalmu...';
   @override
@@ -475,6 +512,11 @@ class IndonesianStrings extends AppStrings {
   String get settingsNotifPermissionDenied => 'Izin notifikasi ditolak';
   @override
   String get settingsNotifPermissionOpenSettings => 'Buka Pengaturan';
+  @override
+  String get speechModelTitle => 'Model Suara (STT/TTS)';
+  @override
+  String get speechModelBody =>
+      'Unduh model suara on-device untuk dikte & suara persona.';
 
   @override
   String get timeJustNow => 'Baru saja';
@@ -609,6 +651,31 @@ class EnglishStrings extends AppStrings {
       '(≥ 2 GB) and try again.';
   @override
   String get modelRetry => 'Try Again';
+  @override
+  String get modelChooseTitle => 'Choose AI Model';
+  @override
+  String get modelChooseSubtitle =>
+      'Download a model from the internet, or upload a model file from your '
+      'storage. Everything stays on-device.';
+  @override
+  String get modelAvailable => 'Available Models';
+  @override
+  String get modelDownload => 'Download Model';
+  @override
+  String get modelDownloading => 'Downloading...';
+  @override
+  String get modelUploadFile => 'Upload from File';
+  @override
+  String get modelHfTokenHint => 'HuggingFace Token (optional)';
+  @override
+  String get modelHfTokenHelper => 'Required for gated models (e.g. Gemma).';
+  @override
+  String get modelCancel => 'Cancel';
+  @override
+  String get modelProgress => 'Downloading:';
+  @override
+  String get modelFileInvalid =>
+      'Unsupported file format. Use .litertlm, .task, or .bin.';
   @override
   String get modelTip1 => '💕 Your virtual partner is getting to know you...';
   @override
@@ -792,6 +859,11 @@ class EnglishStrings extends AppStrings {
   String get settingsNotifPermissionDenied => 'Notification permission denied';
   @override
   String get settingsNotifPermissionOpenSettings => 'Open Settings';
+  @override
+  String get speechModelTitle => 'Speech Models (STT/TTS)';
+  @override
+  String get speechModelBody =>
+      'Download on-device speech models for dictation & persona voice.';
 
   @override
   String get timeJustNow => 'Just now';

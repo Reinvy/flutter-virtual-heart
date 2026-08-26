@@ -4,9 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/design/components/section_card.dart';
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/router/app_router.dart';
 import '../../../models/app_settings.dart';
 import '../settings_controller.dart';
 
@@ -47,11 +49,32 @@ class VoiceSection extends ConsumerWidget {
                   ref.read(appSettingsProvider.notifier).save(settings.copyWith(ttsAutoPlay: v));
                 },
               ),
+            _SpeechModelTile(strings: strings),
             _MicPermissionTile(strings: strings),
           ],
         ),
       ],
     ).animate().fadeIn(duration: 300.ms, delay: 180.ms).slideY(begin: 0.04, end: 0);
+  }
+}
+
+/// Menampilkan status model suara (STT/TTS on-device) + pintu ke layar model.
+class _SpeechModelTile extends ConsumerWidget {
+  const _SpeechModelTile({required this.strings});
+
+  final AppStrings strings;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    return ListTile(
+      dense: true,
+      leading: Icon(Icons.graphic_eq_rounded, color: scheme.primary),
+      title: Text(strings.speechModelTitle),
+      subtitle: Text(strings.speechModelBody),
+      trailing: Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
+      onTap: () => context.push(AppRoutes.modelDownload),
+    );
   }
 }
 
