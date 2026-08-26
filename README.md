@@ -86,39 +86,33 @@ lib/
 ├── app.dart                   # Root widget — MaterialApp, Riverpod, GoRouter
 │
 ├── core/
-│   ├── constants/             # Colors, sizes, text styles
-│   ├── theme/                 # Light & dark ThemeData
+│   ├── design/                # Design tokens, tema, komponen UI shared
+│   │   ├── tokens/            # app_colors, app_sizes, app_durations, text_styles
+│   │   ├── app_theme.dart     # Light/Dark ThemeData (Material 3 lengkap)
+│   │   └── components/        # PrimaryButton, SectionCard, SakuraBackground, ...
+│   ├── router/                # GoRouter + route guards
+│   ├── errors/                # AppLogger, AppException (error handling terpusat)
+│   ├── l10n/                  # Lokalisasi ID/EN (AppStrings)
 │   └── utils/                 # Date formatters, Dart extensions
 │
-├── data/
-│   ├── database/              # ObjectBox service (init, box access)
-│   └── models/                # ObjectBox entities (Message, MemoryFact, MoodState, etc.)
+├── features/                  # Feature-first modular
+│   ├── onboarding/            # Splash, age gate, onboarding
+│   ├── persona/               # Persona setup, profile sheet
+│   ├── model/                 # Model install
+│   ├── chat/                  # Chat screen + widgets + controller
+│   ├── memory/                # Memory screen + controller
+│   ├── notifications/         # Notification scheduling
+│   └── settings/              # Settings sections
 │
-├── providers/                 # Riverpod providers & notifiers
-│   ├── app_settings_provider.dart
-│   ├── model_ready_provider.dart
-│   ├── mood_provider.dart
-│   ├── notification_provider.dart
-│   ├── objectbox_provider.dart
-│   ├── router_provider.dart   # GoRouter with navigation guards
-│   └── theme_provider.dart
+├── services/
+│   ├── ai/                    # Prompt builder, memory extractor, content safety
+│   ├── database/              # ObjectBox service
+│   ├── mood_service.dart      # Mood state transitions
+│   ├── notification_service.dart # Schedule morning, check-in & special day alerts
+│   ├── tts_service.dart       # Text-to-Speech wrapper
+│   └── stt_service.dart       # Speech-to-Text wrapper
 │
-├── screens/
-│   ├── splash/                # Animated splash with floating hearts
-│   ├── age_gate/              # Age verification (13+)
-│   ├── onboarding/            # 3-page feature introduction
-│   ├── persona_setup/         # Create virtual companion
-│   ├── model_download/        # Installs LLM to device storage
-│   ├── chat/                  # Main chat interface + widgets
-│   ├── memory/                # View & manage memory facts
-│   └── settings/              # App preferences structured by sections
-│
-└── services/
-    ├── ai/                    # Integrates LLM memory, safety, and prompt building
-    ├── mood_service.dart      # Mood state transitions logic
-    ├── notification_service.dart # Schedule morning & check-in alerts
-    ├── tts_service.dart       # Text-to-Speech wrapper
-    └── stt_service.dart       # Speech-to-Text wrapper
+└── models/                    # ObjectBox entities (Message, MemoryFact, MoodState, ...)
 ```
 
 ### Navigation Flow
@@ -143,7 +137,8 @@ GoRouter guards redirect the user back to the appropriate screen if a required s
 | **Text-to-Speech** | flutter_tts 4.2.5 |
 | **Speech-to-Text** | speech_to_text 7.4.0 |
 | **Notifications** | flutter_local_notifications 22.3.0 |
-| **Typography** | Google Fonts — Playfair Display + Nunito |
+| **Typography** | Google Fonts — Shippori Mincho (heading) + Nunito (body) |
+| **Icons** | Material Icons + flutter_svg (sakura icon) |
 | **Animations** | flutter_animate 4.5.2 + Lottie 3.5.1 |
 | **Markdown Rendering** | gpt_markdown 1.2.1 |
 | **Code Generation** | build_runner + objectbox_generator |
@@ -233,20 +228,30 @@ fvm flutter run
 
 ## 🎨 Design System
 
+Tema visual: **"Sakura Romance"** — terinspirasi Yae Miko & estetika Inazuma
+(Genshin Impact). Lihat `docs/DESIGN.md` untuk detail lengkap.
+
 ### Color Palette
 
 | Token | Dark Mode | Light Mode |
 |---|---|---|
-| Background | `#0D0A0E` | `#FDF6F9` |
-| Surface | `#1A1320` | `#FFFFFF` |
-| Primary (Rose Pink) | `#C2507A` | `#C2507A` |
-| Secondary (Mauve) | `#7B5EA7` | `#7B5EA7` |
-| Accent (Heart Red) | `#E8506A` | `#E8506A` |
-| Text Primary | `#F5EEF8` | `#1A0A2E` |
+| Background | `#120D14` | `#FDF4F7` |
+| Surface | `#1D1420` | `#FFFFFF` |
+| Primary (Sakura Pink) | `#F28CB0` | `#C24D7E` |
+| Primary Deep (teks kecil) | `#F8A9C6` | `#9E3A63` |
+| Secondary (Electro Purple) | `#B79BE0` | `#6D4FA8` |
+| Accent (Heart Red) | `#F4778C` | `#E8546E` |
+| Gold (sparkle) | `#E8C766` | `#C9A227` |
+| Text Primary | `#F7EFF5` | `#241021` |
 
 ### Typography
-- **Headings:** Playfair Display (serif — romantic, elegant)
+- **Headings:** Shippori Mincho (serif Jepang — elegan, romantis)
 - **Body / UI:** Nunito (rounded sans-serif — friendly, readable)
+
+### Motion & Components
+- Partikel kelopak sakura (`SakuraBackground`, CustomPainter — tanpa aset raster).
+- Target sentuh minimum 48×48 dp; hormati reduced-motion (`MediaQuery.disableAnimations`).
+- Semua nilai visual dari design tokens `lib/core/design/tokens/`.
 
 ---
 

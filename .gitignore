@@ -49,6 +49,4 @@ app.*.map.json
 # FVM Version Cache
 .fvm/
 
-# Generated files
-docs/
-.github/
+# Generated files (docs/ & .github/ di-track — lihat docs/WORKFLOW.md §8)
