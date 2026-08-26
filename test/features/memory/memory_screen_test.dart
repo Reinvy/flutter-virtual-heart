@@ -58,4 +58,30 @@ void main() {
     expect(find.text('PERISTIWA'), findsOneWidget);
     expect(find.text('ulang tahun'), findsOneWidget);
   });
+
+  testWidgets('pencarian memfilter fakta berdasarkan key/value (FR-12)', (tester) async {
+    final facts = [
+      MemoryFact(category: MemoryCategory.personal, key: 'warna favorit', value: 'biru'),
+      MemoryFact(category: MemoryCategory.event, key: 'ulang tahun', value: '5 Mei'),
+    ];
+    await tester.pumpWidget(wrap(facts: facts));
+
+    await tester.enterText(find.byType(TextField), 'biru');
+    await tester.pump(const Duration(milliseconds: 300)); // lewati debounce
+
+    expect(find.text('warna favorit'), findsOneWidget);
+    expect(find.text('ulang tahun'), findsNothing);
+  });
+
+  testWidgets('pencarian tanpa hasil menampilkan empty state (FR-12)', (tester) async {
+    final facts = [
+      MemoryFact(category: MemoryCategory.personal, key: 'warna favorit', value: 'biru'),
+    ];
+    await tester.pumpWidget(wrap(facts: facts));
+
+    await tester.enterText(find.byType(TextField), 'tidak ada');
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Tidak ditemukan'), findsOneWidget);
+  });
 }

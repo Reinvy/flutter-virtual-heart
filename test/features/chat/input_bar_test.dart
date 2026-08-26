@@ -61,4 +61,17 @@ void main() {
     await tester.pumpWidget(wrap(InputBar(onSend: (_) {}, onMicTap: () {})));
     expect(find.byIcon(Icons.mic_none_rounded), findsOneWidget);
   });
+
+  testWidgets('input dibatasi 2000 karakter (FR-05)', (tester) async {
+    await tester.pumpWidget(wrap(InputBar(onSend: (_) {})));
+
+    final longText = 'a' * 2500;
+    await tester.enterText(find.byType(TextField), longText);
+    await tester.pump();
+
+    // TextField memakai maxLength → teks yang tersimpan terpotong ke 2000.
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.maxLength, 2000);
+    expect(field.controller!.text.length, 2000);
+  });
 }
