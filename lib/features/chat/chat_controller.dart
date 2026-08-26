@@ -24,7 +24,10 @@ class ChatNotifier extends Notifier<ChatState> {
   /// Mengirim pesan user → pipeline AI (safety → prompt → streaming → persist)
   /// lalu memicu post-process (memori, ringkasan, mood).
   Future<void> sendMessage(String text) async {
-    if (text.trim().isEmpty || state.isTyping) return;
+    final trimmed = text.trim();
+    // FR-05: batas input 2000 karakter (jaring pengaman di sisi controller).
+    final content = trimmed.length > 2000 ? trimmed.substring(0, 2000) : trimmed;
+    if (content.isEmpty || state.isTyping) return;
 
     final db = ref.read(objectBoxServiceProvider);
     ref.read(moodServiceProvider).recordInteraction();
@@ -32,7 +35,7 @@ class ChatNotifier extends Notifier<ChatState> {
     // 1. Persist pesan user + update UI.
     final userMsg = Message(
       role: MessageRole.user,
-      content: text.trim(),
+      content: content,
       timestamp: DateTime.now(),
     );
     db.messageBox.put(userMsg);
@@ -43,7 +46,7 @@ class ChatNotifier extends Notifier<ChatState> {
     );
 
     // 1b. Content safety gate (input) — FR-14.
-    final inputCheck = ContentSafety.filterInput(text.trim());
+    final inputCheck = ContentSafety.filterInput(content);
     if (inputCheck.isBlocked) {
       final safetyMsg = Message(
         role: MessageRole.assistant,
@@ -79,7 +82,7 @@ class ChatNotifier extends Notifier<ChatState> {
           ? state.messages.sublist(0, state.messages.length - 1)
           : <Message>[];
 
-      final fullPrompt = PromptBuilder.buildFullPrompt(systemPrompt, history, text.trim());
+      final fullPrompt = PromptBuilder.buildFullPrompt(systemPrompt, history, content);
 
       // 3. Stream token AI.
       await for (final token
@@ -109,7 +112,7 @@ class ChatNotifier extends Notifier<ChatState> {
 
       // 5. Post-process fire-and-forget: memori (FR-11), ringkasan (FR-13),
       //    mood (FR-09). Best-effort — kegagalan tidak memblokir chat.
-      Future.microtask(() => _postProcess(text.trim(), finalContent));
+      Future.microtask(() => _postProcess(content, finalContent));
     } catch (e) {
       AppLogger.error('Chat send failed', e);
       state = state.copyWith(isTyping: false, streamingBuffer: '');

@@ -88,12 +88,14 @@ class _InputBarState extends ConsumerState<InputBar> {
                   focusNode: _focusNode,
                   enabled: widget.enabled,
                   maxLines: null,
+                  maxLength: 2000, // FR-05: batas input pesan
                   keyboardType: TextInputType.multiline,
                   textInputAction: TextInputAction.newline,
                   style: AppTextStyles.bubbleText(color: scheme.onSurface),
                   decoration: InputDecoration(
                     hintText: strings.chatInputHint,
                     hintStyle: AppTextStyles.inputHint(color: scheme.onSurfaceVariant),
+                    counterText: '', // sembunyikan counter, batas tetap aktif
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: AppSizes.spaceMd,
                       vertical: 10,
