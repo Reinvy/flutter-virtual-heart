@@ -15,6 +15,7 @@ class InputBar extends ConsumerStatefulWidget {
     this.enabled = true,
     this.isListening = false,
     this.onMicTap,
+    this.controller,
   });
 
   final void Function(String text) onSend;
@@ -22,17 +23,22 @@ class InputBar extends ConsumerStatefulWidget {
   final bool isListening;
   final VoidCallback? onMicTap;
 
+  /// Controller eksternal opsional (mis. untuk mengisi transkrip STT).
+  final TextEditingController? controller;
+
   @override
   ConsumerState<InputBar> createState() => _InputBarState();
 }
 
 class _InputBarState extends ConsumerState<InputBar> {
-  final _controller = TextEditingController();
+  late final TextEditingController _controller =
+      widget.controller ?? TextEditingController();
   final _focusNode = FocusNode();
 
   @override
   void dispose() {
-    _controller.dispose();
+    // Hanya dispose controller yang dibuat internal.
+    if (widget.controller == null) _controller.dispose();
     _focusNode.dispose();
     super.dispose();
   }

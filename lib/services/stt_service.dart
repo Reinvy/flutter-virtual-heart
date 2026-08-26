@@ -1,119 +1,121 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 
-import 'package:speech_to_text/speech_recognition_result.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:flutter_gemma/flutter_gemma.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:record/record.dart';
 
-/// Singleton wrapper around [SpeechToText].
+/// On-device Speech-to-Text via [flutter_gemma_speech] (moonshine-tiny).
 ///
-/// Usage:
-///   1. [initialize()] on first use (called lazily by [startListening]).
-///   2. Subscribe to the [Stream<String>] from [startListening] for partial
-///      transcriptions.
-///   3. Stream closes automatically on final result or session timeout.
-///   4. Call [stopListening] to end a session early.
+/// Rekam PCM 16 kHz mono 16-bit via [record] (tulis ke file sementara, karena
+/// `startStream` belum diimplementasikan di record_linux), lalu transkrip dengan
+/// [SpeechRecognizer.transcribe]. Model STT di-download dari network satu kali.
 class SttService {
   SttService._internal();
   static final SttService _instance = SttService._internal();
   factory SttService() => _instance;
 
-  final stt.SpeechToText _speech = stt.SpeechToText();
-  bool _initialized = false;
+  final AudioRecorder _recorder = AudioRecorder();
+
+  bool _ready = false;
   bool _isListening = false;
-  StreamController<String>? _activeController;
+  String? _recordPath;
 
   bool get isListening => _isListening;
-  bool get isAvailable => _initialized;
+  bool get isAvailable => _ready;
 
-  /// Initialises the STT engine and requests microphone permission.
+  static const String _modelUrl =
+      'https://huggingface.co/litert-community/moonshine-tiny/resolve/main/'
+      'moonshine_tiny_5s_f32.tflite';
+  static const String _tokenizerUrl =
+      'https://huggingface.co/UsefulSensors/moonshine/resolve/main/'
+      'ctranslate2/tiny/tokenizer.json';
+
+  /// Memastikan model STT terpasang + izin mikrofon.
   ///
-  /// Returns `true` on success, `false` if the device doesn't support STT or
-  /// the user denies the permission.
-  Future<bool> initialize() async {
-    if (_initialized) return true;
-    _initialized = await _speech.initialize(
-      onError: (error) {
-        _isListening = false;
-        _closeController();
-      },
-      onStatus: (status) {
-        if (status == stt.SpeechToText.notListeningStatus ||
-            status == stt.SpeechToText.doneStatus) {
-          _isListening = false;
-          _closeController();
-        }
-      },
-    );
-    return _initialized;
-  }
+  /// [onProgress] dipanggil dengan persen (0..100) selama download.
+  Future<bool> initialize({void Function(int percent)? onProgress}) async {
+    if (_ready) return true;
 
-  /// Starts a new listening session.
-  ///
-  /// Returns a [Stream<String>] of partial transcriptions. The stream closes
-  /// automatically on a final result or timeout. Call [stopListening] to end
-  /// the session early.
-  Stream<String> startListening({String localeId = 'id_ID'}) {
-    _closeController(); // cancel any previous session
-    _activeController = StreamController<String>();
-    _beginListening(localeId);
-    return _activeController!.stream;
-  }
+    // Izin mikrofon.
+    final mic = await Permission.microphone.request();
+    if (!mic.isGranted) return false;
 
-  Future<void> _beginListening(String localeId) async {
-    final ok = await initialize();
-    if (!ok) {
-      _addError('Speech recognition tidak tersedia di perangkat ini');
-      return;
+    try {
+      // Instal model STT bila belum ada (id 'active_stt').
+      final installed = await FlutterGemma.isModelInstalled('active_stt');
+      if (!installed) {
+        await FlutterGemma.installStt()
+            .modelFromNetwork(_modelUrl)
+            .tokenizerFromNetwork(_tokenizerUrl)
+            .ofType(SttModelType.moonshine)
+            .install();
+      }
+      _ready = true;
+      return true;
+    } catch (_) {
+      return false;
     }
+  }
 
-    if (_speech.isListening) await _speech.stop();
+  /// Mulai merekam PCM 16 kHz mono 16-bit ke file sementara.
+  Future<void> startListening() async {
+    if (_isListening) return;
+    if (!await initialize()) return;
 
     _isListening = true;
-    await _speech.listen(
-      onResult: (SpeechRecognitionResult result) {
-        if (_activeController == null || _activeController!.isClosed) return;
-        if (result.recognizedWords.isNotEmpty) {
-          _activeController!.add(result.recognizedWords);
-        }
-        if (result.finalResult) {
-          _isListening = false;
-          _closeController();
-        }
-      },
-      listenOptions: stt.SpeechListenOptions(
-        listenMode: stt.ListenMode.confirmation,
-        cancelOnError: true,
-        partialResults: true,
-        localeId: localeId,
-      ),
-    );
+
+    try {
+      final dir = await getTemporaryDirectory();
+      _recordPath = '${dir.path}/vh_stt_${DateTime.now().millisecondsSinceEpoch}.wav';
+      await _recorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.wav,
+          sampleRate: 16000,
+          numChannels: 1,
+        ),
+        path: _recordPath!,
+      );
+    } catch (_) {
+      _isListening = false;
+    }
   }
 
-  /// Ends the current session and flushes the last partial result.
-  Future<void> stopListening() async {
+  /// Menghentikan rekaman dan mengembalikan hasil transkripsi.
+  ///
+  /// Mengembalikan string kosong bila tidak ada audio/transkrip.
+  Future<String> stopListening() async {
+    if (!_isListening) return '';
+
     _isListening = false;
-    await _speech.stop();
-    _closeController();
+    await _recorder.stop();
+
+    final path = _recordPath;
+    _recordPath = null;
+    if (path == null) return '';
+
+    try {
+      // Baca file WAV dan buang header 44-byte → data PCM 16-bit.
+      final file = File(path);
+      final bytes = await file.readAsBytes();
+      await file.delete().catchError((_) => file);
+
+      final pcm = bytes.length > 44 ? bytes.sublist(44) : bytes;
+      if (pcm.isEmpty) return '';
+
+      final recognizer = await FlutterGemma.getActiveStt();
+      return await recognizer.transcribe(Uint8List.fromList(pcm));
+    } catch (_) {
+      return '';
+    }
   }
 
-  /// Cancels the current session without emitting a result.
+  /// Membatalkan sesi rekaman tanpa hasil.
   Future<void> cancel() async {
     _isListening = false;
-    await _speech.cancel();
-    _closeController();
-  }
-
-  void _closeController() {
-    if (_activeController != null && !_activeController!.isClosed) {
-      _activeController!.close();
-    }
-    _activeController = null;
-  }
-
-  void _addError(String message) {
-    if (_activeController != null && !_activeController!.isClosed) {
-      _activeController!.addError(Exception(message));
-      _activeController!.close();
-    }
-    _activeController = null;
+    await _recorder.cancel();
+    _recordPath = null;
   }
 }

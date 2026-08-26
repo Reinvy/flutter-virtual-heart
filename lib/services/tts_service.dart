@@ -1,93 +1,108 @@
-import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_tts/flutter_tts.dart';
+import 'package:flutter_gemma/flutter_gemma.dart';
+import 'package:flutter_pcm_sound/flutter_pcm_sound.dart';
 
-import '../models/persona_config.dart';
-
-/// Singleton wrapper around [FlutterTts].
+/// On-device Text-to-Speech via [flutter_gemma_speech] (LiteRT C API).
 ///
-/// Adjusts language and pitch based on persona [gender].
-/// The caller is responsible for checking [AppSettings.ttsEnabled] before
-/// invoking [speak].
+/// Model TTS default: **Inflect-Nano-v2** (ringan, ~8 MB, cepat). Opsi:
+/// **Matcha** (22050 Hz, lebih natural). Model di-download dari network
+/// satu kali, lalu `synthesize` menghasilkan PCM 16-bit yang diputar via
+/// [FlutterPcmSound].
 class TtsService {
   TtsService._internal();
   static final TtsService _instance = TtsService._internal();
   factory TtsService() => _instance;
 
-  final FlutterTts _tts = FlutterTts();
-  bool _initialized = false;
+  bool _ready = false;
   bool _isSpeaking = false;
   VoidCallback? _onComplete;
+  Timer? _finishTimer;
 
   bool get isSpeaking => _isSpeaking;
 
-  Future<void> _ensureInitialized() async {
-    if (_initialized) return;
-    _initialized = true;
+  static const String _inflectBaseUrl =
+      'https://huggingface.co/sasha-denisov/inflect-nano-v2-litert/resolve/main/';
 
-    if (!kIsWeb && Platform.isIOS) {
-      await _tts.setSharedInstance(true);
-      await _tts.setIosAudioCategory(IosTextToSpeechAudioCategory.playback, [
-        IosTextToSpeechAudioCategoryOptions.allowBluetooth,
-        IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
-        IosTextToSpeechAudioCategoryOptions.mixWithOthers,
-      ], IosTextToSpeechAudioMode.defaultMode);
+  /// Memastikan model TTS terpasang; download dari network bila belum ada.
+  ///
+  /// [onProgress] dipanggil dengan persen (0..100) selama download.
+  /// Kembali `false` bila gagal (mis. offline / dibatalkan).
+  Future<bool> ensureReady({void Function(int percent)? onProgress}) async {
+    if (_ready) return true;
+
+    try {
+      await FlutterGemma.installTts()
+          .fromNetwork(_inflectBaseUrl)
+          .withProgress((p) => onProgress?.call(p))
+          .ofType(TtsModelType.inflect)
+          .install();
+      _ready = true;
+      return true;
+    } catch (_) {
+      return false;
     }
-
-    await _tts.setSpeechRate(0.5);
-    await _tts.setVolume(1.0);
-    await _tts.setPitch(1.0);
-
-    _tts.setStartHandler(() => _isSpeaking = true);
-    _tts.setCompletionHandler(() {
-      _isSpeaking = false;
-      _onComplete?.call();
-      _onComplete = null;
-    });
-    _tts.setCancelHandler(() {
-      _isSpeaking = false;
-      _onComplete = null;
-    });
-    _tts.setErrorHandler((_) {
-      _isSpeaking = false;
-      _onComplete = null;
-    });
   }
 
-  /// Speaks [text] using a voice appropriate for [gender].
-  ///
-  /// Stops any ongoing speech beforehand.
-  /// [onDone] is called when speech completes naturally.
-  Future<void> speak(
-    String text, {
-    PersonaGender gender = PersonaGender.girlfriend,
-    VoidCallback? onDone,
-  }) async {
-    await _ensureInitialized();
-    await _tts.stop();
+  /// Menyintesis [text] dan memutarnya. [onDone] dipanggil setelah selesai.
+  Future<void> speak(String text, {VoidCallback? onDone}) async {
+    if (text.trim().isEmpty) return;
+    if (!await ensureReady()) {
+      _onComplete = null;
+      return;
+    }
 
     _onComplete = onDone;
 
-    // Prefer Indonesian; fall back to English if unavailable.
-    await _tts.setLanguage('en-US');
+    try {
+      final synth = await FlutterGemma.getActiveTts();
+      final pcm = await synth.synthesize(text);
 
-    // Tune pitch/rate per gender for a more natural voice.
-    if (gender == PersonaGender.girlfriend) {
-      await _tts.setPitch(1.6);
-      await _tts.setSpeechRate(0.4);
-    } else {
-      await _tts.setPitch(0.88);
-      await _tts.setSpeechRate(0.47);
+      if (pcm.isEmpty) {
+        _finish();
+        return;
+      }
+
+      // Inisialisasi player PCM dengan sample rate dari synthesizer.
+      await FlutterPcmSound.setup(
+        sampleRate: synth.sampleRate,
+        channelCount: 1,
+      );
+
+      _isSpeaking = true;
+      await FlutterPcmSound.feed(
+        PcmArrayInt16(bytes: pcm.buffer.asByteData()),
+      );
+      FlutterPcmSound.start();
+
+      // Estimasi durasi: 16-bit mono → byte/2 / sampleRate detik.
+      final seconds = (pcm.length / 2 / synth.sampleRate).clamp(0.2, 120.0);
+      _finishTimer?.cancel();
+      _finishTimer = Timer(
+        Duration(milliseconds: (seconds * 1000).round()),
+        _finish,
+      );
+    } catch (_) {
+      _finish();
     }
-
-    await _tts.speak(text);
   }
 
-  /// Stops any ongoing speech immediately.
+  /// Menghentikan playback.
   Future<void> stop() async {
+    _finishTimer?.cancel();
+    _finishTimer = null;
     _onComplete = null;
-    await _tts.stop();
     _isSpeaking = false;
+    await FlutterPcmSound.release();
+  }
+
+  void _finish() {
+    _finishTimer?.cancel();
+    _finishTimer = null;
+    _isSpeaking = false;
+    final cb = _onComplete;
+    _onComplete = null;
+    cb?.call();
   }
 }

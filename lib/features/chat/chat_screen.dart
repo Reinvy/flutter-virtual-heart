@@ -40,18 +40,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _scrollController = ScrollController();
   final _ttsService = TtsService();
   final _sttService = SttService();
+  final _inputTextController = TextEditingController();
 
   int _speakingMessageId = -1;
   bool _isListening = false;
-  StreamSubscription<String>? _sttSubscription;
   bool _sparkleShown = false;
   bool _showSparkle = false;
 
   @override
   void dispose() {
     _scrollController.dispose();
-    _sttSubscription?.cancel();
+    _inputTextController.dispose();
     _ttsService.stop();
+    _sttService.cancel();
     super.dispose();
   }
 
@@ -113,6 +114,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               InputBar(
                 enabled: !chatState.isTyping,
                 isListening: _isListening,
+                controller: _inputTextController,
                 onMicTap: _handleMicTap,
                 onSend: (text) {
                   HapticFeedback.lightImpact();
@@ -201,10 +203,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return;
     }
 
+    // Pastikan model TTS terpasang; jika gagal tampilkan pesan hangat.
+    final ok = await _ttsService.ensureReady();
+    if (!ok) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Model suara belum tersedia. Cek layar model di pengaturan.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() => _speakingMessageId = message.id);
     await _ttsService.speak(
       message.content,
-      gender: persona?.gender ?? PersonaGender.girlfriend,
       onDone: () {
         if (mounted) setState(() => _speakingMessageId = -1);
       },
@@ -214,10 +229,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> _handleMicTap() async {
     final strings = ref.read(appStringsProvider);
     if (_isListening) {
-      await _sttService.stopListening();
-      await _sttSubscription?.cancel();
-      _sttSubscription = null;
+      final transcript = await _sttService.stopListening();
       if (mounted) setState(() => _isListening = false);
+      if (transcript.trim().isNotEmpty) {
+        HapticFeedback.lightImpact();
+        // Masukkan transkrip ke input (bisa diedit) — FR-06.
+        _inputTextController.text = transcript.trim();
+      }
       return;
     }
 
@@ -236,26 +254,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     setState(() => _isListening = true);
     HapticFeedback.lightImpact();
-
-    String lastTranscript = '';
-    final stream = _sttService.startListening();
-
-    _sttSubscription = stream.listen(
-      (transcript) => lastTranscript = transcript,
-      onDone: () {
-        if (mounted) setState(() => _isListening = false);
-        if (lastTranscript.trim().isNotEmpty) {
-          HapticFeedback.lightImpact();
-          ref.read(chatProvider.notifier).sendMessage(lastTranscript.trim());
-        }
-        _sttSubscription = null;
-      },
-      onError: (_) {
-        if (mounted) setState(() => _isListening = false);
-        _sttSubscription = null;
-      },
-      cancelOnError: true,
-    );
+    await _sttService.startListening();
   }
 
   Widget _buildMessageList(
