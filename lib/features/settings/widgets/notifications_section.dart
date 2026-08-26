@@ -1,8 +1,9 @@
-// Settings — Notifications (FR-15..FR-17).
+// Settings — Notifications (FR-15..FR-17 + status izin FR-18).
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../../core/design/components/section_card.dart';
 import '../../../core/design/tokens/app_sizes.dart';
@@ -97,9 +98,64 @@ class NotificationsSection extends ConsumerWidget {
                 await ref.read(notificationProvider.notifier).applySettings(updated);
               },
             ),
+            _NotificationPermissionTile(strings: strings),
           ],
         ),
       ],
     ).animate().fadeIn(duration: 300.ms, delay: 240.ms).slideY(begin: 0.04, end: 0);
+  }
+}
+
+/// Menampilkan status izin notifikasi (FR-18) secara jujur.
+class _NotificationPermissionTile extends ConsumerStatefulWidget {
+  const _NotificationPermissionTile({required this.strings});
+
+  final AppStrings strings;
+
+  @override
+  ConsumerState<_NotificationPermissionTile> createState() =>
+      _NotificationPermissionTileState();
+}
+
+class _NotificationPermissionTileState extends ConsumerState<_NotificationPermissionTile> {
+  bool? _granted;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final ok = await ref.read(notificationProvider.notifier).requestPermission();
+    if (mounted) setState(() => _granted = ok);
+  }
+
+  Future<void> _openSettings() async {
+    await openAppSettings();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final granted = _granted;
+
+    if (granted != true) {
+      return ListTile(
+        dense: true,
+        leading: Icon(Icons.notifications_none_rounded, color: scheme.onSurfaceVariant),
+        title: Text(widget.strings.settingsNotifPermissionDenied),
+        subtitle: Text(widget.strings.settingsNotifPermissionOpenSettings),
+        trailing: Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
+        onTap: _openSettings,
+      );
+    }
+
+    return ListTile(
+      dense: true,
+      leading: Icon(Icons.notifications_active_outlined, color: scheme.primary),
+      title: Text(widget.strings.settingsNotifPermissionGranted),
+      trailing: Icon(Icons.check_circle_outline_rounded, color: scheme.primary),
+    );
   }
 }
