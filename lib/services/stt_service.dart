@@ -6,66 +6,98 @@ import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
-/// On-device Speech-to-Text via [flutter_gemma_speech] (moonshine-tiny).
+import 'ai/speech_model_catalog.dart';
+
+/// Facade Speech-to-Text dengan dua backend:
 ///
-/// Rekam PCM 16 kHz mono 16-bit via [record] (tulis ke file sementara, karena
-/// `startStream` belum diimplementasikan di record_linux), lalu transkrip dengan
-/// [SpeechRecognizer.transcribe]. Model STT di-download dari network satu kali.
+/// - **gemma** (`flutter_gemma_speech`): rekam PCM 16 kHz mono 16-bit via
+///   [record] (tulis ke file sementara, karena `startStream` belum ada di
+///   record_linux), lalu transkrip dengan moonshine-tiny.
+/// - **system** (`speech_to_text`): dikte sistem, tanpa unduhan model, dukung
+///   banyak bahasa (termasuk Bahasa Indonesia).
 class SttService {
   SttService._internal();
   static final SttService _instance = SttService._internal();
   factory SttService() => _instance;
 
   final AudioRecorder _recorder = AudioRecorder();
+  final SpeechToText _speech = SpeechToText();
 
-  bool _ready = false;
+  bool _gemmaReady = false;
   bool _isListening = false;
   String? _recordPath;
+  String _lastWords = '';
 
   bool get isListening => _isListening;
-  bool get isAvailable => _ready;
+  bool get isAvailable => _gemmaReady || _speech.isAvailable;
 
-  static const String _modelUrl =
-      'https://huggingface.co/litert-community/moonshine-tiny/resolve/main/'
-      'moonshine_tiny_5s_f32.tflite';
-  static const String _tokenizerUrl =
-      'https://huggingface.co/UsefulSensors/moonshine/resolve/main/'
-      'ctranslate2/tiny/tokenizer.json';
+  // ── Public API ───────────────────────────────────────────────────────────
 
-  /// Memastikan model STT terpasang + izin mikrofon.
+  /// Memastikan backend siap.
   ///
-  /// [onProgress] dipanggil dengan persen (0..100) selama download.
-  Future<bool> initialize({void Function(int percent)? onProgress}) async {
-    if (_ready) return true;
+  /// - `backend == 'system'`: init speech_to_text + izin mikrofon.
+  /// - `backend == 'gemma'`: download model moonshine bila belum + izin mikrofon.
+  Future<bool> initialize({
+    String backend = 'gemma',
+    void Function(int percent)? onProgress,
+  }) async {
+    if (backend == 'system') {
+      final mic = await Permission.microphone.request();
+      if (!mic.isGranted) return false;
+      return _speech.initialize(
+        onError: (_) => _isListening = false,
+        onStatus: (status) {
+          if (status == SpeechToText.notListeningStatus) _isListening = false;
+        },
+      );
+    }
 
-    // Izin mikrofon.
+    if (_gemmaReady) return true;
+
     final mic = await Permission.microphone.request();
     if (!mic.isGranted) return false;
 
     try {
-      // Instal model STT bila belum ada (id 'active_stt').
       final installed = await FlutterGemma.isModelInstalled('active_stt');
       if (!installed) {
         await FlutterGemma.installStt()
-            .modelFromNetwork(_modelUrl)
-            .tokenizerFromNetwork(_tokenizerUrl)
-            .ofType(SttModelType.moonshine)
+            .modelFromNetwork(kSttModelUrl)
+            .tokenizerFromNetwork(kSttTokenizerUrl)
+            .ofType(sttModelById('moonshine').gemmaSttType!)
             .install();
       }
-      _ready = true;
+      _gemmaReady = true;
       return true;
     } catch (_) {
       return false;
     }
   }
 
-  /// Mulai merekam PCM 16 kHz mono 16-bit ke file sementara.
-  Future<void> startListening() async {
+  /// Mulai mendengarkan sesuai [backend].
+  Future<void> startListening({String backend = 'gemma'}) async {
     if (_isListening) return;
-    if (!await initialize()) return;
+    if (!await initialize(backend: backend)) return;
 
     _isListening = true;
+
+    if (backend == 'system') {
+      _lastWords = '';
+      await _speech.listen(
+        onResult: (SpeechRecognitionResult result) {
+          _lastWords = result.recognizedWords;
+        },
+        listenOptions: SpeechListenOptions(
+          listenMode: ListenMode.confirmation,
+          cancelOnError: true,
+          partialResults: true,
+          localeId: 'id_ID',
+        ),
+      );
+      return;
+    }
 
     try {
       final dir = await getTemporaryDirectory();
@@ -83,13 +115,16 @@ class SttService {
     }
   }
 
-  /// Menghentikan rekaman dan mengembalikan hasil transkripsi.
-  ///
-  /// Mengembalikan string kosong bila tidak ada audio/transkrip.
-  Future<String> stopListening() async {
+  /// Menghentikan dan mengembalikan transkripsi sesuai [backend].
+  Future<String> stopListening({String backend = 'gemma'}) async {
     if (!_isListening) return '';
-
     _isListening = false;
+
+    if (backend == 'system') {
+      await _speech.stop();
+      return _lastWords.trim();
+    }
+
     await _recorder.stop();
 
     final path = _recordPath;
@@ -97,7 +132,6 @@ class SttService {
     if (path == null) return '';
 
     try {
-      // Baca file WAV dan buang header 44-byte → data PCM 16-bit.
       final file = File(path);
       final bytes = await file.readAsBytes();
       await file.delete().catchError((_) => file);
@@ -106,15 +140,16 @@ class SttService {
       if (pcm.isEmpty) return '';
 
       final recognizer = await FlutterGemma.getActiveStt();
-      return await recognizer.transcribe(Uint8List.fromList(pcm));
+      return (await recognizer.transcribe(Uint8List.fromList(pcm))).trim();
     } catch (_) {
       return '';
     }
   }
 
-  /// Membatalkan sesi rekaman tanpa hasil.
+  /// Membatalkan sesi tanpa hasil.
   Future<void> cancel() async {
     _isListening = false;
+    await _speech.cancel();
     await _recorder.cancel();
     _recordPath = null;
   }
