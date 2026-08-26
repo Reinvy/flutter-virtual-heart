@@ -1,4 +1,6 @@
-// Fitur Memory (FR-12) — layar memori AI.
+// Fitur Memory (FR-12) — layar memori AI (daftar + pencarian + hapus).
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,8 +12,17 @@ import '../../core/l10n/app_strings.dart';
 import '../../models/memory_fact.dart';
 import 'memory_controller.dart';
 
-class MemoryScreen extends ConsumerWidget {
+class MemoryScreen extends ConsumerStatefulWidget {
   const MemoryScreen({super.key});
+
+  @override
+  ConsumerState<MemoryScreen> createState() => _MemoryScreenState();
+}
+
+class _MemoryScreenState extends ConsumerState<MemoryScreen> {
+  final _searchController = TextEditingController();
+  Timer? _debounce;
+  String _query = '';
 
   static const Map<MemoryCategory, IconData> _categoryIcon = {
     MemoryCategory.personal: Icons.person_outline_rounded,
@@ -27,12 +38,35 @@ class MemoryScreen extends ConsumerWidget {
     MemoryCategory.date: AppColors.secondary,
   };
 
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 250), () {
+      if (mounted) setState(() => _query = value.trim().toLowerCase());
+    });
+  }
+
   Map<MemoryCategory, List<MemoryFact>> _grouped(List<MemoryFact> facts) {
     final map = <MemoryCategory, List<MemoryFact>>{for (final c in MemoryCategory.values) c: []};
     for (final f in facts) {
       map[f.category]!.add(f);
     }
     return map;
+  }
+
+  List<MemoryFact> _filter(List<MemoryFact> facts) {
+    if (_query.isEmpty) return facts;
+    return facts
+        .where(
+          (f) => f.key.toLowerCase().contains(_query) || f.value.toLowerCase().contains(_query),
+        )
+        .toList();
   }
 
   Future<void> _confirmResetAll(BuildContext context, WidgetRef ref) async {
@@ -49,9 +83,10 @@ class MemoryScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final strings = ref.watch(appStringsProvider);
-    final facts = ref.watch(memoryFactsProvider);
+    final allFacts = ref.watch(memoryFactsProvider);
+    final facts = _filter(allFacts);
     final grouped = _grouped(facts);
 
     return Scaffold(
@@ -59,7 +94,7 @@ class MemoryScreen extends ConsumerWidget {
         title: Text(strings.memoryTitle),
         centerTitle: true,
         actions: [
-          if (facts.isNotEmpty)
+          if (allFacts.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_sweep_outlined),
               tooltip: strings.memoryResetAllTitle,
@@ -67,27 +102,68 @@ class MemoryScreen extends ConsumerWidget {
             ),
         ],
       ),
-      body: facts.isEmpty
-          ? EmptyState(
-              icon: Icons.psychology_outlined,
-              title: strings.memoryEmptyTitle,
-              body: strings.memoryEmptyBody,
-            )
-          : ListView(
-              padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceXs),
-              children: [
-                for (final category in MemoryCategory.values)
-                  if (grouped[category]!.isNotEmpty)
-                    _CategorySection(
-                      category: category,
-                      facts: grouped[category]!,
-                      label: _categoryLabel(strings, category),
-                      icon: _categoryIcon[category]!,
-                      color: _categoryColor[category]!,
-                      onDelete: (id) => ref.read(memoryFactsProvider.notifier).deleteFact(id),
-                    ),
-              ],
+      body: Column(
+        children: [
+          if (allFacts.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSizes.spaceMd,
+                AppSizes.spaceXs,
+                AppSizes.spaceMd,
+                AppSizes.spaceXs,
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: _onSearchChanged,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: strings.memorySearchHint,
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon: _query.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _query = '');
+                          },
+                        )
+                      : null,
+                  isDense: true,
+                ),
+              ),
             ),
+          Expanded(
+            child: allFacts.isEmpty
+                ? EmptyState(
+                    icon: Icons.psychology_outlined,
+                    title: strings.memoryEmptyTitle,
+                    body: strings.memoryEmptyBody,
+                  )
+                : facts.isEmpty
+                ? EmptyState(
+                    icon: Icons.search_off_rounded,
+                    title: strings.memorySearchEmptyTitle,
+                    body: strings.memorySearchEmptyBody,
+                  )
+                : ListView(
+                    padding: const EdgeInsets.only(bottom: AppSizes.spaceXl),
+                    children: [
+                      for (final category in MemoryCategory.values)
+                        if (grouped[category]!.isNotEmpty)
+                          _CategorySection(
+                            category: category,
+                            facts: grouped[category]!,
+                            label: _categoryLabel(strings, category),
+                            icon: _categoryIcon[category]!,
+                            color: _categoryColor[category]!,
+                            onDelete: (id) =>
+                                ref.read(memoryFactsProvider.notifier).deleteFact(id),
+                          ),
+                    ],
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
