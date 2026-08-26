@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/design/tokens/text_styles.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../models/mood_state.dart';
@@ -35,11 +34,10 @@ class MoodIndicator extends ConsumerWidget {
     final emoji = _emoji[mood.current] ?? '😊';
     final label = _label(strings, mood.current);
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Text(
       '$emoji $label',
       style: AppTextStyles.moodIndicator(
-        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
     );
   }

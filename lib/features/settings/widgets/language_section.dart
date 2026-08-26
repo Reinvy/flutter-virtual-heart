@@ -5,7 +5,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/components/section_card.dart';
-import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/design/tokens/app_sizes.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../models/app_settings.dart';
@@ -18,8 +17,8 @@ class LanguageSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(appStringsProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final subtleColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+    final scheme = Theme.of(context).colorScheme;
+    final subtleColor = scheme.onSurfaceVariant;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

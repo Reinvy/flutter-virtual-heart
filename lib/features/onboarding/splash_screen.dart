@@ -1,9 +1,14 @@
 // Fitur Onboarding — layar splash (alur awal).
+//
+// "Sakura Fall": gradien blush lembut, logo hati berdenyut dalam lingkaran
+// rose, dan kelopak sakura melayang (CustomPainter, tanpa aset).
+// Menghormati MediaQuery.disableAnimations.
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/design/components/sakura_background.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
@@ -49,74 +54,76 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final motionOk = !MediaQuery.disableAnimationsOf(context);
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppColors.primary, AppColors.secondary],
+            colors: isDark
+                ? const [Color(0xFF1A0F1E), Color(0xFF2A1B26)]
+                : [AppColors.primarySoft, Colors.white, AppColors.secondarySoft],
+            stops: isDark ? null : const [0.0, 0.5, 1.0],
           ),
         ),
         child: Stack(
           children: [
+            Positioned.fill(child: SakuraBackground(petals: 10, opacity: 1)),
             Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.favorite, size: 72, color: Colors.white)
-                      .animate(onPlay: (c) => c.repeat(reverse: true))
-                      .scale(
-                        begin: const Offset(1, 1),
-                        end: const Offset(1.15, 1.15),
-                        duration: 900.ms,
-                        curve: Curves.easeInOut,
+                  Container(
+                    width: 116,
+                    height: 116,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: isDark
+                            ? [AppColors.primaryDark, AppColors.primarySoftDark]
+                            : [AppColors.primary, AppColors.primarySoft],
                       ),
-                  const SizedBox(height: AppSizes.spaceMd),
+                      boxShadow: [
+                        BoxShadow(
+                          color: scheme.primary.withValues(alpha: 0.35),
+                          blurRadius: 32,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Icon(Icons.favorite, size: 56, color: Colors.white),
+                  ).animate(
+                    onPlay: motionOk ? (c) => c.repeat(reverse: true) : null,
+                  ).scale(
+                    begin: const Offset(1, 1),
+                    end: const Offset(1.08, 1.08),
+                    duration: 900.ms,
+                    curve: Curves.easeInOut,
+                  ),
+                  const SizedBox(height: AppSizes.spaceLg),
                   Text(
                     'VirtualHeart',
-                    style: AppTextStyles.appName(color: Colors.white).copyWith(fontSize: 28),
+                    style: AppTextStyles.appName(
+                      color: isDark ? AppColors.textPrimaryDark : AppColors.primaryDeep,
+                    ).copyWith(fontSize: 28),
                   ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
+                  const SizedBox(height: AppSizes.spaceXs),
+                  Text(
+                    'a sakura romance',
+                    style: AppTextStyles.moodIndicator(
+                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
+                    ),
+                  ).animate().fadeIn(duration: 600.ms, delay: 350.ms),
                 ],
               ),
             ),
-            for (int i = 0; i < 7; i++)
-              _FloatingHeart(
-                left: (i * 13.0) % 100 / 100 * MediaQuery.of(context).size.width,
-                delay: Duration(milliseconds: i * 350),
-                duration: Duration(seconds: 4 + (i % 3)),
-              ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _FloatingHeart extends StatelessWidget {
-  const _FloatingHeart({
-    required this.left,
-    required this.delay,
-    required this.duration,
-  });
-
-  final double left;
-  final Duration delay;
-  final Duration duration;
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      left: left,
-      bottom: -40,
-      child: Icon(
-        Icons.favorite,
-        size: 18 + (left / 10),
-        color: Colors.white.withAlpha(120),
-      ).animate(
-        delay: delay,
-        onPlay: (c) => c.repeat(),
-      ).moveY(begin: 0, end: -MediaQuery.of(context).size.height - 60, duration: duration),
     );
   }
 }

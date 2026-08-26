@@ -1,14 +1,13 @@
 // Fitur Chat (FR-05) — bubble pesan (docs/DESIGN.md §3.3).
 //
-// - User: align kanan, solid [AppColors.primary], teks [AppColors.textOnPrimary].
-// - AI: align kiri, [AppColors.surfaceElevated], teks [AppColors.textPrimary],
-//   markdown, avatar persona kecil di samping.
+// - User: align kanan, solid primary, teks onPrimary.
+// - AI: align kiri, surfaceContainerLow, teks onSurface, markdown,
+//   avatar persona kecil di samping.
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 
 import '../../../core/design/components/speaker_button.dart';
-import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/design/tokens/app_sizes.dart';
 import '../../../core/design/tokens/text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
@@ -43,6 +42,7 @@ class _ChatBubbleState extends State<ChatBubble> {
   Widget build(BuildContext context) {
     final isUser = widget.message.role == MessageRole.user;
     final maxWidth = MediaQuery.of(context).size.width * AppSizes.bubbleMaxWidthFraction;
+    final scheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
           onTap: () => setState(() => _showTimestamp = !_showTimestamp),
@@ -68,9 +68,14 @@ class _ChatBubbleState extends State<ChatBubble> {
                       child: ConstrainedBox(
                         constraints: BoxConstraints(maxWidth: maxWidth),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSizes.bubblePaddingH,
+                            vertical: AppSizes.bubblePaddingV,
+                          ),
                           decoration: BoxDecoration(
-                            color: isUser ? AppColors.primary : AppColors.surfaceElevated,
+                            color: isUser
+                                ? scheme.primary
+                                : scheme.surfaceContainerLow,
                             borderRadius: BorderRadius.only(
                               topLeft: const Radius.circular(AppSizes.radiusMd),
                               topRight: Radius.circular(isUser ? 4 : AppSizes.radiusMd),
@@ -130,10 +135,8 @@ class _BubbleContent extends StatelessWidget {
     final text = message.content.isEmpty ? '...' : message.content;
     // User: teks terang di atas primary. AI: teks utama (ikuti mode).
     final textColor = isUser
-        ? AppColors.textOnPrimary
-        : (Theme.of(context).brightness == Brightness.dark
-              ? AppColors.textPrimaryDark
-              : AppColors.textPrimary);
+        ? Theme.of(context).colorScheme.onPrimary
+        : Theme.of(context).colorScheme.onSurface;
 
     if (isUser) {
       return Text(text, style: AppTextStyles.bubbleText(color: textColor));

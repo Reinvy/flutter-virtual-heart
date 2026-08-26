@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/design/components/primary_button.dart';
-import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/components/sakura_background.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
@@ -27,13 +27,18 @@ class ModelDownloadScreen extends ConsumerWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: modelState.when(
-          loading: () => const _LoadingBody(),
-          data: (_) => const _LoadingBody(),
-          error: (error, _) => _ErrorBody(
-            strings: strings,
-            onRetry: () => ref.read(modelServiceProvider.notifier).reset(),
-          ),
+        child: Stack(
+          children: [
+            const Positioned.fill(child: SakuraBackground(petals: 8)),
+            modelState.when(
+              loading: () => _LoadingBody(strings: strings),
+              data: (_) => _LoadingBody(strings: strings),
+              error: (error, _) => _ErrorBody(
+                strings: strings,
+                onRetry: () => ref.read(modelServiceProvider.notifier).reset(),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -41,27 +46,36 @@ class ModelDownloadScreen extends ConsumerWidget {
 }
 
 class _LoadingBody extends StatelessWidget {
-  const _LoadingBody();
+  const _LoadingBody({required this.strings});
+
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppStringsProvider.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final motionOk = !MediaQuery.disableAnimationsOf(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSizes.xl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.favorite, size: 72, color: AppColors.heartRed)
-                .animate(onPlay: (c) => c.repeat(reverse: true))
-                .scale(
-                  begin: const Offset(1, 1),
-                  end: const Offset(1.2, 1.2),
-                  duration: 1000.ms,
-                  curve: Curves.easeInOut,
-                )
-                .then()
-                .shimmer(duration: 1500.ms, color: AppColors.primary.withAlpha(120)),
+            Container(
+              width: 112,
+              height: 112,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: scheme.secondaryContainer,
+              ),
+              child: Icon(Icons.favorite, size: 56, color: scheme.secondary),
+            ).animate(
+              onPlay: motionOk ? (c) => c.repeat(reverse: true) : null,
+            ).scale(
+              begin: const Offset(1, 1),
+              end: const Offset(1.12, 1.12),
+              duration: 1000.ms,
+              curve: Curves.easeInOut,
+            ),
             const SizedBox(height: AppSizes.xl),
             Text(strings.modelLoadingTitle, style: AppTextStyles.headingLarge())
                 .animate()
@@ -69,19 +83,15 @@ class _LoadingBody extends StatelessWidget {
             const SizedBox(height: AppSizes.sm),
             Text(
               strings.modelLoadingBody,
-              style: AppTextStyles.bodyMedium(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.textSecondary,
-              ),
+              style: AppTextStyles.bodyMedium(color: scheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ).animate().fadeIn(duration: 600.ms, delay: 400.ms),
             const SizedBox(height: AppSizes.xxl),
             ClipRRect(
               borderRadius: BorderRadius.circular(AppSizes.radiusFull),
               child: LinearProgressIndicator(
-                backgroundColor: Theme.of(context).colorScheme.surface,
-                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                backgroundColor: scheme.surfaceContainerHighest,
+                color: scheme.primary,
                 minHeight: 6,
               ),
             ).animate().fadeIn(duration: 600.ms, delay: 600.ms),
@@ -101,16 +111,26 @@ class _ErrorBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSizes.xl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: AppColors.heartRed)
-                .animate()
-                .fadeIn(duration: 500.ms)
-                .scale(begin: const Offset(0.7, 0.7), duration: 500.ms, curve: Curves.easeOut),
+            Container(
+              width: 112,
+              height: 112,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: scheme.errorContainer,
+              ),
+              child: Icon(Icons.error_outline, size: 56, color: scheme.error),
+            ).animate().fadeIn(duration: 500.ms).scale(
+              begin: const Offset(0.7, 0.7),
+              duration: 500.ms,
+              curve: Curves.easeOut,
+            ),
             const SizedBox(height: AppSizes.lg),
             Text(strings.modelErrorTitle, style: AppTextStyles.headingLarge())
                 .animate()
@@ -118,11 +138,7 @@ class _ErrorBody extends StatelessWidget {
             const SizedBox(height: AppSizes.md),
             Text(
               strings.modelErrorBody,
-              style: AppTextStyles.bodyMedium(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.textSecondary,
-              ),
+              style: AppTextStyles.bodyMedium(color: scheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ).animate().fadeIn(duration: 500.ms, delay: 250.ms),
             const SizedBox(height: AppSizes.xxl),
@@ -180,14 +196,5 @@ class _LoadingTipsState extends State<_LoadingTips> {
         textAlign: TextAlign.center,
       ),
     );
-  }
-}
-
-/// Akses AppStrings dari konteks (tanpa ref) untuk widget non-Consumer.
-extension AppStringsProvider on BuildContext {
-  static AppStrings of(BuildContext context) {
-    // Fallback: dipakai dalam widget murni; nilai aktual dibaca via ref
-    // di level screen. Cukup untuk widget presentational.
-    return const IndonesianStrings();
   }
 }

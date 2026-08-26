@@ -7,22 +7,25 @@ import 'package:virtual_heart/core/design/tokens/app_sizes.dart';
 
 void main() {
   group('AppColors', () {
-    test('token utama Romantic Light punya nilai', () {
-      expect(AppColors.background, const Color(0xFFFDF6F9));
+    test('token utama Sakura Light punya nilai', () {
+      expect(AppColors.background, const Color(0xFFFDF4F7));
       expect(AppColors.surface, const Color(0xFFFFFFFF));
-      expect(AppColors.primary, const Color(0xFFC2507A));
-      expect(AppColors.secondary, const Color(0xFF7B5EA7));
-      expect(AppColors.accent, const Color(0xFFE8506A));
-      expect(AppColors.textPrimary, const Color(0xFF1A0A2E));
+      expect(AppColors.primary, const Color(0xFFC24D7E));
+      expect(AppColors.primaryDeep, const Color(0xFF9E3A63));
+      expect(AppColors.secondary, const Color(0xFF6D4FA8));
+      expect(AppColors.accent, const Color(0xFFE8546E));
+      expect(AppColors.gold, const Color(0xFFC9A227));
+      expect(AppColors.textPrimary, const Color(0xFF241021));
       expect(AppColors.textOnPrimary, const Color(0xFFFFFFFF));
-      expect(AppColors.primarySoft, const Color(0xFFF6DCE7));
-      expect(AppColors.secondarySoft, const Color(0xFFEDE4F6));
-      expect(AppColors.divider, const Color(0xFFF0E2EA));
+      expect(AppColors.primarySoft, const Color(0xFFF8DCE7));
+      expect(AppColors.secondarySoft, const Color(0xFFEFE6FA));
+      expect(AppColors.divider, const Color(0xFFF2E1EA));
     });
 
-    test('dark mode tersedia', () {
-      expect(AppColors.backgroundDark, const Color(0xFF0D0A0E));
-      expect(AppColors.textPrimaryDark, const Color(0xFFF5EEF8));
+    test('dark mode tersedia (disetel independen)', () {
+      expect(AppColors.backgroundDark, const Color(0xFF120D14));
+      expect(AppColors.primaryDark, const Color(0xFFF28CB0));
+      expect(AppColors.textPrimaryDark, const Color(0xFFF7EFF5));
     });
 
     test('alias kompatibilitas menunjuk token baru', () {
@@ -49,6 +52,10 @@ void main() {
       expect(AppSizes.radiusMd, 16);
       expect(AppSizes.radiusLg, 24);
       expect(AppSizes.radiusFull, 999);
+    });
+
+    test('target sentuh minimum 48 dp', () {
+      expect(AppSizes.touchTarget, 48);
     });
   });
 

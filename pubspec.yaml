@@ -31,6 +31,7 @@ dependencies:
   # UI / Fonts / Animations
   google_fonts: ^8.2.1
   flutter_animate: ^4.5.2
+  flutter_svg: ^2.0.17
   lottie: ^3.5.1
   gpt_markdown: ^1.2.1
 
@@ -60,6 +61,7 @@ flutter:
 
   assets:
     - assets/models/
+    - assets/icons/
   #   - family: Trajan Pro
   #     fonts:
   #       - asset: fonts/TrajanPro.ttf

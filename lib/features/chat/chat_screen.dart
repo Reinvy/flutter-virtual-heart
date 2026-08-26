@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/design/components/empty_state.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
@@ -170,6 +171,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
       actions: [
         IconButton(
+          icon: Icon(Icons.bookmark_outline_rounded, color: textColor.withAlpha(153)),
+          tooltip: 'Memory',
+          onPressed: () => context.push(AppRoutes.memory),
+        ),
+        IconButton(
           icon: Icon(Icons.settings_outlined, color: textColor.withAlpha(153)),
           onPressed: () => context.push(AppRoutes.settings),
         ),
@@ -262,7 +268,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final itemCount = messages.length + (isTyping ? 1 : 0);
 
     if (itemCount == 0) {
-      return _EmptyChat(strings: strings, personaName: persona?.name);
+      return _EmptyChat(strings: strings, personaName: persona?.name, persona: persona);
     }
 
     return ListView.builder(
@@ -302,34 +308,33 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 }
 
 class _EmptyChat extends StatelessWidget {
-  const _EmptyChat({required this.strings, this.personaName});
+  const _EmptyChat({required this.strings, this.personaName, this.persona});
 
   final AppStrings strings;
   final String? personaName;
+  final PersonaConfig? persona;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final subtleColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.favorite_rounded, color: AppColors.heartRed, size: 48),
-          const SizedBox(height: AppSizes.spaceMd),
-          Text(
-            fillPlaceholders(strings.chatEmptyGreeting, {'name': personaName ?? 'Sweetheart'}),
-            style: AppTextStyles.headingLarge(),
-            textAlign: TextAlign.center,
+    return Column(
+      children: [
+        const Spacer(flex: 3),
+        Expanded(
+          flex: 5,
+          child: EmptyState(
+            icon: Icons.favorite_rounded,
+            iconColor: AppColors.accent,
+            title: fillPlaceholders(strings.chatEmptyGreeting, {'name': personaName ?? 'Sweetheart'}),
+            body: strings.chatEmptyBody,
+            action: personaAvatar(
+              name: personaName,
+              avatarId: persona?.avatarId,
+              size: 72,
+            ),
           ),
-          const SizedBox(height: AppSizes.spaceXs),
-          Text(
-            strings.chatEmptyBody,
-            style: AppTextStyles.bodyMedium(color: subtleColor),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+        ),
+        const Spacer(flex: 4),
+      ],
     );
   }
 }
@@ -370,31 +375,36 @@ class _SparkleParticle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cfg = _SparkleOverlay._configs[index];
+    final motionOk = !MediaQuery.disableAnimationsOf(context);
     final color = index % 3 == 0
-        ? const Color(0xFFFFD700)
+        ? AppColors.gold
         : index % 3 == 1
         ? AppColors.primary
-        : AppColors.heartRed;
+        : AppColors.accent;
 
     return Positioned(
       left: screenSize.width * cfg[0],
       bottom: screenSize.height * cfg[1],
-      child:
-          Icon(
-                index.isEven ? Icons.star_rounded : Icons.auto_awesome_rounded,
-                size: cfg[2],
-                color: color,
-              )
-              .animate(delay: Duration(milliseconds: cfg[3].toInt()))
-              .scale(
-                begin: const Offset(0.1, 0.1),
-                end: const Offset(1, 1),
-                duration: 350.ms,
-                curve: Curves.elasticOut,
-              )
-              .then()
-              .moveY(begin: 0, end: -60, duration: 750.ms, curve: Curves.easeOut)
-              .fadeOut(duration: 600.ms),
+      child: Semantics(
+        label: null,
+        child: Icon(
+              index.isEven ? Icons.star_rounded : Icons.auto_awesome_rounded,
+              size: cfg[2],
+              color: color,
+            )
+            .animate(
+              delay: motionOk ? Duration(milliseconds: cfg[3].toInt()) : Duration.zero,
+            )
+            .scale(
+              begin: const Offset(0.1, 0.1),
+              end: const Offset(1, 1),
+              duration: 350.ms,
+              curve: Curves.elasticOut,
+            )
+            .then()
+            .moveY(begin: 0, end: -60, duration: 750.ms, curve: Curves.easeOut)
+            .fadeOut(duration: 600.ms),
+      ),
     );
   }
 }

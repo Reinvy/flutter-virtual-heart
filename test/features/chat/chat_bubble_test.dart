@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:virtual_heart/core/design/app_theme.dart';
 import 'package:virtual_heart/core/design/tokens/app_colors.dart';
 import 'package:virtual_heart/core/l10n/app_strings.dart';
 import 'package:virtual_heart/features/chat/mood_provider.dart';
@@ -32,7 +33,7 @@ Widget wrap(Widget child) {
       appStringsProvider.overrideWith((ref) => const IndonesianStrings()),
       moodProvider.overrideWith(_FakeMoodNotifier.new),
     ],
-    child: MaterialApp(home: Scaffold(body: child)),
+    child: MaterialApp(theme: AppTheme.light, home: Scaffold(body: child)),
   );
 }
 

@@ -264,7 +264,7 @@ class IndonesianStrings extends AppStrings {
   @override
   String get personaPersonalityMysteriousDesc => 'Menarik, penuh teka-teki, dan memikat';
   @override
-  String get personaCallsYou => 'Memanggilmu';
+  String get personaCallsYou => 'Memanggilmu "{nickname}"';
 
   @override
   String get modelLoadingTitle => 'Memuat AI';
@@ -560,7 +560,7 @@ class EnglishStrings extends AppStrings {
   @override
   String get personaPersonalityMysteriousDesc => 'Intriguing, full of puzzles, and captivating';
   @override
-  String get personaCallsYou => 'Calls you';
+  String get personaCallsYou => 'Calls you "{nickname}"';
 
   @override
   String get modelLoadingTitle => 'Loading AI';

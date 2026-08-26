@@ -1,8 +1,9 @@
 // Fitur Chat (FR-06) — input bar (text + mic + send) (docs/DESIGN.md §3.2).
+//
+// Field pill, mic & send 48×48 (target sentuh minimum), warna via tema.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/design/tokens/app_sizes.dart';
 import '../../../core/design/tokens/text_styles.dart';
 import '../../../core/l10n/app_strings.dart';
@@ -57,17 +58,13 @@ class _InputBarState extends ConsumerState<InputBar> {
   @override
   Widget build(BuildContext context) {
     final strings = ref.read(appStringsProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark ? AppColors.surfaceDark : AppColors.surface;
-    final textColor = isDark ? AppColors.textPrimaryDark : AppColors.textPrimary;
-    final hintColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
-    final fieldFill = isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated;
+    final scheme = Theme.of(context).colorScheme;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceMd, vertical: AppSizes.spaceXs),
       decoration: BoxDecoration(
-        color: surfaceColor,
-        border: Border(top: BorderSide(color: AppColors.secondary.withAlpha(51), width: 1)),
+        color: scheme.surface,
+        border: Border(top: BorderSide(color: scheme.outlineVariant, width: 1)),
       ),
       child: SafeArea(
         top: false,
@@ -76,7 +73,7 @@ class _InputBarState extends ConsumerState<InputBar> {
           children: [
             _IconButton(
               icon: widget.isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
-              iconColor: widget.isListening ? AppColors.primary : null,
+              iconColor: widget.isListening ? scheme.primary : null,
               onTap: widget.enabled ? _handleMicTap : null,
             ),
             const SizedBox(width: AppSizes.spaceXs),
@@ -93,10 +90,10 @@ class _InputBarState extends ConsumerState<InputBar> {
                   maxLines: null,
                   keyboardType: TextInputType.multiline,
                   textInputAction: TextInputAction.newline,
-                  style: AppTextStyles.bubbleText(color: textColor),
+                  style: AppTextStyles.bubbleText(color: scheme.onSurface),
                   decoration: InputDecoration(
                     hintText: strings.chatInputHint,
-                    hintStyle: AppTextStyles.inputHint(color: hintColor),
+                    hintStyle: AppTextStyles.inputHint(color: scheme.onSurfaceVariant),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: AppSizes.spaceMd,
                       vertical: 10,
@@ -106,7 +103,7 @@ class _InputBarState extends ConsumerState<InputBar> {
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor: fieldFill,
+                    fillColor: scheme.surfaceContainerHigh,
                   ),
                   onSubmitted: (_) => _handleSend(),
                 ),
@@ -137,11 +134,11 @@ class _IconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final active = onTap != null;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final defaultIconColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+    final scheme = Theme.of(context).colorScheme;
+    final defaultIconColor = scheme.onSurfaceVariant;
     return SizedBox(
-      width: 44,
-      height: 44,
+      width: AppSizes.touchTarget,
+      height: AppSizes.touchTarget,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -166,18 +163,23 @@ class _SendButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final active = onTap != null;
+    final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: 44,
-        height: 44,
+        width: AppSizes.touchTarget,
+        height: AppSizes.touchTarget,
         decoration: BoxDecoration(
-          color: active ? AppColors.primary : AppColors.primary.withAlpha(76),
+          color: active ? scheme.primary : scheme.onSurface.withValues(alpha: 0.12),
           shape: BoxShape.circle,
         ),
         alignment: Alignment.center,
-        child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+        child: Icon(
+          Icons.send_rounded,
+          color: active ? scheme.onPrimary : scheme.onSurface.withValues(alpha: 0.38),
+          size: 20,
+        ),
       ),
     );
   }

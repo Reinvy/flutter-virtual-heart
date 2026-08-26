@@ -10,9 +10,9 @@ class TypingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dotColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
-    final bubbleBg = isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated;
+    final scheme = Theme.of(context).colorScheme;
+    final dotColor = AppColors.primaryDeep;
+    final bubbleBg = scheme.surfaceContainerLow;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceMd, vertical: AppSizes.spaceXxs),
       child: Row(
@@ -23,13 +23,18 @@ class TypingIndicator extends StatelessWidget {
             width: AppSizes.avatarSm,
             height: AppSizes.avatarSm,
             decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha(76),
+              gradient: RadialGradient(
+                colors: [
+                  scheme.primary.withValues(alpha: 0.55),
+                  scheme.primaryContainer,
+                ],
+              ),
               shape: BoxShape.circle,
             ),
           ),
           const SizedBox(width: AppSizes.spaceXs),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceMd, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceMd, vertical: AppSizes.spaceSm),
             decoration: BoxDecoration(
               color: bubbleBg,
               borderRadius: const BorderRadius.only(

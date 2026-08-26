@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/design/components/confirm_dialog.dart';
 import '../../../core/design/components/section_card.dart';
 import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/design/tokens/app_sizes.dart';
@@ -31,26 +32,14 @@ class PersonaSection extends ConsumerWidget {
 
   Future<void> _confirmReset(BuildContext context, WidgetRef ref) async {
     final strings = ref.read(appStringsProvider);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(strings.settingsResetPersonaTitle),
-        content: Text(strings.settingsResetPersonaBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(strings.memoryCancel),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.heartRed),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(strings.settingsDelete),
-          ),
-        ],
-      ),
+    final confirmed = await showConfirmDialog(
+      context,
+      title: strings.settingsResetPersonaTitle,
+      body: strings.settingsResetPersonaBody,
+      confirmLabel: strings.settingsDelete,
     );
 
-    if (confirmed != true || !context.mounted) return;
+    if (!confirmed || !context.mounted) return;
     HapticFeedback.heavyImpact();
 
     ref.read(personaProvider.notifier).reset();
@@ -65,8 +54,8 @@ class PersonaSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(appStringsProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final subtleColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+    final scheme = Theme.of(context).colorScheme;
+    final subtleColor = scheme.onSurfaceVariant;
     final persona = ref.watch(personaProvider);
 
     final isGirlfriend = persona?.gender == PersonaGender.girlfriend;
@@ -103,7 +92,9 @@ class PersonaSection extends ConsumerWidget {
                         if (persona?.nicknameForUser.isNotEmpty == true) ...[
                           const SizedBox(height: 2),
                           Text(
-                            '${strings.personaCallsYou}: "${persona!.nicknameForUser}"',
+                            fillPlaceholders(strings.personaCallsYou, {
+                              'nickname': persona!.nicknameForUser,
+                            }),
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: subtleColor,
                               fontStyle: FontStyle.italic,

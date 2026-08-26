@@ -5,7 +5,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/components/section_card.dart';
-import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/design/tokens/app_sizes.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../models/app_settings.dart';
@@ -42,8 +41,8 @@ class NotificationsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(appStringsProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final subtleColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+    final scheme = Theme.of(context).colorScheme;
+    final subtleColor = scheme.onSurfaceVariant;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -57,8 +56,6 @@ class NotificationsSection extends ConsumerWidget {
               title: Text(strings.settingsMorningMessage),
               subtitle: Text(strings.settingsMorningMessageDesc),
               value: settings.notificationMorningEnabled,
-              activeThumbColor: AppColors.primary,
-              activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
               onChanged: (v) async {
                 HapticFeedback.selectionClick();
                 final updated = settings.copyWith(notificationMorningEnabled: v);
@@ -77,7 +74,7 @@ class NotificationsSection extends ConsumerWidget {
                     Text(
                       settings.notificationMorningTime,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.primary,
+                        color: scheme.primary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -93,8 +90,6 @@ class NotificationsSection extends ConsumerWidget {
               title: Text(strings.settingsCheckin),
               subtitle: Text(strings.settingsCheckinDesc),
               value: settings.notificationCheckinEnabled,
-              activeThumbColor: AppColors.primary,
-              activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
               onChanged: (v) async {
                 HapticFeedback.selectionClick();
                 final updated = settings.copyWith(notificationCheckinEnabled: v);

@@ -8,8 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../../core/design/components/confirm_dialog.dart';
 import '../../../core/design/components/section_card.dart';
-import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../models/message.dart';
 import '../../../models/objectbox_provider.dart';
@@ -21,26 +21,14 @@ class DataPrivacySection extends ConsumerWidget {
 
   Future<void> _confirmDeleteAll(BuildContext context, WidgetRef ref) async {
     final strings = ref.read(appStringsProvider);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(strings.settingsDeleteConversationsTitle),
-        content: Text(strings.settingsDeleteConversationsBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(strings.memoryCancel),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.heartRed),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(strings.settingsDelete),
-          ),
-        ],
-      ),
+    final confirmed = await showConfirmDialog(
+      context,
+      title: strings.settingsDeleteConversationsTitle,
+      body: strings.settingsDeleteConversationsBody,
+      confirmLabel: strings.settingsDelete,
     );
 
-    if (confirmed != true || !context.mounted) return;
+    if (!confirmed || !context.mounted) return;
     HapticFeedback.heavyImpact();
     ref.read(appSettingsProvider.notifier).deleteAllConversations();
     if (context.mounted) {
@@ -113,8 +101,8 @@ class DataPrivacySection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(appStringsProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final subtleColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+    final scheme = Theme.of(context).colorScheme;
+    final subtleColor = scheme.onSurfaceVariant;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -131,16 +119,13 @@ class DataPrivacySection extends ConsumerWidget {
             ),
             ListTile(
               dense: true,
-              leading: const Icon(Icons.delete_outline_rounded, color: AppColors.heartRed),
-              title: Text(
-                strings.settingsDeleteConversations,
-                style: const TextStyle(color: AppColors.heartRed),
-              ),
+              leading: Icon(Icons.delete_outline_rounded, color: scheme.error),
+              title: Text(strings.settingsDeleteConversations, style: TextStyle(color: scheme.error)),
               onTap: () => _confirmDeleteAll(context, ref),
             ),
             ListTile(
               dense: true,
-              leading: const Icon(Icons.download_rounded, color: AppColors.primary),
+              leading: Icon(Icons.download_rounded, color: scheme.primary),
               title: Text(strings.settingsExportChat),
               subtitle: Text(strings.settingsExportChatDesc),
               trailing: Icon(Icons.chevron_right_rounded, color: subtleColor),

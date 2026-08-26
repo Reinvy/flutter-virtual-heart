@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/design/components/confirm_dialog.dart';
 import '../../core/design/components/primary_button.dart';
 import '../../core/design/components/secondary_button.dart';
 import '../../core/design/tokens/app_colors.dart';
@@ -20,8 +21,7 @@ class AgeGateScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(appStringsProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final subtleColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+    final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       body: SafeArea(
@@ -31,7 +31,15 @@ class AgeGateScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Icon(Icons.lock_outline, size: 56, color: AppColors.primary)
+              Container(
+                width: 112,
+                height: 112,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: scheme.primaryContainer,
+                ),
+                child: Icon(Icons.lock_outline, size: 52, color: scheme.primary),
+              )
                   .animate()
                   .fadeIn(duration: 500.ms)
                   .scale(begin: const Offset(0.7, 0.7), duration: 500.ms, curve: Curves.easeOut),
@@ -40,7 +48,7 @@ class AgeGateScreen extends ConsumerWidget {
 
               Text(
                 strings.ageGateTitle,
-                style: AppTextStyles.headingLarge(),
+                style: AppTextStyles.headingLarge(color: AppColors.primaryDeep),
                 textAlign: TextAlign.center,
               ).animate().fadeIn(duration: 500.ms, delay: 150.ms),
 
@@ -48,7 +56,7 @@ class AgeGateScreen extends ConsumerWidget {
 
               Text(
                 strings.ageGateBody,
-                style: AppTextStyles.bodyMedium(color: subtleColor),
+                style: AppTextStyles.bodyMedium(color: scheme.onSurfaceVariant),
                 textAlign: TextAlign.center,
               ).animate().fadeIn(duration: 500.ms, delay: 250.ms),
 
@@ -90,24 +98,14 @@ class AgeGateScreen extends ConsumerWidget {
   void _decline(BuildContext context, WidgetRef ref) {
     final strings = ref.read(appStringsProvider);
     HapticFeedback.mediumImpact();
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(strings.ageGateCannotTitle, style: AppTextStyles.headingSmall()),
-        content: Text(
-          strings.ageGateCannotBody,
-          style: AppTextStyles.bodyMedium(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              SystemNavigator.pop();
-            },
-            child: Text(strings.ageGateClose, style: AppTextStyles.button(color: AppColors.primary)),
-          ),
-        ],
-      ),
-    );
+    showConfirmDialog(
+      context,
+      title: strings.ageGateCannotTitle,
+      body: strings.ageGateCannotBody,
+      confirmLabel: strings.ageGateClose,
+      destructive: false,
+    ).then((confirmed) {
+      if (confirmed && context.mounted) SystemNavigator.pop();
+    });
   }
 }

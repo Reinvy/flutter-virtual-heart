@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/design/components/primary_button.dart';
@@ -140,11 +141,17 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
   }
 
   Widget _buildHeader(AppStrings strings) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppSizes.xl, AppSizes.lg, AppSizes.xl, AppSizes.lg),
       child: Row(
         children: [
-          const Icon(Icons.favorite, size: AppSizes.iconMd, color: AppColors.heartRed),
+          SvgPicture.asset(
+            'assets/icons/sakura.svg',
+            width: AppSizes.iconLg,
+            height: AppSizes.iconLg,
+            colorFilter: ColorFilter.mode(AppColors.accent, BlendMode.srcIn),
+          ),
           const SizedBox(width: AppSizes.sm),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,7 +160,10 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
                 _isEditing ? strings.settingsEditPersona : strings.personaCreateTitle,
                 style: AppTextStyles.headingLarge(),
               ),
-              Text(strings.personaCreateSubtitle, style: AppTextStyles.moodIndicator()),
+              Text(
+                strings.personaCreateSubtitle,
+                style: AppTextStyles.moodIndicator(color: scheme.onSurfaceVariant),
+              ),
             ],
           ),
         ],
@@ -164,7 +174,7 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
   Widget _buildSectionLabel(String label) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSizes.sm),
-      child: Text(label, style: AppTextStyles.headingSmall(color: AppColors.primary)),
+      child: Text(label, style: AppTextStyles.headingSmall(color: AppColors.primaryDeep)),
     );
   }
 
@@ -419,26 +429,32 @@ class _GenderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: AppSizes.md),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primarySoft : surfaceColor,
+          color: selected ? scheme.primaryContainer : scheme.surface,
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-          border: Border.all(color: selected ? AppColors.primary : Colors.transparent, width: 1.5),
+          border: Border.all(
+            color: selected ? AppColors.primaryDeep : Colors.transparent,
+            width: 1.5,
+          ),
         ),
         child: Column(
           children: [
-            Icon(icon, color: selected ? AppColors.primary : AppColors.textSecondary, size: 32),
+            Icon(
+              icon,
+              color: selected ? AppColors.primaryDeep : scheme.onSurfaceVariant,
+              size: 32,
+            ),
             const SizedBox(height: AppSizes.xs),
             Text(
               label,
               style: AppTextStyles.settingsLabel(
-                color: selected ? AppColors.primary : AppColors.textSecondary,
+                color: selected ? AppColors.primaryDeep : scheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -532,18 +548,17 @@ class _PersonalityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(AppSizes.md),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primarySoft : surfaceColor,
+          color: isSelected ? scheme.primaryContainer : scheme.surface,
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.transparent,
+            color: isSelected ? AppColors.primaryDeep : Colors.transparent,
             width: 1.5,
           ),
         ),
@@ -558,7 +573,7 @@ class _PersonalityCard extends StatelessWidget {
                   Text(
                     label,
                     style: AppTextStyles.headingSmall(
-                      color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                      color: isSelected ? AppColors.primaryDeep : scheme.onSurface,
                     ),
                   ),
                   Text(description, style: AppTextStyles.moodIndicator()),
@@ -566,7 +581,7 @@ class _PersonalityCard extends StatelessWidget {
               ),
             ),
             if (isSelected)
-              const Icon(Icons.check_circle, color: AppColors.primary, size: AppSizes.iconMd),
+              const Icon(Icons.check_circle, color: AppColors.primaryDeep, size: AppSizes.iconMd),
           ],
         ),
       ),
@@ -583,22 +598,24 @@ class _HobbyChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primarySoft : surfaceColor,
+          color: isSelected ? scheme.primaryContainer : scheme.surface,
           borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-          border: Border.all(color: isSelected ? AppColors.primary : AppColors.divider, width: 1.5),
+          border: Border.all(
+            color: isSelected ? AppColors.primaryDeep : scheme.outlineVariant,
+            width: 1.5,
+          ),
         ),
         child: Text(
           label,
           style: AppTextStyles.settingsLabel(
-            color: isSelected ? AppColors.primary : AppColors.textSecondary,
+            color: isSelected ? AppColors.primaryDeep : scheme.onSurfaceVariant,
           ),
         ),
       ),

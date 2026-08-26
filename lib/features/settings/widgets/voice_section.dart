@@ -5,7 +5,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/components/section_card.dart';
-import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../models/app_settings.dart';
 import '../settings_controller.dart';
@@ -30,8 +29,6 @@ class VoiceSection extends ConsumerWidget {
               title: Text(strings.settingsTtsEnable),
               subtitle: Text(strings.settingsTtsEnableDesc),
               value: settings.ttsEnabled,
-              activeThumbColor: AppColors.primary,
-              activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
               onChanged: (v) {
                 HapticFeedback.selectionClick();
                 ref.read(appSettingsProvider.notifier).save(settings.copyWith(ttsEnabled: v));
@@ -44,8 +41,6 @@ class VoiceSection extends ConsumerWidget {
                 title: Text(strings.settingsTtsAutoPlay),
                 subtitle: Text(strings.settingsTtsAutoPlayDesc),
                 value: settings.ttsAutoPlay,
-                activeThumbColor: AppColors.primary,
-                activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
                 onChanged: (v) {
                   HapticFeedback.selectionClick();
                   ref.read(appSettingsProvider.notifier).save(settings.copyWith(ttsAutoPlay: v));

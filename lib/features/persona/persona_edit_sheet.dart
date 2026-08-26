@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/design/components/app_icon_button.dart';
 import '../../core/design/components/primary_button.dart';
-import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../models/persona_config.dart';
@@ -78,9 +78,9 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
   @override
   Widget build(BuildContext context) {
     final strings = ref.watch(appStringsProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sheetBg = isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevated;
-    final subtleColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
+    final scheme = Theme.of(context).colorScheme;
+    final sheetBg = scheme.surface;
+    final subtleColor = scheme.onSurfaceVariant;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.88,
@@ -109,9 +109,11 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
               child: Row(
                 children: [
                   Text(strings.settingsEditPersona, style: Theme.of(context).textTheme.headlineSmall),
-                  IconButton(
+                  const Spacer(),
+                  AppIconButton(
+                    icon: Icons.close_rounded,
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded),
+                    tooltip: strings.memoryCancel,
                   ),
                 ],
               ),

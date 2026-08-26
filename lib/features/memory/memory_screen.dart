@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/design/components/confirm_dialog.dart';
+import '../../core/design/components/empty_state.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/l10n/app_strings.dart';
@@ -19,9 +21,9 @@ class MemoryScreen extends ConsumerWidget {
   };
 
   static const Map<MemoryCategory, Color> _categoryColor = {
-    MemoryCategory.personal: AppColors.primary,
-    MemoryCategory.event: Color(0xFFE89250),
-    MemoryCategory.preference: AppColors.heartRed,
+    MemoryCategory.personal: AppColors.primaryDeep,
+    MemoryCategory.event: AppColors.gold,
+    MemoryCategory.preference: AppColors.accent,
     MemoryCategory.date: AppColors.secondary,
   };
 
@@ -35,25 +37,13 @@ class MemoryScreen extends ConsumerWidget {
 
   Future<void> _confirmResetAll(BuildContext context, WidgetRef ref) async {
     final strings = ref.read(appStringsProvider);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(strings.memoryResetAllTitle),
-        content: Text(strings.memoryResetAllBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(strings.memoryCancel),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.heartRed),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(strings.memoryReset),
-          ),
-        ],
-      ),
+    final confirmed = await showConfirmDialog(
+      context,
+      title: strings.memoryResetAllTitle,
+      body: strings.memoryResetAllBody,
+      confirmLabel: strings.memoryReset,
     );
-    if (confirmed == true) {
+    if (confirmed) {
       ref.read(memoryFactsProvider.notifier).resetAll();
     }
   }
@@ -63,7 +53,6 @@ class MemoryScreen extends ConsumerWidget {
     final strings = ref.watch(appStringsProvider);
     final facts = ref.watch(memoryFactsProvider);
     final grouped = _grouped(facts);
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -79,7 +68,11 @@ class MemoryScreen extends ConsumerWidget {
         ],
       ),
       body: facts.isEmpty
-          ? _EmptyState(strings: strings, theme: theme)
+          ? EmptyState(
+              icon: Icons.psychology_outlined,
+              title: strings.memoryEmptyTitle,
+              body: strings.memoryEmptyBody,
+            )
           : ListView(
               padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceXs),
               children: [
@@ -105,37 +98,6 @@ class MemoryScreen extends ConsumerWidget {
       MemoryCategory.preference => strings.memoryCategoryPreference,
       MemoryCategory.date => strings.memoryCategoryDate,
     };
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.strings, required this.theme});
-  final AppStrings strings;
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final subtleColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondary;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.psychology_outlined, size: 64, color: subtleColor),
-          const SizedBox(height: AppSizes.spaceMd),
-          Text(
-            strings.memoryEmptyTitle,
-            style: theme.textTheme.titleMedium?.copyWith(color: subtleColor),
-          ),
-          const SizedBox(height: AppSizes.spaceXs),
-          Text(
-            strings.memoryEmptyBody,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium?.copyWith(color: subtleColor),
-          ),
-        ],
-      ),
-    );
   }
 }
 
@@ -166,7 +128,15 @@ class _CategorySection extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Row(
             children: [
-              Icon(icon, size: 18, color: color),
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 16, color: color),
+              ),
               const SizedBox(width: 8),
               Text(
                 label.toUpperCase(),
@@ -180,7 +150,7 @@ class _CategorySection extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: color.withAlpha(40),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(99),
                 ),
                 child: Text(
@@ -215,39 +185,28 @@ class _FactTile extends ConsumerWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 24),
-        color: AppColors.heartRed.withAlpha(204),
+        color: theme.colorScheme.error,
         child: const Icon(Icons.delete_outline_rounded, color: Colors.white),
       ),
       confirmDismiss: (_) async {
-        return await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: Text(strings.memoryDelete),
-            content: Text('"${fact.key}: ${fact.value}"'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: Text(strings.memoryCancel),
-              ),
-              TextButton(
-                style: TextButton.styleFrom(foregroundColor: AppColors.heartRed),
-                onPressed: () => Navigator.pop(ctx, true),
-                child: Text(strings.memoryDelete),
-              ),
-            ],
-          ),
+        return showConfirmDialog(
+          context,
+          title: strings.memoryDelete,
+          body: '"${fact.key}: ${fact.value}"',
+          confirmLabel: strings.memoryDelete,
         );
       },
       onDismissed: (_) => onDelete(fact.id),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(AppSizes.radiusSm),
-          border: Border(left: BorderSide(color: accentColor, width: 3)),
+          border: Border.all(color: accentColor.withValues(alpha: 0.35), width: 1),
         ),
         child: ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: Icon(Icons.favorite_rounded, size: 14, color: accentColor),
           title: Text(
             fact.key,
             style: theme.textTheme.bodyMedium?.copyWith(
@@ -265,7 +224,7 @@ class _FactTile extends ConsumerWidget {
                   child: Icon(
                     Icons.info_outline_rounded,
                     size: AppSizes.iconSm,
-                    color: AppColors.textSecondary,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 )
               : null,
