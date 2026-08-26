@@ -247,6 +247,7 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
           validator: (v) {
             if (v == null || v.trim().isEmpty) return strings.personaNameEmpty;
             if (v.trim().length < 2) return strings.personaNameMin;
+            if (v.trim().length > 32) return strings.personaNameMax;
             return null;
           },
         ),
