@@ -115,20 +115,25 @@ hobi, avatar (6 pilihan per gender), dan voice TTS.
 #### FR-04 — Model Install (Setup Model AI Lokal)
 **Prioritas:** P0
 
-**Deskripsi:** Memasang model SLM (`.task`, ~1.5 GB) dari aset aplikasi ke penyimpanan
-internal. **Bukan unduhan internet** — file sudah dibundel di `assets/models/`.
+**Deskripsi:** Memasang model SLM dari **network (HuggingFace)** atau **upload file
+lokal**. Pengguna memilih model dari katalog (publik & gated), download dengan progress,
+atau upload file `.litertlm`/`.task`/`.bin` dari penyimpanan.
 
 **Acceptance Criteria:**
-- [ ] Layar menunjukkan progres unpack + sisa storage.
-- [ ] Storage cukup (< 2 GB) → sukses, inisialisasi engine, lanjut ke chat.
-- [ ] Storage tidak cukup → pesan panduan + tombol retry.
-- [ ] Status model siap dipersistenkan (`modelVariant`, flag model ready).
-- [ ] Saat app di-restart, model tidak di-unpack ulang jika sudah ada.
+- [ ] Layar pilihan model menampilkan katalog (nama, ukuran, deskripsi, badge gated).
+- [ ] Download dari network dengan progress bar + tombol batal.
+- [ ] Upload file model dari penyimpanan (file picker, validasi ekstensi).
+- [ ] Field HuggingFace Token opsional untuk model gated (disimpan lokal, tidak di-log).
+- [ ] Pilihan & status tersimpan (`modelVariant`, `modelSource`, `modelUrl`); saat
+      restart tidak re-download jika sudah terinstal.
+- [ ] Setelah siap → lanjut ke chat.
+- [ ] Storage tidak cukup / download gagal → pesan panduan + retry.
 
 **Edge Cases:**
-- Model rusak/tidak lengkap → deteksi & re-unpack.
-- Storage penuh di tengah proses → gagal-gracefully, jangan crash.
-- Perangkat dengan RAM rendah → peringatan performa, tetap bisa mencoba.
+- Model rusak/tidak lengkap → deteksi & re-install.
+- Download dibatalkan → kembali ke pilihan model.
+- File upload format salah → pesan validasi.
+- Model gated tanpa token → pesan "akses ditolak".
 
 ---
 
@@ -158,35 +163,38 @@ memori, ringkasan percakapan, dan maks 20 pesan terakhir.
 #### FR-06 — Voice Input (Speech-to-Text)
 **Prioritas:** P1
 
-**Deskripsi:** Tombol mikrofon di chat input bar; rekam suara, konversi ke teks, lalu
-kirim sebagai pesan.
+**Deskripsi:** Tombol mikrofon di chat input bar; rekam suara, konversi ke teks
+**on-device** (`flutter_gemma_speech` + model moonshine-tiny), lalu isi input (bisa
+diedit) sebelum dikirim.
 
 **Acceptance Criteria:**
 - [ ] Izin mikrofon diminta dengan penjelasan; ditolak → tombol nonaktif + tooltip.
-- [ ] Saat merekam: waveform/indikator aktif; ketuk lagi untuk berhenti.
+- [ ] Model STT di-download dari network satu kali (progress); tanpa model → pesan hangat.
+- [ ] Saat merekam: indikator aktif; ketuk lagi untuk berhenti.
 - [ ] Hasil transkripsi tampil di input sebelum dikirim (bisa diedit).
 - [ ] Pesan hasil suara ditandai `isVoice` (opsional untuk UI).
 
 **Edge Cases:**
 - Permission ditolak permanen → arahkan ke pengaturan sistem.
-- STT tidak tersedia (platform/region) → sembunyikan tombol.
+- STT tidak tersedia (web / model belum di-download) → sembunyikan tombol / pesan.
 - Transkripsi kosong → abaikan, jangan kirim.
 
 #### FR-07 — Voice Output (Text-to-Speech)
 **Prioritas:** P1
 
-**Deskripsi:** Membacakan respon AI dengan suara persona. Pengaturan: aktif/nonaktif
-TTS, autoplay saat respon selesai, dan pilihan suara.
+**Deskripsi:** Membacakan respon AI dengan suara **on-device**
+(`flutter_gemma_speech` + model Inflect/Matcha). Pengaturan: aktif/nonaktif TTS,
+autoplay saat respon selesai.
 
 **Acceptance Criteria:**
 - [ ] Tombol play/stop di bubble/chat control; indikator sedang membaca.
 - [ ] `ttsEnabled` mematikan semua suara; `ttsAutoPlay` memutar otomatis.
-- [ ] Suara mengikuti `voiceId` persona (jika tersedia).
+- [ ] Model TTS di-download dari network satu kali; tanpa model → pesan + pintu ke layar model.
 - [ ] Mematikan/beralih layar menghentikan playback.
 
 **Edge Cases:**
 - Engine TTS gagal inisialisasi → fallback diam, tanpa crash.
-- Teks sangat panjang → baca per-paragraf, hentikan bila pengguna mengetik.
+- Teks sangat panjang → potong/estimasi durasi, hentikan bila pengguna mengetik.
 - Permission audio/notifikasi ditolak → tetap bisa chat (tanpa suara).
 
 #### FR-08 — Typing Indicator
@@ -458,9 +466,9 @@ jelas, tanpa crash):
 | FR-01 | `features/onboarding/` (age gate) | `AppSettings.isAgeVerified` |
 | FR-02 | `features/onboarding/` | `AppSettings.isOnboardingDone` |
 | FR-03 | `features/persona/` | `PersonaConfig`, `PersonalityPreset`, `PersonaGender` |
-| FR-04 | `features/model/` | `model_service.dart`, `assets/models/*.task` |
+| FR-04 | `features/model/` | `model_service.dart`, `model_catalog.dart`, `assets/models/*` |
 | FR-05 | `features/chat/` | `Message`, `services/ai/prompt_builder.dart` |
-| FR-06 | `features/chat/` (input bar) | `services/stt_service.dart` |
+| FR-06 | `features/chat/` (input bar) | `services/stt_service.dart` (flutter_gemma_speech) |
 | FR-07 | `features/chat/` + `features/settings/` | `services/tts_service.dart`, `AppSettings.tts*` |
 | FR-08 | `features/chat/widgets/` | — |
 | FR-09 | `features/chat/` + mood engine | `MoodState`, `MoodType`, `services/ai/mood` |

@@ -237,6 +237,18 @@ Komponen dibangun di `core/design/components/` (shared) dan `features/<fitur>/wi
 - Ikon channel: morning (🌅), check-in (💬), special day (🎂/❤️).
 - Tapping notifikasi membuka app langsung ke chat.
 
+### 3.11 Model & Suara On-Device
+
+- **Model LLM** di-download dari HuggingFace (katalog `model_catalog.dart`) atau
+  di-upload dari file lokal (`.litertlm`/`.task`/`.bin`). Layar pilihan model
+  menampilkan nama, ukuran, dan badge "HF Token" untuk model gated.
+- **STT** (`flutter_gemma_speech` + moonshine-tiny): rekam PCM 16 kHz mono 16-bit
+  via `record`, transkrip on-device, hasil masuk ke input chat (bisa diedit).
+- **TTS** (`flutter_gemma_speech` + Inflect/Matcha): `synthesize` → PCM 16-bit →
+  playback via `flutter_pcm_sound`.
+- Model suara di-download terpisah (opsional); tanpa model, tombol suara menampilkan
+  pesan hangat + pintu ke layar model.
+
 ---
 
 ## 4. Motion & Micro-interactions

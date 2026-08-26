@@ -43,9 +43,9 @@ dari kode lama.
 | State management | Riverpod (`AsyncNotifierProvider`) + code generation |
 | Navigasi | go_router dengan route guards |
 | Database lokal | ObjectBox (embedded NoSQL) |
-| Model AI on-device | flutter_gemma (MediaPipe LLM) |
-| Text-to-Speech | flutter_tts |
-| Speech-to-Text | speech_to_text |
+| Model AI on-device | flutter_gemma (MediaPipe `.task` + LiteRT-LM `.litertlm`) |
+| Text-to-Speech | flutter_gemma_speech (LiteRT C API) + flutter_pcm_sound |
+| Speech-to-Text | flutter_gemma_speech (moonshine) + record |
 | Notifikasi lokal | flutter_local_notifications + timezone |
 | Font | Shippori Mincho (heading) + Nunito (body) |
 | Ikon | Material Icons + flutter_svg (ikon sakura) |
