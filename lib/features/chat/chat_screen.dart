@@ -203,8 +203,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return;
     }
 
-    // Pastikan model TTS terpasang; jika gagal tampilkan pesan hangat.
-    final ok = await _ttsService.ensureReady();
+    // Pastikan backend suara siap; jika gagal tampilkan pesan hangat.
+    final ok = await _ttsService.ensureReady(
+      backend: settings.ttsBackend,
+      model: settings.ttsModel,
+    );
     if (!ok) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -220,6 +223,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     setState(() => _speakingMessageId = message.id);
     await _ttsService.speak(
       message.content,
+      backend: settings.ttsBackend,
+      model: settings.ttsModel,
+      gender: persona?.gender,
       onDone: () {
         if (mounted) setState(() => _speakingMessageId = -1);
       },
@@ -228,8 +234,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   Future<void> _handleMicTap() async {
     final strings = ref.read(appStringsProvider);
+    final settings = ref.read(appSettingsProvider);
     if (_isListening) {
-      final transcript = await _sttService.stopListening();
+      final transcript = await _sttService.stopListening(backend: settings.sttBackend);
       if (mounted) setState(() => _isListening = false);
       if (transcript.trim().isNotEmpty) {
         HapticFeedback.lightImpact();
@@ -239,7 +246,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return;
     }
 
-    final ok = await _sttService.initialize();
+    final ok = await _sttService.initialize(backend: settings.sttBackend);
     if (!ok) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -254,7 +261,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     setState(() => _isListening = true);
     HapticFeedback.lightImpact();
-    await _sttService.startListening();
+    await _sttService.startListening(backend: settings.sttBackend);
   }
 
   Widget _buildMessageList(
