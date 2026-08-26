@@ -12,6 +12,10 @@ class AppSettings {
 
   bool ttsEnabled = false;
   bool ttsAutoPlay = false;
+  String ttsBackend = 'gemma'; // 'gemma' | 'system'
+  String sttBackend = 'gemma'; // 'gemma' | 'system'
+  String ttsModel = 'inflect'; // 'inflect' | 'matcha' | 'qwen3'
+  String sttModel = 'moonshine';
   bool notificationMorningEnabled = false;
   String notificationMorningTime = '08:00';
   bool notificationCheckinEnabled = false;
@@ -39,6 +43,10 @@ class AppSettings {
     AppLanguage language = AppLanguage.indonesian,
     this.ttsEnabled = false,
     this.ttsAutoPlay = false,
+    this.ttsBackend = 'gemma',
+    this.sttBackend = 'gemma',
+    this.ttsModel = 'inflect',
+    this.sttModel = 'moonshine',
     this.notificationMorningEnabled = false,
     this.notificationMorningTime = '08:00',
     this.notificationCheckinEnabled = false,
@@ -61,6 +69,10 @@ class AppSettings {
     AppLanguage? language,
     bool? ttsEnabled,
     bool? ttsAutoPlay,
+    String? ttsBackend,
+    String? sttBackend,
+    String? ttsModel,
+    String? sttModel,
     bool? notificationMorningEnabled,
     String? notificationMorningTime,
     bool? notificationCheckinEnabled,
@@ -77,6 +89,10 @@ class AppSettings {
       language: language ?? this.language,
       ttsEnabled: ttsEnabled ?? this.ttsEnabled,
       ttsAutoPlay: ttsAutoPlay ?? this.ttsAutoPlay,
+      ttsBackend: ttsBackend ?? this.ttsBackend,
+      sttBackend: sttBackend ?? this.sttBackend,
+      ttsModel: ttsModel ?? this.ttsModel,
+      sttModel: sttModel ?? this.sttModel,
       notificationMorningEnabled: notificationMorningEnabled ?? this.notificationMorningEnabled,
       notificationMorningTime: notificationMorningTime ?? this.notificationMorningTime,
       notificationCheckinEnabled: notificationCheckinEnabled ?? this.notificationCheckinEnabled,
