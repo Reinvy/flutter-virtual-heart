@@ -172,7 +172,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       actions: [
         IconButton(
           icon: Icon(Icons.bookmark_outline_rounded, color: textColor.withAlpha(153)),
-          tooltip: 'Memory',
+          tooltip: strings.memoryTitle,
           onPressed: () => context.push(AppRoutes.memory),
         ),
         IconButton(

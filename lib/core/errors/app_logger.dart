@@ -17,7 +17,7 @@ abstract final class AppLogger {
   }
 
   static void warn(String message, [Object? error]) {
-    debugPrint('[VH][warn] $message${error == null ? '' : ' → $error'}');
+    if (kDebugMode) debugPrint('[VH][warn] $message${error == null ? '' : ' → $error'}');
   }
 
   static void error(String message, [Object? error, StackTrace? stack]) {
