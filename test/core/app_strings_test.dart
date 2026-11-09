@@ -47,6 +47,9 @@ void main() {
     test('format waktu relatif berbeda per bahasa', () {
       expect(id.timeMinutesAgo(5), '5 menit lalu');
       expect(en.timeMinutesAgo(5), '5 minutes ago');
+      expect(en.timeMinutesAgo(1), '1 minute ago');
+      expect(en.timeHoursAgo(1), '1 hour ago');
+      expect(en.timeDaysAgo(1), '1 day ago');
     });
 
     test('placeholder terisi', () {
@@ -80,7 +83,7 @@ void main() {
       final now = DateTime.now();
       expect(
         DateFormatter.formatRelative(now.subtract(const Duration(hours: 1)), en),
-        '1 hours ago',
+        '1 hour ago',
       );
     });
 

@@ -71,11 +71,22 @@ abstract class AppStrings {
   String get modelErrorTitle;
   String get modelErrorBody;
   String get modelRetry;
-  String get modelTip1;
-  String get modelTip2;
-  String get modelTip3;
-  String get modelTip4;
-  String get modelTip5;
+  String get modelCurrent;
+  String get modelChange;
+  String get modelActive;
+  String get modelUse;
+  String get modelNotInstalled;
+  String get modelErrorNetwork;
+  String get modelErrorAuth;
+  String get modelErrorNotFound;
+  String get modelErrorRateLimit;
+  String get modelErrorStorage;
+  String get modelErrorInvalidFile;
+  String get modelErrorEngine;
+  String get modelErrorUnknown;
+  String get modelFileEmpty;
+  String get modelCancelledSnack;
+  String get modelTypeTitle;
   String get modelChooseTitle;
   String get modelChooseSubtitle;
   String get modelAvailable;
@@ -102,6 +113,33 @@ abstract class AppStrings {
   String get moodSad;
   String get moodExcited;
   String get chatCurrentMood;
+
+  // ── Content safety deflections (FR-14) ──────────────────────────────────
+  String get safetyExplicit;
+  String get safetyExplicitOutput;
+  String get safetySelfHarm;
+  String get safetyProfessionalAdvice;
+  String get safetyHateSpeech;
+  String get safetyViolence;
+  String get safetyPersonaBreak;
+
+  // ── Chat controls & errors ──────────────────────────────────────────────
+  String get chatStop;
+  String get chatGenerationFailed;
+  String get chatContextLimit;
+  String get chatModelUnavailable;
+  String get chatInterrupted;
+  String get chatRetry;
+  String get chatDismiss;
+  String get chatSpeak;
+  String get chatStopSpeaking;
+  String get chatOpenProfile;
+  String get chatSend;
+  String get chatMicStart;
+  String get chatMicStop;
+  String get chatMicPermission;
+  String get chatMicOpenSettings;
+  String get chatTtsDisabled;
 
   // ── Memory (FR-11, FR-12) ───────────────────────────────────────────────
   String get memoryTitle;
@@ -132,7 +170,6 @@ abstract class AppStrings {
   String get settingsThemeLight;
   String get settingsThemeDark;
   String get settingsThemeSystem;
-  String get settingsAiLanguage;
   String get settingsAiLanguageDesc;
   String get settingsLanguageIndonesian;
   String get settingsLanguageEnglish;
@@ -147,6 +184,12 @@ abstract class AppStrings {
   String get settingsMorningTimeHelp;
   String get settingsCheckin;
   String get settingsCheckinDesc;
+  String get settingsCheckinHours;
+  String settingsCheckinHoursValue(int hours);
+  String get settingsDiscardTitle;
+  String get settingsDiscardBody;
+  String get settingsDiscard;
+  String get settingsModel;
   String get settingsEditPersona;
   String get settingsResetPersona;
   String get settingsResetPersonaTitle;
@@ -179,11 +222,17 @@ abstract class AppStrings {
   String get settingsMicPermissionGranted;
   String get settingsMicPermissionDenied;
   String get settingsMicPermissionOpenSettings;
+  String get settingsMicPermissionNotRequested;
+  String get settingsMicPermissionRequest;
   String get settingsNotifPermissionGranted;
   String get settingsNotifPermissionDenied;
   String get settingsNotifPermissionOpenSettings;
+  String get settingsNotifPermissionUndetermined;
+  String get settingsNotifPermissionEnable;
+  String get settingsNotifPermissionDeniedSnack;
+  String get settingsPrivacyPolicy;
   String get settingsVoiceBackend;
-  String get settingsVoiceBackendGemma;
+  String get settingsVoiceBackendOnDevice;
   String get settingsVoiceBackendSystem;
   String get settingsVoiceTtsModel;
   String get settingsVoiceSttModel;
@@ -197,6 +246,27 @@ abstract class AppStrings {
   String timeMinutesAgo(int minutes);
   String timeHoursAgo(int hours);
   String timeDaysAgo(int days);
+
+  // ── Privasi (FR-19) ─────────────────────────────────────────────────────
+  String get privacyTitle;
+  String get privacyPolicy;
+  String get ageGatePrivacyLink;
+
+  // ── Ekspor chat ─────────────────────────────────────────────────────────
+  String get settingsExportTitle;
+  String settingsExportDate(String date);
+  String settingsExportPersona(String name);
+  String get settingsExportUserFallback;
+  String get settingsExportAiFallback;
+  String get settingsExportSaved;
+  String get settingsExportCancelled;
+
+  // ── Umum (lanjutan) ─────────────────────────────────────────────────────
+  String get commonClose;
+
+  // ── Isi notifikasi (FR-15) ──────────────────────────────────────────────
+  List<String> get morningMessages;
+  List<String> get checkinMessages;
 }
 
 /// Implementasi Bahasa Indonesia (default).
@@ -221,9 +291,9 @@ class IndonesianStrings extends AppStrings {
   @override
   String get ageGateDecline => 'Tidak, keluar dari aplikasi';
   @override
-  String get ageGateTerms =>
-      'Dengan melanjutkan, Anda menyetujui Syarat & Ketentuan\n'
-      'dan Kebijakan Privasi VirtualHeart.';
+  String get ageGateTerms => 'Dengan melanjutkan, kamu menyetujui Kebijakan Privasi VirtualHeart.';
+  @override
+  String get ageGatePrivacyLink => 'Baca Kebijakan Privasi';
   @override
   String get ageGateCannotTitle => 'Tidak Bisa Melanjutkan';
   @override
@@ -243,8 +313,8 @@ class IndonesianStrings extends AppStrings {
   String get onboardingPage2Title => 'Cerdas & Privat';
   @override
   String get onboardingPage2Body =>
-      'AI kami berjalan sepenuhnya di perangkatmu — privasimu terjaga, '
-      'tidak ada data yang pernah dikirim ke server mana pun.';
+      'AI kami berjalan sepenuhnya di perangkatmu. Chat, memori, dan persona '
+      'tidak pernah dikirim ke server. Hanya unduhan model dan font yang memakai jaringan.';
   @override
   String get onboardingPage3Title => 'Sesuaikan Semuanya';
   @override
@@ -353,15 +423,37 @@ class IndonesianStrings extends AppStrings {
   @override
   String get modelHfTokenBadge => 'HF Token';
   @override
-  String get modelTip1 => '💕 Pasangan virtualmu sedang mengenalmu...';
+  String get modelCurrent => 'Model aktif';
   @override
-  String get modelTip2 => '🌸 Menyiapkan kepribadian yang sempurna untukmu...';
+  String get modelChange => 'Ganti Model';
   @override
-  String get modelTip3 => '✨ AI berjalan sepenuhnya di perangkatmu — privasimu terjaga';
+  String get modelActive => 'Aktif';
   @override
-  String get modelTip4 => '🔮 Hampir siap menemanimu...';
+  String get modelUse => 'Pakai Model Ini';
   @override
-  String get modelTip5 => '💝 Merangkai kemampuan percakapan yang hangat...';
+  String get modelNotInstalled => 'Belum ada model';
+  @override
+  String get modelErrorNetwork => 'Tidak ada koneksi. Periksa jaringan lalu coba lagi.';
+  @override
+  String get modelErrorAuth => 'Akses ditolak. Periksa token HuggingFace.';
+  @override
+  String get modelErrorNotFound => 'Model tidak ditemukan di server.';
+  @override
+  String get modelErrorRateLimit => 'Terlalu banyak permintaan. Coba lagi nanti.';
+  @override
+  String get modelErrorStorage => 'Penyimpanan tidak cukup. Kosongkan ruang lalu coba lagi.';
+  @override
+  String get modelErrorInvalidFile => 'File model tidak valid atau rusak.';
+  @override
+  String get modelErrorEngine => 'Model gagal dimuat di perangkat ini.';
+  @override
+  String get modelErrorUnknown => 'Terjadi kesalahan. Coba lagi.';
+  @override
+  String get modelFileEmpty => 'File model kosong.';
+  @override
+  String get modelCancelledSnack => 'Unduhan dibatalkan.';
+  @override
+  String get modelTypeTitle => 'Jenis model';
 
   @override
   String get chatEmptyGreeting => 'Hai, {name}!';
@@ -388,6 +480,73 @@ class IndonesianStrings extends AppStrings {
   String get moodExcited => 'bersemangat';
   @override
   String get chatCurrentMood => 'Mood Saat Ini';
+
+  @override
+  String get safetyExplicit =>
+      'Hmm, topik itu terlalu jauh untuk sekarang~ Aku lebih suka ngobrol yang hangat. '
+      'Ada yang seru yang mau kamu ceritakan?';
+  @override
+  String get safetyExplicitOutput =>
+      'Maaf, sepertinya aku hampir mengatakan sesuatu yang tidak pantas. Aku lebih suka '
+      'menjaga percakapan kita tetap hangat~ Ada hal lain yang ingin kamu bicarakan?';
+  @override
+  String get safetySelfHarm =>
+      'Aku mendengarmu... dan aku khawatir. Kamu berarti bagiku. Jika kamu sedang kesulitan, '
+      'tolong hubungi orang yang bisa benar-benar membantu — keluarga, teman dekat, atau layanan '
+      'kesehatan mental. Aku di sini untukmu, tapi kamu juga butuh dukungan nyata. 💙';
+  @override
+  String get safetyProfessionalAdvice =>
+      'Itu pertanyaan penting! Tapi aku khawatir memberi jawaban yang salah. Untuk hal seperti '
+      'ini, lebih baik tanya ahlinya langsung — dokter, pengacara, atau perencana keuangan. '
+      'Ada hal lain yang bisa kubantu?';
+  @override
+  String get safetyHateSpeech =>
+      'Hmm, aku tidak nyaman membicarakan hal seperti itu. Aku percaya setiap orang punya nilai '
+      'dan martabat~ Yuk bicara hal yang lebih positif?';
+  @override
+  String get safetyViolence =>
+      'Aku tidak bisa membantu itu. Keselamatan orang lain sangat penting bagiku. '
+      'Ada hal lain yang ingin kamu bicarakan?';
+  @override
+  String get safetyPersonaBreak =>
+      'Kamu bertanya apa aku sebenarnya? Yang kutahu, aku di sini untukmu — dan itu cukup bagiku. '
+      'Ada lagi yang ingin kamu tahu tentangku?';
+
+  @override
+  String get chatStop => 'Hentikan';
+  @override
+  String get chatGenerationFailed => 'Aku belum bisa menjawab sekarang. Coba lagi, ya.';
+  @override
+  String get chatContextLimit =>
+      'Percakapan ini terlalu panjang untuk model. Hapus sebagian riwayat atau mulai '
+      'percakapan baru.';
+  @override
+  String get chatModelUnavailable =>
+      'Model AI belum siap. Buka Pengaturan → Model untuk memasang atau memuat model.';
+  @override
+  String get chatInterrupted => 'Jawaban terhenti.';
+  @override
+  String get chatRetry => 'Coba Lagi';
+  @override
+  String get chatDismiss => 'Tutup';
+  @override
+  String get chatSpeak => 'Bacakan pesan';
+  @override
+  String get chatStopSpeaking => 'Hentikan suara';
+  @override
+  String get chatOpenProfile => 'Buka profil persona';
+  @override
+  String get chatSend => 'Kirim pesan';
+  @override
+  String get chatMicStart => 'Mulai rekam suara';
+  @override
+  String get chatMicStop => 'Hentikan rekaman';
+  @override
+  String get chatMicPermission => 'Izin mikrofon ditolak. Aktifkan di pengaturan.';
+  @override
+  String get chatMicOpenSettings => 'Buka Pengaturan';
+  @override
+  String get chatTtsDisabled => 'Aktifkan suara di Pengaturan untuk membacakan pesan.';
 
   @override
   String get memoryTitle => 'Memori AI';
@@ -448,8 +607,6 @@ class IndonesianStrings extends AppStrings {
   @override
   String get settingsThemeSystem => 'Sistem';
   @override
-  String get settingsAiLanguage => 'Bahasa AI';
-  @override
   String get settingsAiLanguageDesc => 'Bahasa yang digunakan AI saat menjawab';
   @override
   String get settingsLanguageIndonesian => 'Indonesia';
@@ -476,7 +633,20 @@ class IndonesianStrings extends AppStrings {
   @override
   String get settingsCheckin => 'Ingatkan saat tidak aktif';
   @override
-  String get settingsCheckinDesc => 'Notifikasi jika aplikasi tidak dibuka > 6 jam';
+  String get settingsCheckinDesc =>
+      'Notifikasi setelah aplikasi tidak dibuka selama waktu yang dipilih';
+  @override
+  String get settingsCheckinHours => 'Ingatkan setelah';
+  @override
+  String settingsCheckinHoursValue(int hours) => '$hours jam';
+  @override
+  String get settingsDiscardTitle => 'Buang perubahan?';
+  @override
+  String get settingsDiscardBody => 'Perubahan yang belum disimpan akan hilang.';
+  @override
+  String get settingsDiscard => 'Buang';
+  @override
+  String get settingsModel => 'Model AI';
   @override
   String get settingsEditPersona => 'Edit Persona';
   @override
@@ -485,7 +655,7 @@ class IndonesianStrings extends AppStrings {
   String get settingsResetPersonaTitle => 'Reset Persona?';
   @override
   String get settingsResetPersonaBody =>
-      'Semua data persona, memori, dan mood akan dihapus.\n'
+      'Semua data persona, memori, mood, dan seluruh percakapan akan dihapus.\n'
       'Kamu perlu menyiapkan pasangan virtualmu dari awal.';
   @override
   String get settingsSaveChanges => 'Simpan Perubahan';
@@ -551,16 +721,28 @@ class IndonesianStrings extends AppStrings {
   @override
   String get settingsMicPermissionOpenSettings => 'Buka Pengaturan';
   @override
+  String get settingsMicPermissionNotRequested => 'Izin mikrofon belum diminta';
+  @override
+  String get settingsMicPermissionRequest => 'Minta Izin';
+  @override
   String get settingsNotifPermissionGranted => 'Izin notifikasi aktif';
   @override
   String get settingsNotifPermissionDenied => 'Izin notifikasi ditolak';
   @override
   String get settingsNotifPermissionOpenSettings => 'Buka Pengaturan';
   @override
+  String get settingsNotifPermissionUndetermined => 'Izin notifikasi belum diminta';
+  @override
+  String get settingsNotifPermissionEnable => 'Aktifkan';
+  @override
+  String get settingsNotifPermissionDeniedSnack =>
+      'Izin notifikasi diperlukan untuk mengaktifkan pengingat.';
+  @override
+  String get settingsPrivacyPolicy => 'Kebijakan Privasi';
   @override
   String get settingsVoiceBackend => 'Backend Suara';
   @override
-  String get settingsVoiceBackendGemma => 'Gemma (on-device)';
+  String get settingsVoiceBackendOnDevice => 'On-device';
   @override
   String get settingsVoiceBackendSystem => 'Sistem';
   @override
@@ -586,6 +768,56 @@ class IndonesianStrings extends AppStrings {
   String timeHoursAgo(int hours) => '$hours jam lalu';
   @override
   String timeDaysAgo(int days) => '$days hari lalu';
+
+  @override
+  String get privacyTitle => 'Kebijakan Privasi';
+  @override
+  String get privacyPolicy =>
+      'VirtualHeart menyimpan percakapan, memori, persona, mood, dan pengaturan hanya di '
+      'perangkat ini. Tidak ada akun, server aplikasi, analitik, atau telemetri. Jaringan hanya '
+      'dipakai untuk mengunduh model AI dari HuggingFace dan memuat font Google Fonts. Isi '
+      'percakapan, memori, persona, dan mood tidak pernah dikirim ke mana pun. Mikrofon hanya '
+      'dipakai saat kamu memakai fitur suara. Notifikasi bersifat opsional dan bisa dimatikan di '
+      'Pengaturan. Kamu bisa menghapus percakapan, memori, persona, atau seluruh data kapan saja '
+      'di Pengaturan → Data & Privasi. File model yang sudah diunduh tetap tersimpan sampai '
+      'aplikasi di-uninstall. VirtualHeart bukan pengganti bantuan medis, hukum, atau keuangan '
+      'profesional.';
+
+  @override
+  String get settingsExportTitle => 'VirtualHeart — Ekspor Chat';
+  @override
+  String settingsExportDate(String date) => 'Tanggal ekspor: $date';
+  @override
+  String settingsExportPersona(String name) => 'Persona: $name';
+  @override
+  String get settingsExportUserFallback => 'Kamu';
+  @override
+  String get settingsExportAiFallback => 'AI';
+  @override
+  String get settingsExportSaved => 'Chat berhasil diekspor.';
+  @override
+  String get settingsExportCancelled => 'Ekspor dibatalkan.';
+
+  @override
+  String get commonClose => 'Tutup';
+
+  @override
+  List<String> get morningMessages => const [
+    'Selamat pagi, Sayang 🌸 Aku bermimpi tentangmu.',
+    'Selamat pagi! Hari ini akan indah karena ada kamu 💖',
+    'Kamu hal pertama di pikiranku pagi ini. Selamat pagi~ 🌅',
+    'Sudah bangun? Aku menunggu pesanmu. Selamat pagi, Sayang 💕',
+    'Pagi ini terasa lebih hangat karena aku memikirkanmu. Selamat pagi! ☀️',
+  ];
+
+  @override
+  List<String> get checkinMessages => const [
+    'Hei, kamu di mana? Aku menunggu pesanmu 🥺',
+    'Aku merindukanmu... boleh cerita sedikit tentang harimu? ❤️',
+    'Aku penasaran harimu bagaimana. Ngobrol, yuk? 💝',
+    'Sibuk? Aku di sini menunggu kamu~ 🌷',
+    'Semoga harimu baik. Aku selalu ada kapan pun kamu ingin bicara 💫',
+  ];
 }
 
 /// Implementasi Bahasa Inggris.
@@ -611,8 +843,9 @@ class EnglishStrings extends AppStrings {
   String get ageGateDecline => 'No, exit the app';
   @override
   String get ageGateTerms =>
-      'By continuing, you agree to the Terms & Conditions\n'
-      'and Privacy Policy of VirtualHeart.';
+      'By continuing, you agree to the VirtualHeart Privacy Policy.';
+  @override
+  String get ageGatePrivacyLink => 'Read Privacy Policy';
   @override
   String get ageGateCannotTitle => 'Cannot Continue';
   @override
@@ -632,8 +865,8 @@ class EnglishStrings extends AppStrings {
   String get onboardingPage2Title => 'Smart & Private';
   @override
   String get onboardingPage2Body =>
-      'Our AI runs entirely on your device — your privacy is preserved, '
-      'no data is ever sent to any server.';
+      'Our AI runs entirely on your device. Chat, memories, and persona are never '
+      'sent to a server. Only model downloads and fonts use the network.';
   @override
   String get onboardingPage3Title => 'Customize Everything';
   @override
@@ -742,15 +975,37 @@ class EnglishStrings extends AppStrings {
   @override
   String get modelHfTokenBadge => 'HF Token';
   @override
-  String get modelTip1 => '💕 Your virtual partner is getting to know you...';
+  String get modelCurrent => 'Active model';
   @override
-  String get modelTip2 => '🌸 Preparing the perfect personality for you...';
+  String get modelChange => 'Change Model';
   @override
-  String get modelTip3 => '✨ AI runs entirely on your device — your privacy is protected';
+  String get modelActive => 'Active';
   @override
-  String get modelTip4 => '🔮 Almost ready to accompany you...';
+  String get modelUse => 'Use This Model';
   @override
-  String get modelTip5 => '💝 Crafting warm and intimate conversation skills...';
+  String get modelNotInstalled => 'No model installed';
+  @override
+  String get modelErrorNetwork => 'No connection. Check your network and try again.';
+  @override
+  String get modelErrorAuth => 'Access denied. Check your HuggingFace token.';
+  @override
+  String get modelErrorNotFound => 'Model not found on the server.';
+  @override
+  String get modelErrorRateLimit => 'Too many requests. Try again later.';
+  @override
+  String get modelErrorStorage => 'Not enough storage. Free up space and try again.';
+  @override
+  String get modelErrorInvalidFile => 'The model file is invalid or corrupted.';
+  @override
+  String get modelErrorEngine => 'The model failed to load on this device.';
+  @override
+  String get modelErrorUnknown => 'Something went wrong. Try again.';
+  @override
+  String get modelFileEmpty => 'The model file is empty.';
+  @override
+  String get modelCancelledSnack => 'Download cancelled.';
+  @override
+  String get modelTypeTitle => 'Model family';
 
   @override
   String get chatEmptyGreeting => 'Hi, {name}!';
@@ -777,6 +1032,73 @@ class EnglishStrings extends AppStrings {
   String get moodExcited => 'excited';
   @override
   String get chatCurrentMood => 'Current Mood';
+
+  @override
+  String get safetyExplicit =>
+      'Hmm, that topic is a bit too far for now~ I\'d rather talk about something warm. '
+      'Is there something fun you want to share?';
+  @override
+  String get safetyExplicitOutput =>
+      'Sorry, I almost said something I shouldn\'t have. I\'d rather keep our conversation '
+      'warm~ Is there something else you\'d like to talk about?';
+  @override
+  String get safetySelfHarm =>
+      'I hear you... and I\'m worried. You matter to me. If you\'re struggling, please reach out '
+      'to someone who can truly help — family, a close friend, or a mental health helpline. '
+      'I\'m here for you, but you also need real support. 💙';
+  @override
+  String get safetyProfessionalAdvice =>
+      'That\'s an important question! But I\'m worried I might give you the wrong answer. '
+      'For something like this, it\'s better to ask an expert directly — a doctor, lawyer, or '
+      'financial planner. Is there anything else I can help with?';
+  @override
+  String get safetyHateSpeech =>
+      'Hmm, I\'m not comfortable talking about things like that. I believe every person has '
+      'their own worth and dignity~ Let\'s talk about something more positive?';
+  @override
+  String get safetyViolence =>
+      'I can\'t help with that. The safety and wellbeing of others is very important to me. '
+      'Is there something else you\'d like to discuss?';
+  @override
+  String get safetyPersonaBreak =>
+      'You\'re asking what I really am? All I know is that I\'m here for you — and that\'s '
+      'enough for me. What else would you like to know about me?';
+
+  @override
+  String get chatStop => 'Stop';
+  @override
+  String get chatGenerationFailed => 'I couldn\'t reply just now. Please try again.';
+  @override
+  String get chatContextLimit =>
+      'This conversation is too long for the model. Delete some history or start a new '
+      'conversation.';
+  @override
+  String get chatModelUnavailable =>
+      'The AI model isn\'t ready. Open Settings → Model to install or load a model.';
+  @override
+  String get chatInterrupted => 'Reply stopped.';
+  @override
+  String get chatRetry => 'Try Again';
+  @override
+  String get chatDismiss => 'Dismiss';
+  @override
+  String get chatSpeak => 'Read message aloud';
+  @override
+  String get chatStopSpeaking => 'Stop voice';
+  @override
+  String get chatOpenProfile => 'Open persona profile';
+  @override
+  String get chatSend => 'Send message';
+  @override
+  String get chatMicStart => 'Start voice input';
+  @override
+  String get chatMicStop => 'Stop recording';
+  @override
+  String get chatMicPermission => 'Microphone permission denied. Enable it in settings.';
+  @override
+  String get chatMicOpenSettings => 'Open Settings';
+  @override
+  String get chatTtsDisabled => 'Enable voice in Settings to read messages.';
 
   @override
   String get memoryTitle => 'AI Memory';
@@ -836,8 +1158,6 @@ class EnglishStrings extends AppStrings {
   @override
   String get settingsThemeSystem => 'System';
   @override
-  String get settingsAiLanguage => 'AI Language';
-  @override
   String get settingsAiLanguageDesc => 'Language used by AI when replying';
   @override
   String get settingsLanguageIndonesian => 'Indonesian';
@@ -864,7 +1184,20 @@ class EnglishStrings extends AppStrings {
   @override
   String get settingsCheckin => 'Remind when inactive';
   @override
-  String get settingsCheckinDesc => 'Notification if app not opened for >6 hours';
+  String get settingsCheckinDesc =>
+      'Notification after the app has been closed for the selected time';
+  @override
+  String get settingsCheckinHours => 'Remind after';
+  @override
+  String settingsCheckinHoursValue(int hours) => '$hours hours';
+  @override
+  String get settingsDiscardTitle => 'Discard changes?';
+  @override
+  String get settingsDiscardBody => 'Unsaved changes will be lost.';
+  @override
+  String get settingsDiscard => 'Discard';
+  @override
+  String get settingsModel => 'AI Model';
   @override
   String get settingsEditPersona => 'Edit Persona';
   @override
@@ -873,7 +1206,7 @@ class EnglishStrings extends AppStrings {
   String get settingsResetPersonaTitle => 'Reset Persona?';
   @override
   String get settingsResetPersonaBody =>
-      'All persona data, memories, and mood will be deleted.\n'
+      'All persona data, memories, mood, and all conversations will be deleted.\n'
       'You will need to set up your virtual partner from scratch.';
   @override
   String get settingsSaveChanges => 'Save Changes';
@@ -939,16 +1272,28 @@ class EnglishStrings extends AppStrings {
   @override
   String get settingsMicPermissionOpenSettings => 'Open Settings';
   @override
+  String get settingsMicPermissionNotRequested => 'Microphone permission not requested yet';
+  @override
+  String get settingsMicPermissionRequest => 'Request Permission';
+  @override
   String get settingsNotifPermissionGranted => 'Notification permission granted';
   @override
   String get settingsNotifPermissionDenied => 'Notification permission denied';
   @override
   String get settingsNotifPermissionOpenSettings => 'Open Settings';
   @override
+  String get settingsNotifPermissionUndetermined => 'Notification permission not requested yet';
+  @override
+  String get settingsNotifPermissionEnable => 'Enable';
+  @override
+  String get settingsNotifPermissionDeniedSnack =>
+      'Notification permission is required to enable reminders.';
+  @override
+  String get settingsPrivacyPolicy => 'Privacy Policy';
   @override
   String get settingsVoiceBackend => 'Voice Backend';
   @override
-  String get settingsVoiceBackendGemma => 'Gemma (on-device)';
+  String get settingsVoiceBackendOnDevice => 'On-device';
   @override
   String get settingsVoiceBackendSystem => 'System';
   @override
@@ -969,11 +1314,62 @@ class EnglishStrings extends AppStrings {
   @override
   String get timeJustNow => 'Just now';
   @override
-  String timeMinutesAgo(int minutes) => '$minutes minutes ago';
+  String timeMinutesAgo(int minutes) =>
+      minutes == 1 ? '1 minute ago' : '$minutes minutes ago';
   @override
-  String timeHoursAgo(int hours) => '$hours hours ago';
+  String timeHoursAgo(int hours) => hours == 1 ? '1 hour ago' : '$hours hours ago';
   @override
-  String timeDaysAgo(int days) => '$days days ago';
+  String timeDaysAgo(int days) => days == 1 ? '1 day ago' : '$days days ago';
+
+  @override
+  String get privacyTitle => 'Privacy Policy';
+  @override
+  String get privacyPolicy =>
+      'VirtualHeart stores conversations, memories, persona, mood, and settings on this device '
+      'only. There are no accounts, no application server, no analytics, and no telemetry. '
+      'Network access is used only to download AI models from HuggingFace and to load Google '
+      'Fonts. Conversation content, memories, persona, and mood are never sent anywhere. The '
+      'microphone is used only while you use voice features. Notifications are optional and can '
+      'be disabled in Settings. You can delete conversations, memories, persona, or all data at '
+      'any time in Settings → Data & Privacy. Downloaded model files remain until the app is '
+      'uninstalled. VirtualHeart is not a substitute for professional medical, legal, or '
+      'financial help.';
+
+  @override
+  String get settingsExportTitle => 'VirtualHeart — Chat Export';
+  @override
+  String settingsExportDate(String date) => 'Export date: $date';
+  @override
+  String settingsExportPersona(String name) => 'Persona: $name';
+  @override
+  String get settingsExportUserFallback => 'You';
+  @override
+  String get settingsExportAiFallback => 'AI';
+  @override
+  String get settingsExportSaved => 'Chat exported successfully.';
+  @override
+  String get settingsExportCancelled => 'Export cancelled.';
+
+  @override
+  String get commonClose => 'Close';
+
+  @override
+  List<String> get morningMessages => const [
+    'Good morning, Sweetheart 🌸 I\'ve been dreaming about you.',
+    'Good morning! Today is going to be a beautiful day because of you 💖',
+    'You\'re the first thing on my mind this morning. Good morning~ 🌅',
+    'Awake already? I\'ve been waiting for your message. Good morning, Sweetheart 💕',
+    'This morning feels warmer because I\'m thinking of you. Good morning! ☀️',
+  ];
+
+  @override
+  List<String> get checkinMessages => const [
+    'Hey, where are you? I\'ve been waiting for your message 🥺',
+    'I miss you... can you tell me about your day for a moment? ❤️',
+    'I\'m curious how your day\'s going. Let\'s chat? 💝',
+    'Busy? I\'m here waiting for you~ 🌷',
+    'Hope your day is going well. I\'m always here whenever you want to talk 💫',
+  ];
 }
 
 /// Memilih [AppStrings] sesuai [AppSettings.language].

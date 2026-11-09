@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:1350341759699591298",
-      "lastPropertyId": "19:331854042973278382",
+      "lastPropertyId": "21:2675952744523911279",
       "name": "AppSettings",
       "properties": [
         {
@@ -103,6 +103,16 @@
           "id": "19:331854042973278382",
           "name": "modelUrl",
           "type": 9
+        },
+        {
+          "id": "20:481726660539932822",
+          "name": "notificationCheckinHours",
+          "type": 6
+        },
+        {
+          "id": "21:2675952744523911279",
+          "name": "summaryMessageCount",
+          "type": 6
         }
       ],
       "relations": []
@@ -153,7 +163,7 @@
     },
     {
       "id": "3:4461514350763041745",
-      "lastPropertyId": "6:3781894061313651537",
+      "lastPropertyId": "7:1604179621499966276",
       "name": "Message",
       "properties": [
         {
@@ -186,6 +196,11 @@
           "id": "6:3781894061313651537",
           "name": "roleIndex",
           "type": 6
+        },
+        {
+          "id": "7:1604179621499966276",
+          "name": "isBlocked",
+          "type": 1
         }
       ],
       "relations": []

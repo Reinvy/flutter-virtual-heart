@@ -90,7 +90,7 @@ class _BackendSelector extends ConsumerWidget {
             segments: [
               ButtonSegment(
                 value: 'gemma',
-                label: Text(strings.settingsVoiceBackendGemma),
+                label: Text(strings.settingsVoiceBackendOnDevice),
                 icon: const Icon(Icons.memory_rounded),
               ),
               ButtonSegment(

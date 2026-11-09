@@ -6,6 +6,40 @@ import '../../features/model/model_ready_provider.dart';
 import '../../features/settings/settings_controller.dart';
 import 'model_catalog.dart';
 
+/// Jenis kegagalan pemasangan/pemuatan model.
+enum ModelErrorKind {
+  network,
+  auth,
+  notFound,
+  rateLimited,
+  storage,
+  invalidFile,
+  engine,
+  cancelled,
+  unknown,
+}
+
+/// Kegagalan model yang membawa [kind] untuk dipetakan ke `AppStrings`.
+class ModelException implements Exception {
+  final ModelErrorKind kind;
+  final Object? cause;
+  const ModelException(this.kind, [this.cause]);
+
+  @override
+  String toString() => 'ModelException(${kind.name})';
+}
+
+/// Prompt melebihi context window model aktif.
+///
+/// Dilempar oleh [ModelServiceNotifier.generateResponseStream] agar lapisan
+/// fitur tidak perlu mengimpor exception engine.
+class ContextLimitReachedException implements Exception {
+  const ContextLimitReachedException();
+
+  @override
+  String toString() => 'ContextLimitReachedException';
+}
+
 /// Status model LLM on-device.
 class ModelStatus {
   /// Model siap inferensi.

@@ -26,7 +26,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(1, 1350341759699591298),
     name: 'AppSettings',
-    lastPropertyId: const obx_int.IdUid(19, 331854042973278382),
+    lastPropertyId: const obx_int.IdUid(21, 2675952744523911279),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -143,6 +143,18 @@ final _entities = <obx_int.ModelEntity>[
         type: 9,
         flags: 0,
       ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(20, 481726660539932822),
+        name: 'notificationCheckinHours',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(21, 2675952744523911279),
+        name: 'summaryMessageCount',
+        type: 6,
+        flags: 0,
+      ),
     ],
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
@@ -202,7 +214,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(3, 4461514350763041745),
     name: 'Message',
-    lastPropertyId: const obx_int.IdUid(6, 3781894061313651537),
+    lastPropertyId: const obx_int.IdUid(7, 1604179621499966276),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -239,6 +251,12 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(6, 3781894061313651537),
         name: 'roleIndex',
         type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 1604179621499966276),
+        name: 'isBlocked',
+        type: 1,
         flags: 0,
       ),
     ],
@@ -424,7 +442,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final sttModelOffset = fbb.writeString(object.sttModel);
         final modelSourceOffset = fbb.writeString(object.modelSource);
         final modelUrlOffset = fbb.writeString(object.modelUrl);
-        fbb.startTable(20);
+        fbb.startTable(22);
         fbb.addInt64(0, object.id);
         fbb.addBool(1, object.ttsEnabled);
         fbb.addBool(2, object.ttsAutoPlay);
@@ -444,6 +462,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(16, sttModelOffset);
         fbb.addOffset(17, modelSourceOffset);
         fbb.addOffset(18, modelUrlOffset);
+        fbb.addInt64(19, object.notificationCheckinHours);
+        fbb.addInt64(20, object.summaryMessageCount);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -495,6 +515,12 @@ obx_int.ModelDefinition getObjectBoxModel() {
           14,
           false,
         );
+        final notificationCheckinHoursParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          42,
+          0,
+        );
         final modelVariantParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGet(buffer, rootOffset, 16, '');
@@ -525,6 +551,12 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final conversationSummaryParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGet(buffer, rootOffset, 24, '');
+        final summaryMessageCountParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          44,
+          0,
+        );
         final object =
             AppSettings(
                 id: idParam,
@@ -537,6 +569,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
                 notificationMorningEnabled: notificationMorningEnabledParam,
                 notificationMorningTime: notificationMorningTimeParam,
                 notificationCheckinEnabled: notificationCheckinEnabledParam,
+                notificationCheckinHours: notificationCheckinHoursParam,
                 modelVariant: modelVariantParam,
                 modelSource: modelSourceParam,
                 modelUrl: modelUrlParam,
@@ -544,6 +577,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
                 isOnboardingDone: isOnboardingDoneParam,
                 isPersonaSetup: isPersonaSetupParam,
                 conversationSummary: conversationSummaryParam,
+                summaryMessageCount: summaryMessageCountParam,
               )
               ..themeIndex = const fb.Int64Reader().vTableGet(
                 buffer,
@@ -642,13 +676,14 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final moodOffset = object.mood == null
             ? null
             : fbb.writeString(object.mood!);
-        fbb.startTable(7);
+        fbb.startTable(8);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, contentOffset);
         fbb.addBool(2, object.isVoice);
         fbb.addOffset(3, moodOffset);
         fbb.addInt64(4, object.timestamp.millisecondsSinceEpoch);
         fbb.addInt64(5, object.roleIndex);
+        fbb.addBool(6, object.isBlocked);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -676,6 +711,12 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final moodParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGetNullable(buffer, rootOffset, 10);
+        final isBlockedParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          16,
+          false,
+        );
         final object =
             Message(
                 id: idParam,
@@ -683,6 +724,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
                 timestamp: timestampParam,
                 isVoice: isVoiceParam,
                 mood: moodParam,
+                isBlocked: isBlockedParam,
               )
               ..roleIndex = const fb.Int64Reader().vTableGet(
                 buffer,
@@ -926,6 +968,16 @@ class AppSettings_ {
   static final modelUrl = obx.QueryStringProperty<AppSettings>(
     _entities[0].properties[18],
   );
+
+  /// See [AppSettings.notificationCheckinHours].
+  static final notificationCheckinHours = obx.QueryIntegerProperty<AppSettings>(
+    _entities[0].properties[19],
+  );
+
+  /// See [AppSettings.summaryMessageCount].
+  static final summaryMessageCount = obx.QueryIntegerProperty<AppSettings>(
+    _entities[0].properties[20],
+  );
 }
 
 /// [MemoryFact] entity fields to define ObjectBox queries.
@@ -996,6 +1048,11 @@ class Message_ {
   /// See [Message.roleIndex].
   static final roleIndex = obx.QueryIntegerProperty<Message>(
     _entities[2].properties[5],
+  );
+
+  /// See [Message.isBlocked].
+  static final isBlocked = obx.QueryBooleanProperty<Message>(
+    _entities[2].properties[6],
   );
 }
 

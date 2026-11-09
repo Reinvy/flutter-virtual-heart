@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:objectbox/objectbox.dart';
 
 import '../../core/errors/app_logger.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../models/memory_fact.dart';
 import '../../models/message.dart';
 import '../../models/objectbox_provider.dart';
@@ -57,7 +58,7 @@ class ChatNotifier extends Notifier<ChatState> {
     if (inputCheck.isBlocked) {
       final safetyMsg = Message(
         role: MessageRole.assistant,
-        content: inputCheck.redirectResponse!,
+        content: _deflection(inputCheck.redirect!, ref.read(appStringsProvider)),
         timestamp: DateTime.now(),
       );
       db.messageBox.put(safetyMsg);
@@ -105,7 +106,7 @@ class ChatNotifier extends Notifier<ChatState> {
       // 4a. Content safety gate (output) — FR-14.
       final outputCheck = ContentSafety.validateOutput(buffer.toString());
       final finalContent = outputCheck.isBlocked
-          ? outputCheck.redirectResponse!
+          ? _deflection(outputCheck.redirect!, ref.read(appStringsProvider))
           : buffer.toString();
 
       // 4b. Persist pesan AI + update UI.
@@ -197,6 +198,17 @@ class ChatNotifier extends Notifier<ChatState> {
     }
     box.putMany(facts);
   }
+
+  /// Memetakan [SafetyRedirect] ke teks terlokalisasi.
+  static String _deflection(SafetyRedirect redirect, AppStrings strings) => switch (redirect) {
+    SafetyRedirect.explicitSexual => strings.safetyExplicit,
+    SafetyRedirect.explicitSexualOutput => strings.safetyExplicitOutput,
+    SafetyRedirect.selfHarm => strings.safetySelfHarm,
+    SafetyRedirect.professionalAdvice => strings.safetyProfessionalAdvice,
+    SafetyRedirect.hateSpeech => strings.safetyHateSpeech,
+    SafetyRedirect.violence => strings.safetyViolence,
+    SafetyRedirect.personaBreak => strings.safetyPersonaBreak,
+  };
 }
 
 final chatProvider = NotifierProvider<ChatNotifier, ChatState>(ChatNotifier.new);

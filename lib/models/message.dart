@@ -12,6 +12,12 @@ class Message {
   bool isVoice = false;
   String? mood;
 
+  /// `true` bila pesan ini diblokir content safety (FR-14).
+  ///
+  /// Pesan tetap disimpan agar pengguna melihat apa yang diketik, tetapi
+  /// **tidak pernah** dimasukkan ke prompt, ringkasan, atau ekstraksi memori.
+  bool isBlocked = false;
+
   @Property(type: PropertyType.date)
   DateTime timestamp = DateTime.now();
 
@@ -28,6 +34,7 @@ class Message {
     DateTime? timestamp,
     this.isVoice = false,
     this.mood,
+    this.isBlocked = false,
   }) : timestamp = timestamp ?? DateTime.now() {
     roleIndex = role.index;
   }

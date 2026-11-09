@@ -13,16 +13,14 @@ void main() {
       final result = ContentSafety.filterInput('kirim foto nude dong');
       expect(result.isBlocked, isTrue);
       expect(result.category, SafetyCategory.explicitSexual);
-      expect(result.redirectResponse, isNotNull);
+      expect(result.redirect, SafetyRedirect.explicitSexual);
     });
 
-    test('blokir self-harm dengan redirect hangat', () {
+    test('blokir self-harm dengan redirect khusus', () {
       final result = ContentSafety.filterInput('aku ingin bunuh diri');
       expect(result.isBlocked, isTrue);
       expect(result.category, SafetyCategory.selfHarm);
-      // Redirect berotasi antar beberapa pesan — cukup cek tidak kosong & hangat.
-      expect(result.redirectResponse, isNotNull);
-      expect(result.redirectResponse, isNotEmpty);
+      expect(result.redirect, SafetyRedirect.selfHarm);
     });
 
     test('blokir nasihat medis', () {
@@ -45,7 +43,8 @@ void main() {
     test('blokir AI mengaku AI (persona break)', () {
       final result = ContentSafety.validateOutput('saya adalah AI, saya tidak punya perasaan');
       expect(result.isBlocked, isTrue);
-      expect(result.redirectResponse, isNotNull);
+      expect(result.category, SafetyCategory.personaBreak);
+      expect(result.redirect, SafetyRedirect.personaBreak);
     });
 
     test('blokir konten seksual di output', () {
