@@ -11,7 +11,7 @@ import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../models/persona_config.dart';
 import '../notifications/notification_controller.dart';
-import '../settings/settings_controller.dart';
+import 'package:virtual_heart/services/settings/settings_service.dart';
 import 'avatar_catalog.dart';
 import 'persona_controller.dart';
 import 'persona_options.dart';

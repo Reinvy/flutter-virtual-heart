@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/app_settings.dart';
-import '../../features/settings/settings_controller.dart';
+import 'package:virtual_heart/services/settings/settings_service.dart';
 
 /// Menurunkan [ThemeMode] dari [AppSettings.theme] yang tersimpan.
 ///

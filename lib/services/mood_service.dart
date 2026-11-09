@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/mood_state.dart';
-import '../models/objectbox_provider.dart';
+import 'package:virtual_heart/services/database/objectbox_provider.dart';
 import 'mood_store.dart';
 
 /// Menangani transisi state mood berdasarkan isi percakapan & waktu idle.

@@ -18,7 +18,7 @@ import '../../notifications/notification_controller.dart';
 import '../../persona/avatar_catalog.dart';
 import '../../persona/persona_controller.dart';
 import '../../persona/persona_edit_sheet.dart';
-import '../settings_controller.dart';
+import 'package:virtual_heart/services/settings/settings_service.dart';
 
 class PersonaSection extends ConsumerWidget {
   final AppSettings settings;

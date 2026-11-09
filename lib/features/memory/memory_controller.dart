@@ -2,7 +2,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/memory_fact.dart';
-import '../../models/objectbox_provider.dart';
+import 'package:virtual_heart/services/database/objectbox_provider.dart';
 
 /// Daftar reaktif semua [MemoryFact], diurutkan terbaru dulu.
 class MemoryFactsNotifier extends Notifier<List<MemoryFact>> {

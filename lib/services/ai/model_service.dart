@@ -6,8 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/errors/app_logger.dart';
-import '../../features/model/model_ready_provider.dart';
-import '../../features/settings/settings_controller.dart';
+import 'package:virtual_heart/services/ai/model_ready_provider.dart';
+import 'package:virtual_heart/services/settings/settings_service.dart';
 import 'model_catalog.dart';
 
 /// Jenis kegagalan pemasangan/pemuatan model.

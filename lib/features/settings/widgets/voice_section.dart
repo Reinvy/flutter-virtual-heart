@@ -14,7 +14,7 @@ import '../../../models/app_settings.dart';
 import '../../../services/ai/speech_model_catalog.dart';
 import '../../../services/stt_service.dart';
 import '../../../services/tts_service.dart';
-import '../settings_controller.dart';
+import 'package:virtual_heart/services/settings/settings_service.dart';
 
 class VoiceSection extends ConsumerWidget {
   final AppSettings settings;

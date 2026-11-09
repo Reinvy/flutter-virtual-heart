@@ -13,7 +13,7 @@ import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
-import '../settings/settings_controller.dart';
+import 'package:virtual_heart/services/settings/settings_service.dart';
 
 class AgeGateScreen extends ConsumerWidget {
   const AgeGateScreen({super.key});

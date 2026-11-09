@@ -1,7 +1,7 @@
 // Provider ObjectBox — menyediakan ObjectBoxService ke seluruh app.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../services/database/objectbox_service.dart';
+import 'objectbox_service.dart';
 
 /// Menyediakan instance [ObjectBoxService] yang sudah diinisialisasi.
 ///

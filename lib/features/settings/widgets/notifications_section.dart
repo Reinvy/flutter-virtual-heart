@@ -11,7 +11,7 @@ import '../../../core/l10n/app_strings.dart';
 import '../../../models/app_settings.dart';
 import '../../../services/notification_service.dart';
 import '../../notifications/notification_controller.dart';
-import '../settings_controller.dart';
+import 'package:virtual_heart/services/settings/settings_service.dart';
 
 class NotificationsSection extends ConsumerWidget {
   final AppSettings settings;

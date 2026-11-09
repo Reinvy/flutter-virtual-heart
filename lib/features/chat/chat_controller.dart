@@ -6,7 +6,7 @@ import '../../core/errors/app_logger.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../models/memory_fact.dart';
 import '../../models/message.dart';
-import '../../models/objectbox_provider.dart';
+import 'package:virtual_heart/services/database/objectbox_provider.dart';
 import '../../models/persona_config.dart';
 import '../../services/ai/content_safety.dart';
 import '../../services/ai/memory_extractor.dart';
@@ -15,7 +15,7 @@ import '../../services/ai/model_service.dart';
 import '../../services/ai/prompt_builder.dart';
 import '../../services/mood_service.dart';
 import '../memory/memory_controller.dart';
-import '../settings/settings_controller.dart';
+import 'package:virtual_heart/services/settings/settings_service.dart';
 import 'chat_models.dart';
 import 'mood_provider.dart';
 

@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/errors/app_logger.dart';
 import '../../models/app_settings.dart';
-import '../../models/objectbox_provider.dart';
+import 'package:virtual_heart/services/database/objectbox_provider.dart';
 
 /// Mengelola [AppSettings] dan mempersistensikannya ke ObjectBox.
 class AppSettingsNotifier extends Notifier<AppSettings> {

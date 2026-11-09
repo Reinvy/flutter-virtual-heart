@@ -1,7 +1,7 @@
 // Fitur Persona (FR-03, FR-10) — controller & provider persona.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../models/objectbox_provider.dart';
+import 'package:virtual_heart/services/database/objectbox_provider.dart';
 import '../../models/persona_config.dart';
 
 /// Mengelola [PersonaConfig] tunggal (aplikasi single-persona).

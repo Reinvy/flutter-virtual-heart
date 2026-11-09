@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:virtual_heart/core/design/app_theme.dart';
 import 'package:virtual_heart/core/l10n/app_strings.dart';
-import 'package:virtual_heart/features/settings/settings_controller.dart';
+import 'package:virtual_heart/services/settings/settings_service.dart';
 import 'package:virtual_heart/features/settings/widgets/appearance_section.dart';
 import 'package:virtual_heart/features/settings/widgets/language_section.dart';
 import 'package:virtual_heart/features/settings/widgets/model_section.dart';

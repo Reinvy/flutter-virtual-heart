@@ -16,15 +16,15 @@ import '../../../core/design/components/section_card.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/router/app_router.dart';
 import '../../../models/message.dart';
-import '../../../models/objectbox_provider.dart';
+import 'package:virtual_heart/services/database/objectbox_provider.dart';
 import '../../../services/ai/model_service.dart';
 import '../../../services/notification_service.dart';
 import '../../chat/chat_controller.dart';
 import '../../chat/mood_provider.dart';
 import '../../memory/memory_controller.dart';
-import '../../model/model_ready_provider.dart';
+import 'package:virtual_heart/services/ai/model_ready_provider.dart';
 import '../../persona/persona_controller.dart';
-import '../settings_controller.dart';
+import 'package:virtual_heart/services/settings/settings_service.dart';
 
 class DataPrivacySection extends ConsumerWidget {
   const DataPrivacySection({super.key});

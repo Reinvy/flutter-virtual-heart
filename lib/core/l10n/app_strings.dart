@@ -4,7 +4,7 @@
 // Bahasa dipilih dari AppSettings.language via [appStringsProvider].
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../features/settings/settings_controller.dart';
+import 'package:virtual_heart/services/settings/settings_service.dart';
 import '../../models/app_settings.dart';
 
 /// Kumpulan string UI. Implementasi: [IndonesianStrings] & [EnglishStrings].

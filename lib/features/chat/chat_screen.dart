@@ -25,7 +25,7 @@ import '../persona/avatar_catalog.dart';
 import '../persona/persona_controller.dart';
 import '../persona/persona_edit_sheet.dart';
 import '../persona/persona_profile_sheet.dart';
-import '../settings/settings_controller.dart';
+import 'package:virtual_heart/services/settings/settings_service.dart';
 import 'chat_controller.dart';
 import 'chat_models.dart';
 import 'mood_provider.dart';

@@ -8,7 +8,7 @@ import '../../../core/design/components/section_card.dart';
 import '../../../core/design/tokens/app_sizes.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../models/app_settings.dart';
-import '../settings_controller.dart';
+import 'package:virtual_heart/services/settings/settings_service.dart';
 
 class AppearanceSection extends ConsumerWidget {
   final AppSettings settings;

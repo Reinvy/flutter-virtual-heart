@@ -7,7 +7,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../models/app_settings.dart';
 import '../../services/notification_service.dart';
 import '../persona/persona_controller.dart';
-import '../settings/settings_controller.dart';
+import 'package:virtual_heart/services/settings/settings_service.dart';
 
 /// Menjaga jadwal notifikasi tetap sinkron dengan [AppSettings].
 ///

@@ -7,7 +7,7 @@ import 'package:virtual_heart/core/design/tokens/app_colors.dart';
 import 'package:virtual_heart/core/l10n/app_strings.dart';
 import 'package:virtual_heart/features/chat/mood_provider.dart';
 import 'package:virtual_heart/features/chat/widgets/chat_bubble.dart';
-import 'package:virtual_heart/features/settings/settings_controller.dart';
+import 'package:virtual_heart/services/settings/settings_service.dart';
 import 'package:virtual_heart/models/app_settings.dart';
 import 'package:virtual_heart/models/message.dart';
 import 'package:virtual_heart/models/mood_state.dart';

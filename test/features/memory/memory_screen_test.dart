@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:virtual_heart/core/l10n/app_strings.dart';
 import 'package:virtual_heart/features/memory/memory_controller.dart';
 import 'package:virtual_heart/features/memory/memory_screen.dart';
-import 'package:virtual_heart/features/settings/settings_controller.dart';
+import 'package:virtual_heart/services/settings/settings_service.dart';
 import 'package:virtual_heart/models/app_settings.dart';
 import 'package:virtual_heart/models/memory_fact.dart';
 

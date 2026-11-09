@@ -10,7 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'bootstrap_error_app.dart';
 import 'core/errors/app_logger.dart';
-import 'models/objectbox_provider.dart';
+import 'package:virtual_heart/services/database/objectbox_provider.dart';
 import 'services/database/objectbox_service.dart';
 import 'services/notification_service.dart';
 

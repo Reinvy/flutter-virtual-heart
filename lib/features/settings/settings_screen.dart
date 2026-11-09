@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
-import 'settings_controller.dart';
+import 'package:virtual_heart/services/settings/settings_service.dart';
 import 'widgets/appearance_section.dart';
 import 'widgets/data_privacy_section.dart';
 import 'widgets/language_section.dart';
