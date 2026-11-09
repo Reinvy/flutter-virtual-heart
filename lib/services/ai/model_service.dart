@@ -44,6 +44,51 @@ class ContextLimitReachedException implements Exception {
   String toString() => 'ContextLimitReachedException';
 }
 
+/// Mengklasifikasikan error engine/IO ke [ModelErrorKind] yang bisa ditampilkan.
+///
+/// Fungsi murni (tidak menyentuh provider) supaya bisa diuji terpisah.
+ModelErrorKind classifyModelError(Object error) {
+  if (error is ModelException) return error.kind;
+  if (error is ContextLimitReachedException) return ModelErrorKind.engine;
+
+  final message = error.toString().toLowerCase();
+  if (message.contains('cancel')) return ModelErrorKind.cancelled;
+  if (message.contains('404') || message.contains('not found')) {
+    return ModelErrorKind.notFound;
+  }
+  if (message.contains('401') ||
+      message.contains('403') ||
+      message.contains('unauthorized') ||
+      message.contains('forbidden')) {
+    return ModelErrorKind.auth;
+  }
+  if (message.contains('429') ||
+      message.contains('rate limit') ||
+      message.contains('too many')) {
+    return ModelErrorKind.rateLimited;
+  }
+  if (message.contains('socket') ||
+      message.contains('network') ||
+      message.contains('connection') ||
+      message.contains('host lookup') ||
+      message.contains('timed out')) {
+    return ModelErrorKind.network;
+  }
+  if (message.contains('space') ||
+      message.contains('storage') ||
+      message.contains('enospc') ||
+      message.contains('disk')) {
+    return ModelErrorKind.storage;
+  }
+  if (message.contains('invalid') ||
+      message.contains('corrupt') ||
+      message.contains('format')) {
+    return ModelErrorKind.invalidFile;
+  }
+  if (error is StateError) return ModelErrorKind.engine;
+  return ModelErrorKind.unknown;
+}
+
 /// Status model LLM on-device.
 class ModelStatus {
   /// Model siap inferensi.
@@ -55,9 +100,6 @@ class ModelStatus {
   /// Nama model aktif (null bila belum ada).
   final String? modelName;
 
-  /// Pesan error ramah (null bila tidak ada).
-  final String? error;
-
   /// Sedang mengunduh/memasang.
   final bool installing;
 
@@ -65,7 +107,6 @@ class ModelStatus {
     this.ready = false,
     this.progress = 0,
     this.modelName,
-    this.error,
     this.installing = false,
   });
 
@@ -73,14 +114,12 @@ class ModelStatus {
     bool? ready,
     double? progress,
     String? modelName,
-    String? error,
     bool? installing,
   }) {
     return ModelStatus(
       ready: ready ?? this.ready,
       progress: progress ?? this.progress,
       modelName: modelName ?? this.modelName,
-      error: error ?? this.error,
       installing: installing ?? this.installing,
     );
   }
@@ -103,6 +142,9 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
   /// Chat yang sedang aktif — dipakai [stopGeneration].
   edge_ai.InferenceChat? _activeChat;
 
+  /// Selesai saat proses install (sukses/gagal/batal) berakhir.
+  Completer<void>? _installDone;
+
   /// Antrean inferensi: chat, ekstraksi memori, dan ringkasan tidak boleh
   /// berjalan bersamaan pada instance engine yang sama.
   Completer<void>? _lockHeld;
@@ -120,42 +162,53 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
       final model = _model;
       if (model != null) unawaited(model.close());
     });
+
     final settings = ref.read(appSettingsProvider);
 
     // Model sudah pernah dipilih & terinstal → langsung aktifkan.
     if (settings.modelVariant.isNotEmpty) {
+      if (!await edge_ai.FlutterEdgeAi.isModelInstalled(settings.modelVariant)) {
+        return const ModelStatus();
+      }
+      return _activate(settings.modelVariant);
+    }
+
+    // Belum pernah memilih model. Hanya pakai otomatis bila tepat satu file
+    // terpasang (daftar juga memuat model TTS/STT, jadi >1 tidak bisa ditebak).
+    try {
+      final installed = await edge_ai.FlutterEdgeAi.listInstalledModels();
+      if (installed.length != 1) return const ModelStatus();
+      final fileName = installed.first;
       try {
-        final installed = await edge_ai.FlutterEdgeAi.isModelInstalled(
-          settings.modelVariant,
+        final status = await _activate(fileName);
+        await _persistSelection(
+          fileName: fileName,
+          source: 'file',
+          url: '',
         );
-        if (installed) {
-          _model = await edge_ai.FlutterEdgeAi.getActiveModel(
-            preferredBackend: edge_ai.PreferredBackend.cpu,
-            maxTokens: 2048,
-          );
-          ref.read(modelReadyProvider.notifier).setReady();
-          return ModelStatus(ready: true, modelName: settings.modelVariant);
-        }
-      } catch (_) {
-        // Model rusak → biarkan pengguna memasang ulang dari layar model.
-      }
-    }
-
-    // Belum pernah ada pilihan model → pasang model default.
-    if (settings.modelSource.isEmpty) {
-      _cancelToken = edge_ai.CancelToken();
-      try {
-        await _installWithProgress(kDefaultModelOption, hfToken: null);
-        return state.value ?? const ModelStatus(ready: true);
+        return status;
       } catch (e) {
-        return ModelStatus(error: _friendlyError(e));
-      } finally {
-        _cancelToken = null;
+        // File bisa jadi model suara — jangan blokir startup.
+        AppLogger.debug('Auto-activate skipped', e);
+        return const ModelStatus();
       }
+    } catch (e) {
+      AppLogger.debug('Installed model scan skipped', e);
+      return const ModelStatus();
     }
+  }
 
-    // Ada pilihan tersimpan tapi file-nya tidak ada: jangan auto-install ulang.
-    return const ModelStatus();
+  Future<ModelStatus> _activate(String fileName) async {
+    try {
+      _model = await edge_ai.FlutterEdgeAi.getActiveModel(
+        preferredBackend: edge_ai.PreferredBackend.cpu,
+        maxTokens: 2048,
+      );
+    } catch (e) {
+      throw ModelException(ModelErrorKind.engine, e);
+    }
+    ref.read(modelReadyProvider.notifier).setReady();
+    return ModelStatus(ready: true, modelName: fileName);
   }
 
   // -------------------------------------------------------------------------
@@ -163,44 +216,72 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
   // -------------------------------------------------------------------------
 
   /// Mengunduh [option] dari HuggingFace dengan progress.
-  Future<void> installFromNetwork(ModelOption option, {String? hfToken}) async {
+  ///
+  /// `true` bila model terpasang dan aktif.
+  Future<bool> installFromNetwork(ModelOption option, {String? hfToken}) async {
+    final previous = state.value;
     state = const AsyncLoading();
-    _cancelToken = edge_ai.CancelToken();
+    final token = _cancelToken = edge_ai.CancelToken();
+    final done = _installDone = Completer<void>();
     try {
-      await _installWithProgress(option, hfToken: hfToken);
-    } catch (e) {
-      state = AsyncError(_friendlyError(e), StackTrace.current);
+      await _installFromNetwork(option, hfToken: hfToken, token: token);
+      return true;
+    } catch (e, st) {
+      final kind = classifyModelError(e);
+      if (!ref.mounted) return false;
+      if (kind == ModelErrorKind.cancelled) {
+        state = AsyncData(previous ?? const ModelStatus());
+      } else {
+        state = AsyncError(ModelException(kind, e), st);
+      }
+      return false;
     } finally {
       _cancelToken = null;
+      if (!done.isCompleted) done.complete();
+      if (identical(_installDone, done)) _installDone = null;
     }
   }
 
   /// Memasang model dari file lokal (upload pengguna).
-  Future<void> installFromFile(String path, ModelOption option) async {
+  ///
+  /// `true` bila model terpasang dan aktif.
+  Future<bool> installFromFile(String path, ModelOption option) async {
+    final previous = state.value;
     state = const AsyncLoading();
     _cancelToken = null;
-    state = await AsyncValue.guard(() async {
+    try {
       await edge_ai.FlutterEdgeAi.installModel(
         modelType: option.edgeAiModelType,
         fileType: option.edgeAiFileType,
       ).fromFile(path).install();
 
-      _model = await edge_ai.FlutterEdgeAi.getActiveModel(
-        preferredBackend: edge_ai.PreferredBackend.cpu,
-        maxTokens: 2048,
-      );
-
-      await _persistSelection(option, source: 'file', url: '');
-      ref.read(modelReadyProvider.notifier).setReady();
-      return ModelStatus(ready: true, modelName: option.fileName);
-    });
+      await _activate(option.fileName);
+      await _persistSelection(fileName: option.fileName, source: 'file', url: '');
+      if (ref.mounted) {
+        state = AsyncData(ModelStatus(ready: true, modelName: option.fileName));
+      }
+      return true;
+    } catch (e, st) {
+      final kind = classifyModelError(e);
+      if (!ref.mounted) return false;
+      if (kind == ModelErrorKind.cancelled) {
+        state = AsyncData(previous ?? const ModelStatus());
+      } else {
+        state = AsyncError(ModelException(kind, e), st);
+      }
+      return false;
+    }
   }
 
-  /// Membatalkan download yang sedang berjalan.
+  /// Membatalkan download yang sedang berjalan dan menunggu proses berhenti.
   Future<void> cancelDownload() async {
     final token = _cancelToken;
     if (token != null && !token.isCancelled) {
       token.cancel('User cancelled download');
+    }
+    final done = _installDone;
+    if (done != null && !done.isCompleted) {
+      await done.future;
     }
   }
 
@@ -208,9 +289,11 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
   // Private
   // -------------------------------------------------------------------------
 
-  Future<void> _installWithProgress(ModelOption option, {String? hfToken}) async {
-    final token = _cancelToken ??= edge_ai.CancelToken();
-
+  Future<void> _installFromNetwork(
+    ModelOption option, {
+    String? hfToken,
+    required edge_ai.CancelToken token,
+  }) async {
     await edge_ai.FlutterEdgeAi.installModel(
       modelType: option.edgeAiModelType,
       fileType: option.edgeAiFileType,
@@ -218,6 +301,7 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
         .fromNetwork(option.url, token: hfToken)
         .withCancelToken(token)
         .withProgress((progress) {
+          if (!ref.mounted) return;
           state = AsyncData(
             (state.value ?? const ModelStatus()).copyWith(
               progress: progress / 100,
@@ -228,26 +312,24 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
         })
         .install();
 
-    _model = await edge_ai.FlutterEdgeAi.getActiveModel(
-      preferredBackend: edge_ai.PreferredBackend.cpu,
-      maxTokens: 2048,
-    );
-
-    await _persistSelection(option, source: 'network', url: option.url);
-    ref.read(modelReadyProvider.notifier).setReady();
-    state = AsyncData(ModelStatus(ready: true, modelName: option.fileName));
+    await _activate(option.fileName);
+    await _persistSelection(fileName: option.fileName, source: 'network', url: option.url);
+    if (ref.mounted) {
+      state = AsyncData(ModelStatus(ready: true, modelName: option.fileName));
+    }
   }
 
   /// Menyimpan identitas model aktif ke [AppSettings].
-  Future<void> _persistSelection(
-    ModelOption option, {
+  Future<void> _persistSelection({
+    required String fileName,
     required String source,
     required String url,
   }) async {
+    if (!ref.mounted) return;
     final settings = ref.read(appSettingsProvider);
     ref.read(appSettingsProvider.notifier).save(
       settings.copyWith(
-        modelVariant: option.fileName,
+        modelVariant: fileName,
         modelSource: source,
         modelUrl: url,
       ),
@@ -258,17 +340,6 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
   static Future<void> saveHfToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('hf_token', token.trim());
-  }
-
-  String _friendlyError(Object error) {
-    final msg = error.toString();
-    if (msg.contains('404')) return 'Model tidak ditemukan di server.';
-    if (msg.contains('401') || msg.contains('403')) {
-      return 'Akses ditolak — periksa token HuggingFace untuk model gated.';
-    }
-    if (msg.contains('429')) return 'Terlalu banyak permintaan. Coba lagi nanti.';
-    if (msg.contains('cancel')) return 'Unduhan dibatalkan.';
-    return 'Gagal memasang model. Coba lagi.';
   }
 
   // -------------------------------------------------------------------------

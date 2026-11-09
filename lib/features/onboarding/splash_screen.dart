@@ -14,7 +14,7 @@ import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
-import '../model/model_ready_provider.dart';
+import '../../services/ai/model_service.dart';
 import '../settings/settings_controller.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -32,10 +32,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _boot() async {
-    await Future.delayed(const Duration(seconds: 2));
+    final modelReadyFuture = _loadModelReady();
+    await Future<void>.delayed(const Duration(seconds: 2));
+    final isModelReady = await modelReadyFuture;
 
     final settings = ref.read(appSettingsProvider);
-    final isModelReady = ref.read(modelReadyProvider);
     final String route;
 
     if (!settings.isAgeVerified) {
@@ -53,6 +54,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     if (mounted) context.go(route);
   }
 
+  /// Menunggu model selesai dimuat (dibatasi 8 detik agar splash tidak macet).
+  Future<bool> _loadModelReady() async {
+    try {
+      return await ref
+          .read(modelServiceProvider.future)
+          .then((status) => status.ready)
+          .timeout(const Duration(seconds: 8), onTimeout: () => false);
+    } catch (_) {
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -66,7 +79,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: isDark
-                ? const [Color(0xFF1A0F1E), Color(0xFF2A1B26)]
+                ? const [AppColors.backgroundDark, AppColors.surfaceDark]
                 : [AppColors.primarySoft, Colors.white, AppColors.secondarySoft],
             stops: isDark ? null : const [0.0, 0.5, 1.0],
           ),
@@ -107,7 +120,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   ),
                   const SizedBox(height: AppSizes.spaceLg),
                   Text(
-                    'VirtualHeart',
+                    ref.watch(appStringsProvider).appName,
                     style: AppTextStyles.appName(
                       color: isDark ? AppColors.textPrimaryDark : AppColors.primaryDeep,
                     ).copyWith(fontSize: 28),

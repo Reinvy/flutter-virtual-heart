@@ -5,10 +5,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../core/router/app_router.dart';
 import 'settings_controller.dart';
 import 'widgets/appearance_section.dart';
 import 'widgets/data_privacy_section.dart';
 import 'widgets/language_section.dart';
+import 'widgets/model_section.dart';
 import 'widgets/notifications_section.dart';
 import 'widgets/persona_section.dart';
 import 'widgets/voice_section.dart';
@@ -25,7 +27,8 @@ class SettingsScreen extends ConsumerWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => context.pop(),
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+          onPressed: () => context.canPop() ? context.pop() : context.go(AppRoutes.chat),
         ),
         title: Text(strings.settingsTitle, style: Theme.of(context).textTheme.headlineSmall),
         centerTitle: true,
@@ -38,6 +41,8 @@ class SettingsScreen extends ConsumerWidget {
           AppearanceSection(settings: settings),
           const SizedBox(height: AppSizes.spaceMd),
           LanguageSection(settings: settings),
+          const SizedBox(height: AppSizes.spaceMd),
+          ModelSection(settings: settings),
           const SizedBox(height: AppSizes.spaceMd),
           VoiceSection(settings: settings),
           const SizedBox(height: AppSizes.spaceMd),

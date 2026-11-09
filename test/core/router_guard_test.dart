@@ -29,6 +29,23 @@ void main() {
       expect(_resolve(AppRoutes.splash, settings: _settings(age: true)), isNull);
     });
 
+    test('/privacy lolos sebelum gate apa pun', () {
+      expect(_resolve(AppRoutes.privacy), isNull);
+      expect(_resolve(AppRoutes.privacy, settings: _settings(age: true)), isNull);
+      expect(
+        _resolve(
+          AppRoutes.privacy,
+          settings: _settings(age: true, onboarding: true, persona: true),
+        ),
+        isNull,
+      );
+    });
+
+    test('/model-download tetap boleh dibuka saat model sudah siap', () {
+      final settings = _settings(age: true, onboarding: true, persona: true);
+      expect(_resolve(AppRoutes.modelDownload, settings: settings, modelReady: true), isNull);
+    });
+
     test('usia belum diverifikasi → age gate', () {
       expect(_resolve(AppRoutes.chat), AppRoutes.ageGate);
       expect(_resolve(AppRoutes.memory), AppRoutes.ageGate);

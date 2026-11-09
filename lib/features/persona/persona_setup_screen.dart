@@ -13,6 +13,8 @@ import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
 import '../../models/persona_config.dart';
+import '../../services/ai/model_service.dart';
+import '../model/model_ready_provider.dart';
 import '../settings/settings_controller.dart';
 import 'avatar_catalog.dart';
 import 'persona_controller.dart';
@@ -95,7 +97,10 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
       final settings = ref.read(appSettingsProvider);
       ref.read(appSettingsProvider.notifier).save(settings.copyWith(isPersonaSetup: true));
 
-      if (mounted) context.go(AppRoutes.modelDownload);
+      final ready =
+          (ref.read(modelServiceProvider).value?.ready ?? false) ||
+          ref.read(modelReadyProvider);
+      if (mounted) context.go(ready ? AppRoutes.chat : AppRoutes.modelDownload);
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }

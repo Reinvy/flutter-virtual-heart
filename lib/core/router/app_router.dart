@@ -13,15 +13,18 @@ import '../../features/onboarding/age_gate_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/onboarding/splash_screen.dart';
 import '../../features/persona/persona_setup_screen.dart';
+import '../../features/settings/privacy_screen.dart';
 import '../../features/settings/settings_controller.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../models/app_settings.dart';
 import '../design/tokens/app_durations.dart';
+import '../l10n/app_strings.dart';
 
 /// Named route paths.
 abstract final class AppRoutes {
   static const splash = '/splash';
   static const ageGate = '/age-gate';
+  static const privacy = '/privacy';
   static const onboarding = '/onboarding';
   static const personaSetup = '/persona-setup';
   static const modelDownload = '/model-download';
@@ -73,7 +76,10 @@ String? resolveRedirect({
   required AppSettings settings,
   required bool isModelReady,
 }) {
+  // Splash memutuskan langkah berikutnya; kebijakan privasi harus bisa dibaca
+  // sebelum pengguna menyetujui apa pun.
   if (path == AppRoutes.splash) return null;
+  if (path == AppRoutes.privacy) return null;
 
   // Step 1 — age gate (FR-01)
   if (!settings.isAgeVerified) {
@@ -115,9 +121,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       settings: ref.read(appSettingsProvider),
       isModelReady: ref.read(modelReadyProvider),
     ),
+    errorBuilder: (context, state) => const _RouterErrorScreen(),
     routes: [
       GoRoute(path: AppRoutes.splash, pageBuilder: (context, state) => _buildPage(state, const SplashScreen())),
       GoRoute(path: AppRoutes.ageGate, pageBuilder: (context, state) => _buildPage(state, const AgeGateScreen())),
+      GoRoute(path: AppRoutes.privacy, pageBuilder: (context, state) => _buildPage(state, const PrivacyScreen())),
       GoRoute(path: AppRoutes.onboarding, pageBuilder: (context, state) => _buildPage(state, const OnboardingScreen())),
       GoRoute(path: AppRoutes.personaSetup, pageBuilder: (context, state) => _buildPage(state, const PersonaSetupScreen())),
       GoRoute(path: AppRoutes.modelDownload, pageBuilder: (context, state) => _buildPage(state, const ModelDownloadScreen())),
@@ -127,3 +135,33 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+/// Layar fallback bila rute tidak dikenal / gagal dibangun.
+class _RouterErrorScreen extends ConsumerWidget {
+  const _RouterErrorScreen();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline_rounded, size: 40),
+              const SizedBox(height: 12),
+              Text(strings.modelErrorUnknown, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => context.go(AppRoutes.splash),
+                child: Text(strings.chatRetry),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

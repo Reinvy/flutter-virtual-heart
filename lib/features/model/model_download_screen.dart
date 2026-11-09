@@ -1,4 +1,4 @@
-// Fitur Model (FR-04) — layar pilih model AI (network / upload file).
+// Fitur Model (FR-04) — layar pilih/ganti model AI (network / upload file).
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../core/design/components/primary_button.dart';
 import '../../core/design/components/sakura_background.dart';
@@ -16,7 +17,8 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
 import '../../services/ai/model_catalog.dart';
 import '../../services/ai/model_service.dart';
-import 'model_ready_provider.dart';
+import '../settings/settings_controller.dart';
+import 'model_error_text.dart';
 
 class ModelDownloadScreen extends ConsumerStatefulWidget {
   const ModelDownloadScreen({super.key});
@@ -29,23 +31,50 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
   final _tokenController = TextEditingController();
   ModelOption? _selected;
 
+  /// Aksi yang dijalankan tombol "Coba Lagi" setelah kegagalan terakhir.
+  VoidCallback? _retry;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = _catalogOptionFor(ref.read(appSettingsProvider).modelVariant);
+  }
+
   @override
   void dispose() {
     _tokenController.dispose();
     super.dispose();
   }
 
+  static ModelOption? _catalogOptionFor(String fileName) {
+    if (fileName.isEmpty) return null;
+    for (final option in kModelOptions) {
+      if (option.fileName == fileName) return option;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final strings = ref.watch(appStringsProvider);
+    final settings = ref.watch(appSettingsProvider);
     final modelState = ref.watch(modelServiceProvider);
-    final isReady = modelState.value?.ready ?? false;
+    final status = modelState.value;
+    final bool busy = status?.installing ?? false;
+    final bool building = modelState.isLoading && status == null;
+    final bool activeReady = status?.ready ?? false;
+    final String activeFile = settings.modelVariant;
 
-    ref.listen(modelReadyProvider, (_, isReady) {
-      if (isReady && context.mounted) context.go(AppRoutes.chat);
-    });
+    final chosen = _selected ?? _catalogOptionFor(activeFile);
+    final isActive = chosen != null ? (activeReady && activeFile == chosen.fileName) : activeReady;
+    final installTarget = _selected ?? kDefaultModelOption;
 
     return Scaffold(
+      appBar: AppBar(
+        leading: context.canPop() ? const BackButton() : null,
+        title: Text(strings.modelChooseTitle),
+        elevation: 0,
+      ),
       body: SafeArea(
         child: Stack(
           children: [
@@ -53,23 +82,25 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
             ListView(
               padding: const EdgeInsets.fromLTRB(
                 AppSizes.spaceMd,
-                AppSizes.spaceLg,
+                AppSizes.spaceMd,
                 AppSizes.spaceMd,
                 AppSizes.spaceXl,
               ),
               children: [
                 _buildHeader(strings),
                 const SizedBox(height: AppSizes.spaceLg),
-                _buildModelList(strings),
-                const SizedBox(height: AppSizes.spaceLg),
-                _buildTokenField(strings),
-                const SizedBox(height: AppSizes.spaceLg),
-                _buildActions(strings, modelState, isReady),
-                if (modelState.value?.installing == true ||
-                    modelState.isLoading)
-                  _buildProgress(strings, modelState.value?.progress ?? 0),
-                if (modelState.hasError)
-                  _buildError(strings, modelState.error?.toString() ?? ''),
+                if (building)
+                  _buildLoading(strings)
+                else ...[
+                  _buildModelList(strings, activeReady, activeFile),
+                  const SizedBox(height: AppSizes.spaceLg),
+                  _buildTokenField(strings),
+                  const SizedBox(height: AppSizes.spaceLg),
+                  _buildActions(strings, busy: busy, isActive: isActive, target: installTarget),
+                  if (busy) _buildProgress(strings, status?.progress ?? 0),
+                  if (modelState.hasError && !busy)
+                    _buildError(strings, modelState.error!, retryLabel: strings.modelRetry),
+                ],
               ],
             ),
           ],
@@ -82,10 +113,9 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          strings.modelChooseTitle,
-          style: AppTextStyles.headingLarge(),
-        ).animate().fadeIn(duration: 400.ms),
+        Text(strings.modelChooseTitle, style: AppTextStyles.headingLarge())
+            .animate()
+            .fadeIn(duration: 400.ms),
         const SizedBox(height: AppSizes.spaceXs),
         Text(
           strings.modelChooseSubtitle,
@@ -97,7 +127,27 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
     );
   }
 
-  Widget _buildModelList(AppStrings strings) {
+  Widget _buildLoading(AppStrings strings) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceLg),
+      child: Column(
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: AppSizes.spaceMd),
+          Text(strings.modelLoadingTitle, style: AppTextStyles.headingSmall()),
+          const SizedBox(height: AppSizes.spaceXs),
+          Text(
+            strings.modelLoadingBody,
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodyMedium(color: scheme.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModelList(AppStrings strings, bool activeReady, String activeFile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -114,6 +164,8 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
             child: _ModelTile(
               option: opt,
               selected: _selected?.id == opt.id,
+              active: activeReady && activeFile == opt.fileName,
+              activeLabel: strings.modelActive,
               hfTokenBadge: strings.modelHfTokenBadge,
               onTap: () => setState(() => _selected = opt),
             ),
@@ -139,36 +191,33 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
   }
 
   Widget _buildActions(
-    AppStrings strings,
-    AsyncValue<ModelStatus> modelState,
-    bool isReady,
-  ) {
-    final installing = modelState.isLoading ||
-        (modelState.value?.installing ?? false);
-    final option = _selected ?? kDefaultModelOption;
-
+    AppStrings strings, {
+    required bool busy,
+    required bool isActive,
+    required ModelOption target,
+  }) {
+    final label = busy
+        ? strings.modelDownloading
+        : (isActive ? strings.modelActive : strings.modelUse);
     return Column(
       children: [
         PrimaryButton(
-          label: installing ? strings.modelDownloading : strings.modelDownload,
-          loading: installing,
-          icon: Icons.download_rounded,
-          onPressed: installing || isReady
-              ? null
-              : () => _startDownload(option),
+          label: label,
+          loading: busy,
+          icon: isActive ? Icons.check_circle_outline : Icons.download_rounded,
+          onPressed: busy || isActive ? null : () => _startDownload(target),
         ),
         const SizedBox(height: AppSizes.spaceSm),
         SecondaryButton(
           label: strings.modelUploadFile,
           icon: Icons.upload_file_rounded,
-          onPressed: installing || isReady ? null : _pickFile,
+          onPressed: busy ? null : _pickFile,
         ),
-        if (installing)
+        if (busy)
           Padding(
             padding: const EdgeInsets.only(top: AppSizes.spaceSm),
             child: TextButton(
-              onPressed: () =>
-                  ref.read(modelServiceProvider.notifier).cancelDownload(),
+              onPressed: _cancel,
               child: Text(
                 strings.modelCancel,
                 style: AppTextStyles.button(
@@ -207,8 +256,9 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
     );
   }
 
-  Widget _buildError(AppStrings strings, String error) {
+  Widget _buildError(AppStrings strings, Object error, {required String retryLabel}) {
     final scheme = Theme.of(context).colorScheme;
+    final kind = error is ModelException ? error.kind : classifyModelError(error);
     return Padding(
       padding: const EdgeInsets.only(top: AppSizes.spaceMd),
       child: Container(
@@ -217,14 +267,34 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
           color: scheme.errorContainer,
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.error_outline, color: scheme.error),
-            const SizedBox(width: AppSizes.spaceSm),
-            Expanded(
-              child: Text(
-                error,
-                style: AppTextStyles.bodyMedium(color: scheme.onErrorContainer),
+            Row(
+              children: [
+                Icon(Icons.error_outline, color: scheme.error),
+                const SizedBox(width: AppSizes.spaceSm),
+                Expanded(
+                  child: Text(
+                    strings.modelErrorTitle,
+                    style: AppTextStyles.headingSmall(color: scheme.onErrorContainer),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSizes.spaceXs),
+            Text(
+              modelErrorMessage(strings, kind),
+              style: AppTextStyles.bodyMedium(color: scheme.onErrorContainer),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _retry,
+                child: Text(
+                  retryLabel,
+                  style: AppTextStyles.button(color: scheme.error),
+                ),
               ),
             ),
           ],
@@ -233,52 +303,136 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
     );
   }
 
+  // -------------------------------------------------------------------------
+  // Actions
+  // -------------------------------------------------------------------------
+
   Future<void> _startDownload(ModelOption option) async {
-    final notifier = ref.read(modelServiceProvider.notifier);
+    setState(() => _retry = () => _startDownload(option));
     final token = _tokenController.text.trim();
-    if (token.isNotEmpty) {
-      await ModelServiceNotifier.saveHfToken(token);
-    }
-    final hfToken = token.isNotEmpty ? token : null;
-    await notifier.installFromNetwork(option, hfToken: hfToken);
+    if (token.isNotEmpty) await ModelServiceNotifier.saveHfToken(token);
+    if (!mounted) return;
+    final ok = await ref
+        .read(modelServiceProvider.notifier)
+        .installFromNetwork(option, hfToken: token.isNotEmpty ? token : null);
+    if (!mounted) return;
+    if (ok) _onInstalled();
+  }
+
+  Future<void> _cancel() async {
+    final strings = ref.read(appStringsProvider);
+    await ref.read(modelServiceProvider.notifier).cancelDownload();
+    if (!mounted) return;
+    _snack(strings.modelCancelledSnack);
   }
 
   Future<void> _pickFile() async {
+    setState(() => _retry = _pickFile);
     final strings = ref.read(appStringsProvider);
-    final file = await FilePicker.pickFile(
+
+    final picked = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: const ['litertlm', 'task'],
+      dialogTitle: strings.modelUploadFile,
     );
+    final sourcePath = picked?.path;
+    if (sourcePath == null || !mounted) return;
 
-    final path = file?.path;
-    if (path == null) return;
-
-    final basename = File(path).uri.pathSegments.last;
+    final basename = File(sourcePath).uri.pathSegments.last;
     final lower = basename.toLowerCase();
     final isLiteRtl = lower.endsWith('.litertlm');
     if (!isLiteRtl && !lower.endsWith('.task')) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(strings.modelFileInvalid)),
-        );
-      }
+      _snack(strings.modelFileInvalid);
       return;
     }
 
-    // Nama file pengguna bisa apa saja: identitas model = nama file aktual,
-    // sedangkan tipe/engine mengikuti entri katalog yang cocok (atau default).
-    final catalog = modelOptionByFileName(basename);
-    final fileOption = ModelOption(
-      id: catalog.id,
-      name: catalog.name,
-      description: catalog.description,
-      fileName: basename,
-      url: '',
-      fileType: isLiteRtl ? 'litertlm' : 'task',
-      modelType: catalog.modelType,
-      sizeLabel: catalog.sizeLabel,
+    final length = await File(sourcePath).length();
+    if (!mounted) return;
+    if (length == 0) {
+      _snack(strings.modelFileEmpty);
+      return;
+    }
+
+    final modelType = await _askModelType(strings);
+    if (!mounted || modelType == null) return;
+
+    // Salin ke penyimpanan aplikasi: engine mendaftarkan path ini dan harus
+    // tetap ada selama model dipakai (path sementara dari picker tidak stabil).
+    File? target;
+    try {
+      final support = await getApplicationSupportDirectory();
+      final uploadDir = Directory('${support.path}/model_uploads');
+      await uploadDir.create(recursive: true);
+      target = await File(sourcePath).copy('${uploadDir.path}/$basename');
+      if (!mounted) return;
+
+      final option = ModelOption(
+        id: basename,
+        name: basename,
+        description: basename,
+        fileName: basename,
+        url: '',
+        fileType: isLiteRtl ? 'litertlm' : 'task',
+        modelType: modelType,
+        sizeLabel: '',
+      );
+      final ok = await ref
+          .read(modelServiceProvider.notifier)
+          .installFromFile(target.path, option);
+      if (!mounted) return;
+      if (ok) {
+        _onInstalled();
+      } else {
+        await _deleteQuietly(target);
+      }
+    } catch (e) {
+      if (target != null) await _deleteQuietly(target);
+      if (mounted) _snack(strings.modelErrorUnknown);
+    }
+  }
+
+  Future<String?> _askModelType(AppStrings strings) {
+    const families = <String, String>{
+      'qwen': 'Qwen 2.5',
+      'smollm': 'SmolLM',
+      'deepseek': 'DeepSeek R1',
+      'gemmaIt': 'Gemma 3',
+    };
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(strings.modelTypeTitle),
+        children: [
+          for (final entry in families.entries)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(ctx).pop(entry.key),
+              child: Text(entry.value),
+            ),
+        ],
+      ),
     );
-    await ref.read(modelServiceProvider.notifier).installFromFile(path, fileOption);
+  }
+
+  void _onInstalled() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppRoutes.chat);
+    }
+  }
+
+  void _snack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 3)),
+    );
+  }
+
+  static Future<void> _deleteQuietly(File file) async {
+    try {
+      if (await file.exists()) await file.delete();
+    } catch (_) {
+      // Pembersihan best-effort; file yatim tidak memblokir alur.
+    }
   }
 }
 
@@ -286,12 +440,16 @@ class _ModelTile extends StatelessWidget {
   const _ModelTile({
     required this.option,
     required this.selected,
+    required this.active,
+    required this.activeLabel,
     required this.hfTokenBadge,
     required this.onTap,
   });
 
   final ModelOption option;
   final bool selected;
+  final bool active;
+  final String activeLabel;
   final String hfTokenBadge;
   final VoidCallback onTap;
 
@@ -317,7 +475,10 @@ class _ModelTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: AppSizes.spaceXs,
+                    runSpacing: 2,
                     children: [
                       Text(
                         option.name,
@@ -325,23 +486,17 @@ class _ModelTile extends StatelessWidget {
                           color: selected ? scheme.onPrimaryContainer : scheme.onSurface,
                         ),
                       ),
-                      const SizedBox(width: AppSizes.spaceXs),
+                      if (active)
+                        _Badge(
+                          label: activeLabel,
+                          background: scheme.tertiaryContainer,
+                          foreground: scheme.onTertiaryContainer,
+                        ),
                       if (option.gated)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: scheme.secondaryContainer,
-                            borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-                          ),
-                          child: Text(
-                            hfTokenBadge,
-                            style: AppTextStyles.timestamp(
-                              color: scheme.onSecondaryContainer,
-                            ),
-                          ),
+                        _Badge(
+                          label: hfTokenBadge,
+                          background: scheme.secondaryContainer,
+                          foreground: scheme.onSecondaryContainer,
                         ),
                     ],
                   ),
@@ -366,6 +521,26 @@ class _ModelTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge({required this.label, required this.background, required this.foreground});
+
+  final String label;
+  final Color background;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+      ),
+      child: Text(label, style: AppTextStyles.timestamp(color: foreground)),
     );
   }
 }
