@@ -1,492 +1,259 @@
-# FEATURES.md — VirtualHeart
+# FEATURES — Spesifikasi & Status
 
-Dokumen ini adalah **spesifikasi fitur** (Product Requirements) VirtualHeart hasil
-refactor. Setiap fitur punya ID unik (FR-XX), prioritas, acceptance criteria, dan edge
-case. Dokumen ditulis baru sebagai fondasi — bukan dokumentasi dari kode lama.
+Status dokumen ini adalah **kondisi kode saat ini**, bukan rencana.
 
-Dokumen ini **wajib** dibaca bersama:
-- `docs/AGENTS.md` — aturan kerja
-- `docs/DESIGN.md` — design system, UX, arsitektur
-- `docs/WORKFLOW.md` — alur kerja pengembangan
+| Status | Arti |
+| --- | --- |
+| `Implemented` | seluruh acceptance criteria terpenuhi |
+| `Partial` | berfungsi, sebagian kriteria belum (lihat `KNOWN_ISSUES`) |
+| `Backlog` | belum ada di aplikasi (hanya rencana) |
 
----
-
-## 1. Ringkasan Produk & Prinsip
-
-**VirtualHeart** adalah aplikasi *romantic companion* AI yang berjalan **100% on-device**
-(Small Language Model). Pengguna membuat dan berinteraksi dengan pasangan virtual yang
-dipersonalisasi — tanpa akun, tanpa cloud, tanpa telemetri.
-
-Prinsip produk (non-negosiasi):
-
-| # | Prinsip | Implikasi |
-|---|---|---|
-| P1 | **Privasi total** | Semua inferensi, memori, dan data tersimpan lokal. Tidak ada panggilan jaringan. |
-| P2 | **Personalisasi mendalam** | Persona, mood, dan memori membentuk pengalaman yang terasa hidup. |
-| P3 | **Emosional, bukan utilitarian** | Bahasa UI & AI hangat dan manusiawi; fitur mendukung rasa ditemani. |
-| P4 | **Tanpa akun** | Tidak ada login, sinkronisasi, atau akun cloud. |
-| P5 | **Keselamatan konten** | Input & output melewati safety gate; fitur menolak konten berbahaya dengan anggun. |
-
-**Prioritas fitur:**
-- **P0** — wajib untuk rilis pertama (fondasi).
-- **P1** — penting, menyusul segera.
-- **P2** — peningkatan/eksperimen.
+Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas dokumen.
 
 ---
 
-## 2. Format Spesifikasi
+## Alur Awal (Setup Flow)
 
-Setiap fitur mengikuti format:
+### FR-01 — Age Gate (13+) — `Implemented`
 
-```text
-ID   : FR-XX
-Nama : <nama fitur>
-Prioritas : P0/P1/P2
-Deskripsi : <apa dan mengapa>
-Acceptance Criteria:
-  - [ ] <kondisi terukur>
-Edge Cases:
-  - <skenario tepi & perilaku yang diharapkan>
-```
+- Gerbang usia wajib sebelum fitur lain; `AppSettings.isAgeVerified` disimpan di ObjectBox.
+- Menolak → dialog tidak bisa melanjutkan + tutup aplikasi (`SystemNavigator.pop`).
+- Teks ID/EN lewat `AppStrings`; locale Material mengikuti bahasa app.
+- Edge case: aplikasi dimatikan sebelum konfirmasi → gerbang muncul lagi.
+- Ref: `lib/features/onboarding/age_gate_screen.dart`, `lib/app.dart`, `lib/core/router/app_router.dart`.
 
-> Fitur baru yang belum ada di dokumen ini **wajib** ditambahkan di sini sebelum
-> dikerjakan (lihat checklist `AGENTS.md` §6).
+### FR-02 — Onboarding — `Implemented`
 
----
+- 3 halaman, bisa dilewati; flag `isOnboardingDone`.
+- Edge case: sudah onboarding tapi belum persona → guard mengarahkan ke `/persona-setup`.
+- Ref: `lib/features/onboarding/onboarding_screen.dart`.
 
-## 3. Daftar Fitur
+### FR-03 — Persona Setup & Edit — `Partial`
 
-### Alur Awal (Setup Flow)
+- Buat/ubah persona: gender (girlfriend/boyfriend), nama (2–32 karakter), panggilan untuk user,
+  preset kepribadian (gentle/cheerful/mature/mysterious), hobi, 6 avatar per gender.
+- Edit dari profile sheet chat **dan** dari Settings membuka form yang sama; tidak ada route
+  edit terpisah.
+- `PersonaConfig` tidak menyimpan `voiceId` (lihat FR-07).
+- ⚠️ `Partial`: pemilihan suara tidak per-persona, melainkan global.
+- Edge case: nama kosong/terlalu pendek → error inline; edit tanpa mengubah field tetap menyimpan
+  `id` yang sama (tidak membuat duplikat).
+- Ref: `lib/features/persona/`, `lib/models/persona_config.dart`.
 
-#### FR-01 — Age Gate (13+)
-**Prioritas:** P0
+### FR-04 — Model Install & Katalog — `Partial`
 
-**Deskripsi:** Layar verifikasi usia sebelum akses aplikasi. Aplikasi berisi konten
-romantis/emosional sehingga perlu batas usia 13+.
-
-**Acceptance Criteria:**
-- [ ] Layar menampilkan pertanyaan usia dengan dua pilihan: "13 tahun ke atas" / "Di bawah 13 tahun".
-- [ ] Konfirmasi "di bawah 13 tahun" menampilkan pesan hangat dan menutup aplikasi.
-- [ ] Konfirmasi lolos menyimpan status (`isAgeVerified`) dan melanjutkan ke onboarding.
-- [ ] Status bertahan setelah app di-restart (tanpa harus verifikasi ulang).
-
-**Edge Cases:**
-- Pengguna menekan back dari layar age gate → tetap di age gate (tidak boleh lanjut).
-- Status verifikasi hilang dari database → redirect kembali ke age gate.
-
-#### FR-02 — Onboarding (3 Halaman)
-**Prioritas:** P0
-
-**Deskripsi:** Pengenalan fitur dalam 3 halaman singkat (personalisasi, chat & suara,
-privasi on-device) dengan tombol "Lanjut"/"Mulai".
-
-**Acceptance Criteria:**
-- [ ] 3 halaman dengan indikator posisi; bisa di-swipe.
-- [ ] Halaman terakhir punya tombol "Mulai" → menuju Persona Setup.
-- [ ] Status selesai disimpan (`isOnboardingDone`); onboarding tidak tampil lagi.
-- [ ] Desain mengikuti DESIGN.md §3 (empty state, ilustrasi Lottie diperbolehkan).
-
-**Edge Cases:**
-- Pengguna keluar di tengah onboarding → lanjut dari halaman pertama saat kembali.
-- Akses kembali setelah selesai → langsung ke home (chat).
-
-#### FR-03 — Persona Setup (Buat Pasangan Virtual)
-**Prioritas:** P0
-
-**Deskripsi:** Alur pembuatan persona: pilih gender (girlfriend/boyfriend), nama,
-nickname untuk pengguna, preset kepribadian (Gentle, Cheerful, Mature, Mysterious),
-hobi, avatar (6 pilihan per gender), dan voice TTS.
-
-**Acceptance Criteria:**
-- [ ] Semua langkah bisa diselesaikan; hasil tersimpan di `PersonaConfig`.
-- [ ] Validasi: nama tidak kosong (maks 32 karakter); minimal 1 hobi (opsional tapi
-      dianjurkan).
-- [ ] Preset kepribadian memengaruhi deskripsi persona pada prompt AI (DESIGN §6,
-      `prompt_builder`).
-- [ ] Avatar & voice punya preview saat dipilih.
-- [ ] Setelah selesai, menuju Model Install.
-- [ ] Persona bisa diedit dari Settings kapan saja (FR-18).
-
-**Edge Cases:**
-- Nama hanya spasi → tidak valid, tampilkan pesan hangat.
-- Nama terlalu panjang → dibatasi input.
-- Pengguna menekan back → kembali ke onboarding (tidak ke chat).
-
-#### FR-04 — Model Install (Setup Model AI Lokal)
-**Prioritas:** P0
-
-**Deskripsi:** Memasang model SLM dari **network (HuggingFace)** atau **upload file
-lokal**. Pengguna memilih model dari katalog (publik & gated), download dengan progress,
-atau upload file `.litertlm`/`.task`/`.bin` dari penyimpanan.
-
-**Acceptance Criteria:**
-- [ ] Layar pilihan model menampilkan katalog (nama, ukuran, deskripsi, badge gated).
-- [ ] Download dari network dengan progress bar + tombol batal.
-- [ ] Upload file model dari penyimpanan (file picker, validasi ekstensi).
-- [ ] Field HuggingFace Token opsional untuk model gated (disimpan lokal, tidak di-log).
-- [ ] Pilihan & status tersimpan (`modelVariant`, `modelSource`, `modelUrl`); saat
-      restart tidak re-download jika sudah terinstal.
-- [ ] Setelah siap → lanjut ke chat.
-- [ ] Storage tidak cukup / download gagal → pesan panduan + retry.
-
-**Edge Cases:**
-- Model rusak/tidak lengkap → deteksi & re-install.
-- Download dibatalkan → kembali ke pilihan model.
-- File upload format salah → pesan validasi.
-- Model gated tanpa token → pesan "akses ditolak".
+- 5 model (Qwen 2.5 1.5B default, Qwen 2.5 0.5B, SmolLM 135M, DeepSeek R1 1.5B, Gemma 3 1B)
+  diunduh dari HuggingFace dengan progress dan tombol batal, **atau** file `.litertlm`/`.task`
+  di-upload dari perangkat.
+- Token HuggingFace opsional (model gated) disimpan di `SharedPreferences`.
+- Setelah sukses: `modelVariant` = nama file, `modelSource` = `network`/`file`, `modelUrl` = URL.
+- Restart: model terpasang dikenali lewat `isModelInstalled(nama file)`.
+- ⚠️ `Partial`: belum ada preflight ruang penyimpanan/peringatan RAM rendah.
+- Edge case: file dengan nama kustom tetap dikenali (identitas = nama file); upload ekstensi lain
+  ditolak dengan pesan `modelFileInvalid`; batal unduhan menghasilkan status error yang ramah.
+- Ref: `lib/features/model/model_download_screen.dart`, `lib/services/ai/model_service.dart`,
+  `lib/services/ai/model_catalog.dart`.
 
 ---
 
-### Chat & Suara
+## Chat & Suara
 
-#### FR-05 — Chat dengan Streaming Respon AI
-**Prioritas:** P0
+### FR-05 — Chat Streaming — `Partial`
 
-**Deskripsi:** Layar utama: pengguna mengirim pesan, AI merespons dengan **streaming**
-token. Riwayat percakapan tersimpan di ObjectBox. Konteks prompt berisi persona, mood,
-memori, ringkasan percakapan, dan maks 20 pesan terakhir.
+- Input maksimum 2000 karakter; pesan user langsung dipersist dan tampil.
+- Token AI muncul bertahap (bubble streaming), `TypingIndicator` sebelum token pertama.
+- Riwayat lengkap dipersist di ObjectBox dan dimuat ulang saat app dibuka.
+- ⚠️ `Partial`: tidak ada tombol stop-generation; input dinonaktifkan selama AI menjawab.
+- Ref: `lib/features/chat/chat_screen.dart`, `lib/features/chat/chat_controller.dart`,
+  `lib/services/ai/model_service.dart`.
 
-**Acceptance Criteria:**
-- [ ] Pesan user tampil segera; typing indicator muncul selama AI memproses.
-- [ ] Respon AI dirender bertahap (streaming) dan disimpan utuh setelah selesai.
-- [ ] Tombol kirim berubah menjadi "stop" selama generasi berlangsung.
-- [ ] Riwayat tetap ada setelah app di-restart.
-- [ ] Respon mengikuti instruksi prompt (bahasa, kepribadian, mood, memori).
-- [ ] Output melewati safety gate sebelum ditampilkan (FR-14).
+### FR-06 — Voice Input (STT) — `Partial`
 
-**Edge Cases:**
-- Model belum siap → tombol kirim nonaktif + pesan "model sedang disiapkan".
-- Input kosong/terlalu panjang (> 2000 karakter) → dibatasi.
-- Generasi terhenti (app di-background) → pesan parsial disimpan, mood tetap diperbarui.
-- Prompt terlalu panjang → ringkasan + pemangkasan riwayat (FR-13).
+- Dua backend: on-device (Moonshine, rekam WAV 16 kHz mono) dan sistem (`speech_to_text`).
+- Transkrip masuk ke input untuk diedit, lalu terkirim dengan `Message.isVoice = true`.
+- Izin mikrofon diminta saat dipakai; penolakan → pesan `chatSttUnavailable`.
+- ⚠️ `Partial`: tidak ada visualisasi waveform/progress transkripsi.
+- Edge case: rekaman tanpa akhir → `stopListening` mengembalikan string kosong (tanpa error ke
+  UI); WAV tanpa chunk `data` ditolak parser (`FormatException`) dan sesi dianggap gagal.
+- Ref: `lib/services/stt_service.dart`, `lib/core/utils/wav_pcm.dart`,
+  `lib/features/chat/widgets/input_bar.dart`.
 
-#### FR-06 — Voice Input (Speech-to-Text)
-**Prioritas:** P1
+### FR-07 — Voice Output (TTS) — `Partial`
 
-**Deskripsi:** Tombol mikrofon di chat input bar; rekam suara, konversi ke teks
-**on-device** (`flutter_gemma_speech` + moonshine-tiny) atau **dikte sistem**
-(`speech_to_text` — opsional, tanpa unduhan), lalu isi input (bisa diedit)
-sebelum dikirim.
+- Dua backend: on-device (Inflect default, Matcha, Qwen3) dan suara sistem (`flutter_tts`).
+- Play/stop per bubble AI; auto-play opsional setelah jawaban selesai.
+- Bahasa TTS mengikuti `AppSettings.language` (`id-ID`/`en-US`).
+- Ganti model benar-benar memasang/mengaktifkan model yang dipilih.
+- ⚠️ `Partial`: selesai playback diperkirakan dari durasi PCM (bukan callback plugin).
+- Edge case: model belum tersedia → SnackBar `chatTtsUnavailable`, chat tetap jalan; meninggalkan
+  layar chat menghentikan audio.
+- Ref: `lib/services/tts_service.dart`, `lib/features/chat/widgets/chat_bubble.dart`.
 
-**Acceptance Criteria:**
-- [ ] Izin mikrofon diminta dengan penjelasan; ditolak → tombol nonaktif + tooltip.
-- [ ] Backend STT bisa dipilih di Settings (Gemma on-device / System); model gemma
-      di-download satu kali (progress); system tanpa unduhan.
-- [ ] Saat merekam: indikator aktif; ketuk lagi untuk berhenti.
-- [ ] Hasil transkripsi tampil di input sebelum dikirim (bisa diedit).
-- [ ] Pesan hasil suara ditandai `isVoice` (opsional untuk UI).
+### FR-08 — Typing Indicator — `Implemented`
 
-**Edge Cases:**
-- Permission ditolak permanen → arahkan ke pengaturan sistem.
-- STT tidak tersedia (web / model belum di-download) → sembunyikan tombol / pesan.
-- Transkripsi kosong → abaikan, jangan kirim.
+- Animasi tiga titik saat `ChatState.isTyping` dan belum ada token.
+- Ref: `lib/features/chat/widgets/typing_indicator.dart`.
 
-#### FR-07 — Voice Output (Text-to-Speech)
-**Prioritas:** P1
+### FR-09 — Dynamic Mood Engine — `Implemented`
 
-**Deskripsi:** Membacakan respon AI — **on-device** (`flutter_gemma_speech` +
-Inflect/Matcha/Qwen3) atau **suara sistem** (`flutter_tts` — opsional, tanpa
-unduhan). Pengaturan: backend, model TTS, aktif/nonaktif, autoplay.
+- 5 mood (happy, longing, playful, sad, excited) dengan intensitas 0–1.
+- Diperbarui dari sentimen jawaban AI, turun ke `longing` setelah 6/12 jam idle.
+- Mood diinjeksikan ke system prompt dan ditampilkan di AppBar + profile sheet.
+- Ref: `lib/services/mood_service.dart`, `lib/features/chat/mood_provider.dart`,
+  `lib/features/chat/widgets/mood_indicator.dart`.
 
-**Acceptance Criteria:**
-- [ ] Tombol play/stop di bubble/chat control; indikator sedang membaca.
-- [ ] `ttsEnabled` mematikan semua suara; `ttsAutoPlay` memutar otomatis.
-- [ ] Backend & model TTS bisa dipilih di Settings; model gemma di-download satu
-      kali (progress); system tanpa unduhan.
-- [ ] Mematikan/beralih layar menghentikan playback.
+### FR-10 — Persona Profile Sheet — `Implemented`
 
-**Edge Cases:**
-- Engine TTS gagal inisialisasi → fallback diam, tanpa crash.
-- Teks sangat panjang → potong/estimasi durasi, hentikan bila pengguna mengetik.
-- Permission audio/notifikasi ditolak → tetap bisa chat (tanpa suara).
-
-#### FR-08 — Typing Indicator
-**Prioritas:** P0
-
-**Deskripsi:** Animasi 3 titik saat AI sedang menyusun respons (DESIGN.md §3.3).
-
-**Acceptance Criteria:**
-- [ ] Muncul segera setelah pesan user terkirim, hilang saat token pertama tampil.
-- [ ] Durasi & easing mengikuti token motion (DESIGN.md §2.6).
-
-**Edge Cases:**
-- Generasi lambat → indikator tetap tampil (tidak timeout palsu).
-
-#### FR-09 — Dynamic Mood Engine
-**Prioritas:** P0
-
-**Deskripsi:** Pasangan virtual punya mood dinamis (Happy, Longing, Playful, Sad,
-Excited) dengan intensitas 0.0–1.0. Mood diperbarui dari sentimen percakapan dan
-waktu idle, lalu diinjeksikan ke prompt AI serta ditampilkan sebagai chip (FR-10/§3.4
-DESIGN).
-
-**Acceptance Criteria:**
-- [ ] Mood diperbarui setelah setiap pertukaran pesan (keyword sentiment + konteks).
-- [ ] Idle ≥ 6 jam → cenderung `longing`; ≥ 12 jam → `longing` intensitas tinggi.
-- [ ] Mood tersimpan di ObjectBox (`MoodState`) dan bertahan setelah restart.
-- [ ] Prompt AI menyertakan mood & intensitas (DESIGN §6, `prompt_builder`).
-- [ ] Chip mood di header chat merefleksikan state saat ini.
-
-**Edge Cases:**
-- Percakapan campur aduk emosi → skor tertinggi menang, intensitas dibatasi (cap).
-- Tanpa interaksi berhari-hari → mood `longing` (tidak pernah `sad` ekstrem).
-- Reset mood saat data di-wipe (FR-19).
-
-#### FR-10 — Persona Profile Sheet
-**Prioritas:** P1
-
-**Deskripsi:** Sheet yang bisa di-swipe-up dari chat: avatar besar, nama, preset
-kepribadian, hobi, mood saat ini, dan pintu edit persona.
-
-**Acceptance Criteria:**
-- [ ] Tersedia dari app bar chat; animasi bottom sheet sesuai DESIGN §3.5.
-- [ ] Menampilkan data persona & mood live.
-- [ ] Tombol "Edit Persona" → Settings → Persona.
-
-**Edge Cases:**
-- Persona belum lengkap (data korup) → fallback nama default "VirtualHeart".
+- Bottom sheet dari AppBar chat: avatar besar, nama, gender, panggilan, kartu mood (emoji +
+  intensitas), chip hobi, kartu kepribadian, tombol Edit.
+- Edit membuka `PersonaEditSheet` (bukan route), perubahan langsung terlihat.
+- Ref: `lib/features/persona/persona_profile_sheet.dart`,
+  `lib/features/persona/persona_edit_sheet.dart`.
 
 ---
 
-### Memori & Konteks
+## Memori & Konteks
 
-#### FR-11 — Memory Extraction (Ekstraksi Fakta)
-**Prioritas:** P0
+### FR-11 — Memory Extraction — `Implemented`
 
-**Deskripsi:** Setelah percakapan, sistem mengekstrak fakta penting ke 4 kategori:
-**Personal**, **Events**, **Preferences**, **Important Dates**. Fakta disimpan sebagai
-`MemoryFact` dan direferensikan AI agar respons terasa personal.
+- Setiap jawaban AI memicu ekstraksi fakta `FACT: category | key | value` (best-effort).
+- Fakta digabung berdasarkan `key` (case-insensitive): nilai/kategori/sumber diperbarui, bukan
+  duplikat. `sourceSnippet` menyimpan pesan user pemicu.
+- `lastReferencedAt` diperbarui untuk setiap fakta yang dipakai menyusun prompt.
+- Kategori: personal, event, preference, date.
+- Edge case: model mengembalikan format salah → tidak ada fakta baru, chat tidak gagal.
+- Ref: `lib/services/ai/memory_extractor.dart`, `lib/features/chat/chat_controller.dart`.
 
-**Acceptance Criteria:**
-- [ ] Ekstraksi berjalan otomatis (batch/background ringan) setelah percakapan.
-- [ ] Fakta punya `key`, `value`, `sourceSnippet`, `createdAt`, `lastReferencedAt`.
-- [ ] Fakta duplikat digabung/di-update, bukan ditumpuk.
-- [ ] Prompt AI menyertakan fakta relevan (DESIGN §6).
+### FR-12 — Memory Screen — `Implemented`
 
-**Edge Cases:**
-- Percakapan tanpa fakta → tidak ada ekstraksi (hemat token).
-- Fakta sensitif (mis. kesehatan) → tetap diproses lokal; tidak pernah keluar perangkat.
-- Hasil ekstraksi tidak valid/format salah → dibuang, jangan crash.
+- Daftar fakta per kategori, pencarian key/value, hapus satu fakta, reset semua fakta.
+- Ref: `lib/features/memory/memory_screen.dart`, `lib/features/memory/memory_controller.dart`.
 
-#### FR-12 — Memory Screen
-**Prioritas:** P1
+### FR-13 — Conversation Summarization — `Implemented`
 
-**Deskripsi:** Layar untuk melihat, mencari, dan menghapus fakta memori per kategori.
+- Setiap 30 pesan, ringkasan 3–5 kalimat dibuat (maks. 60 pesan terakhir) dan disimpan di
+  `AppSettings.conversationSummary` lewat `AppSettingsNotifier.setConversationSummary`.
+- Ringkasan diinjeksikan ke system prompt sebagai `[CONTEXT SUMMARY]`.
+- Hapus semua percakapan dan reset persona menghapus ringkasan.
+- Ref: `lib/services/ai/prompt_builder.dart`, `lib/features/settings/settings_controller.dart`.
 
-**Acceptance Criteria:**
-- [ ] Daftar fakta dikelompokkan per kategori; ada pencarian (filter key/value).
-- [ ] Hapus per-fakta dengan konfirmasi.
-- [ ] Empty state hangat jika belum ada memori (DESIGN §3.7).
+### FR-14 — Content Safety — `Implemented`
 
-**Edge Cases:**
-- Kategori kosong → tampilkan section kosong/tersembunyi.
-- Pencarian tanpa hasil → pesan "tidak ditemukan" yang ramah.
-
-#### FR-13 — Conversation Summarization
-**Prioritas:** P0
-
-**Deskripsi:** Percakapan panjang diringkas otomatis (setiap ±30 pesan) agar konteks
-tetap terjaga tanpa meledakkan ukuran prompt. Ringkasan disimpan di
-`AppSettings.conversationSummary`.
-
-**Acceptance Criteria:**
-- [ ] Ringkasan dihasilkan saat ambang pesan tercapai, menggantikan riwayat lama.
-- [ ] Ringkasan diinjeksikan ke prompt sebagai `[CONTEXT SUMMARY]`.
-- [ ] Ringkasan diperbarui saat percakapan berlanjut.
-- [ ] Menghapus riwayat (FR-19) juga menghapus ringkasan.
-
-**Edge Cases:**
-- Model sibuk saat summarisasi → tunda ke jeda berikutnya, jangan blokir chat.
-- Ringkasan gagal dihasilkan → lanjutkan dengan riwayat terpotong, coba lagi nanti.
-
-#### FR-14 — Content Safety (Input & Output Gate)
-**Prioritas:** P0
-
-**Deskripsi:** Gate keamanan dua arah: (1) input user melewati filter sebelum diproses
-model, (2) output model divalidasi sebelum ditampilkan. Konten berbahaya (eksplisit,
-self-harm, ujaran kebencian, kekerasan) diblokir dengan respons hangat in-character.
-
-**Acceptance Criteria:**
-- [ ] Input terlarang → tidak diteruskan ke model; pengguna mendapat pesan penolakan hangat.
-- [ ] Output terlarang → tidak ditampilkan; diganti pesan pengalihan in-character.
-- [ ] Filter bekerja lokal (tanpa jaringan) dan tetap berfungsi offline.
-- [ ] Tidak ada konten berbahaya yang lolos ke UI.
-
-**Edge Cases:**
-- Positif palsu (konten normal dianggap terlarang) → pesan netral, user bisa menulis ulang.
-- Percakapan sensitif tapi legal (mis. duka) → TIDAK diblokir (filter berbasis kategori, bukan kata kunci kasar).
+- Gate input (sebelum prompt) dan output (setelah generasi) dengan kategori: explicit sexual,
+  self-harm, professional advice, hate speech, violence instruction, PII.
+- Konten terblokir diganti deflection hangat; tidak ada pesan error teknis ke UI.
+- Ref: `lib/services/ai/content_safety.dart`, `test/core/content_safety_test.dart`.
 
 ---
 
-### Notifikasi
+## Notifikasi
 
-#### FR-15 — Morning Message
-**Prioritas:** P1
+### FR-15 — Morning Message — `Implemented`
 
-**Deskripsi:** Notifikasi harian di waktu yang dikonfigurasi (default 08:00) berisi
-sapaan romantis dari persona (templat acak hangat). Judul = nama persona.
+- Notifikasi harian pada jam pilihan (`AppSettings.notificationMorningTime`), teks acak,
+  dijadwalkan ulang saat settings berubah.
+- Tap notifikasi membuka chat (bila seluruh gate selesai & model siap).
+- Edge case: izin notifikasi ditolak → jadwal tidak dibuat, UI menampilkan status izin.
+- Ref: `lib/services/notification_service.dart`,
+  `lib/features/notifications/notification_controller.dart`.
 
-**Acceptance Criteria:**
-- [ ] Dijadwalkan ulang saat waktu diubah di Settings; repeat harian.
-- [ ] Mati jika dimatikan di Settings; mati saat notifikasi dimatikan sistem.
-- [ ] Tap notifikasi membuka chat.
-- [ ] Gunakan channel & permission yang benar per platform (DESIGN §3.9).
+### FR-16 — Check-in Notification — `Implemented` (interval tetap)
 
-**Edge Cases:**
-- Waktu diubah ke masa lalu hari ini → jadwal besok.
-- Permission ditolak → status "nonaktif" di Settings dengan penjelasan.
-- Persona diubah namanya → notifikasi berikutnya memakai nama baru.
+- Saat app masuk background (`paused`) dan fitur aktif, check-in dijadwalkan **1 jam** ke depan;
+  dibatalkan saat app kembali (`resumed`).
+- Interval belum bisa diubah pengguna (KI-07).
+- Ref: `lib/features/notifications/app_lifecycle_observer.dart`,
+  `lib/services/notification_service.dart`.
 
-#### FR-16 — Check-in Notification
-**Prioritas:** P2
+### FR-17 — Special Day Notification — `Backlog`
 
-**Deskripsi:** Pengingat saat pengguna tidak aktif dalam waktu tertentu (mis. keluar
-app), berupa pesan rindu dari persona.
-
-**Acceptance Criteria:**
-- [ ] Dijadwalkan saat app masuk background (interval default: 0 jam — nonaktif sampai
-      dikonfigurasi).
-- [ ] Dibatalkan saat pengguna kembali membuka app.
-- [ ] Hanya jika diaktifkan di Settings.
-
-**Edge Cases:**
-- App dibuka sebelum notifikasi muncul → dibatalkan (tidak muncul).
-- Interval 0 = nonaktif (tidak menjadwalkan apa pun).
-
-#### FR-17 — Special Day Notification
-**Prioritas:** P2
-
-**Deskripsi:** Notifikasi satu kali untuk momen penting (ulang tahun, anniversary) —
-bisa dijadwalkan lewat memori Important Dates atau input manual.
-
-**Acceptance Criteria:**
-- [ ] Dijadwalkan pada tanggal tertentu; hanya jika tanggal masih di masa depan.
-- [ ] Beberapa special day bisa aktif bersamaan (slot ID unik).
-- [ ] Dibersihkan saat data memori dihapus.
-
-**Edge Cases:**
-- Tanggal sudah lewat saat penjadwalan → dilewati.
-- Perubahan timezone → jadwal mengikuti zona lokal perangkat.
+- API `scheduleSpecialDay`/`cancelSpecialDay` ada (tanggal masa depan saja, slot id), tetapi
+  **belum ada UI** yang memanggilnya.
+- Ref: `lib/services/notification_service.dart`; status: `KNOWN_ISSUES` KI-06.
 
 ---
 
-### Settings & Privasi
+## Settings & Privasi
 
-#### FR-18 — Settings
-**Prioritas:** P0
+### FR-18 — Settings — `Implemented`
 
-**Deskripsi:** Layar pengaturan ber-section: Appearance (**tema default: Light — Romantic
-Light**; pilihan Dark/System), Language (ID/EN/Mixed), Voice (TTS on/off, autoplay),
-Notifications (morning/check-in/special day + waktu), Persona (edit profil), Data &
-Privacy (lihat FR-19), Privacy Policy.
+- Section: Persona (ringkasan + edit + reset), Tampilan (light/dark/system), Bahasa
+  (ID/EN/mixed), Suara (TTS on/off, auto-play, backend, model), Notifikasi (morning message,
+  jam, check-in, izin), Data & Privasi.
+- ⚠️ Belum ada layar Privacy Policy in-app (lihat FR-19/KI-10).
+- Ref: `lib/features/settings/`.
 
-**Acceptance Criteria:**
-- [ ] **Tema default adalah Light** (`ThemeMode.light`) saat pertama kali dibuka;
-      pengguna bisa beralih ke Dark atau System.
-- [ ] Semua perubahan tersimpan segera (`AppSettings`) dan langsung berlaku.
-- [ ] Tema mengikuti pilihan; bahasa mengubah UI & instruksi AI.
-- [ ] Perubahan persona tercermin di chat & notifikasi.
-- [ ] Status izin (mikrofon, notifikasi) ditampilkan dengan jujur.
+### FR-19 — Data & Privasi — `Implemented`
 
-**Edge Cases:**
-- Nilai rusak/korup di database → fallback ke default, jangan crash.
-- Bahasa diubah di tengah percakapan → respon AI berikutnya memakai bahasa baru.
-- Preferensi tema diubah ke System → mengikuti tema OS (light/dark).
+- Hapus semua percakapan (+ ringkasan) → `chatProvider` disegarkan.
+- Ekspor riwayat chat ke `.txt` di direktori dokumen.
+- Reset persona: persona, memori, mood, ringkasan dihapus; kembali ke `/persona-setup`.
+- Reset semua data: persona, memori, mood, pesan, settings dihapus; notifikasi dibatalkan;
+  kembali ke `/age-gate`. File model + identitasnya dipertahankan (tidak unduh ulang).
+- Semua aksi destruktif memakai dialog konfirmasi dengan label batal terlokalisasi.
+- Ref: `lib/features/settings/widgets/data_privacy_section.dart`,
+  `lib/features/settings/widgets/persona_section.dart`,
+  `lib/features/settings/settings_controller.dart`.
 
-#### FR-19 — Data Privacy (Hapus Riwayat / Wipe Memory)
-**Prioritas:** P0
+### FR-20 — Bahasa (Indonesia / English / Mixed) — `Partial`
 
-**Deskripsi:** Pengguna bisa menghapus riwayat chat, memori, atau seluruh data lokal
-(termasuk persona & pengaturan) — semuanya on-device, tanpa server.
-
-**Acceptance Criteria:**
-- [ ] "Hapus riwayat chat" menghapus pesan + ringkasan; persona & memori tetap.
-- [ ] "Hapus memori" menghapus semua fakta (dan special day terkait).
-- [ ] "Reset semua data" menghapus semuanya dan kembali ke alur awal (age gate).
-- [ ] Setiap aksi punya dialog konfirmasi eksplisit (DESIGN §3.8).
-- [ ] Tidak ada data yang dikirim ke mana pun — penghapusan murni lokal.
-
-**Edge Cases:**
-- Penghapusan di tengah generasi AI → generasi dihentikan, state dibersihkan.
-- Database kosong → aksi tetap berhasil (idempoten).
-
-#### FR-20 — Bahasa (Indonesia / English / Mixed)
-**Prioritas:** P1
-
-**Deskripsi:** Pengaturan bahasa aplikasi: UI + instruksi AI mengikuti pilihan
-(Indonesian, English, atau Mixed — UI Indonesia, AI bebas dua bahasa).
-
-**Acceptance Criteria:**
-- [ ] Semua string UI lewat lokalisasi (`core/l10n/`) — tidak ada string hardcode.
-- [ ] Instruksi AI menyebut bahasa respon sesuai pilihan.
-- [ ] Beralih bahasa berlaku tanpa restart.
-
-**Edge Cases:**
-- Terjemahan belum lengkap → fallback ke bahasa utama, bukan string kosong.
-- Bahasa AI "Mixed" → instruksi menyatakan bebas campur, sesuai konteks percakapan.
+- `AppSettings.language` mengatur: string UI (`AppStrings`), locale Material
+  (`GlobalMaterialLocalizations`), bahasa keluaran AI (instruksi di system prompt), dan bahasa
+  TTS/STT.
+- ⚠️ `Partial`: teks notifikasi, deflection safety, header ekspor, katalog hobi, dan
+  `_friendlyError` masih Inggris/hardcode (KI-11).
+- Ref: `lib/core/l10n/app_strings.dart`, `lib/services/ai/prompt_builder.dart`, `lib/app.dart`.
 
 ---
 
-## 4. Fitur Peningkatan (Usulan, P1/P2)
+## Fitur Peningkatan (Backlog)
 
-Fitur berikut **belum** ada di kode lama — usulan pengembangan selanjutnya. Daftar ini
-bisa diubah; setiap item harus mendapat ID FR baru sebelum dikerjakan.
-
-| ID usulan | Fitur | Prioritas | Catatan |
-|---|---|---|---|
-| FR-21 | Mood history & tren (grafik sederhana mood per hari) | P2 | Melengkapi FR-09 |
-| FR-22 | Good night / momen harian (notifikasi malam opsional) | P2 | Melengkapi FR-15 |
-| FR-23 | Ekspor/cadangan data lokal (file JSON di perangkat) | P2 | Tetap privacy-first, on-device |
-| FR-24 | Ringkasan harian "kenangan bersama" (recap percakapan) | P2 | Emosional, memanfaatkan FR-13 |
-| FR-25 | Dukungan persona tambahan (multiple companion) | P2 | Perlu perubahan skema data besar |
-| FR-26 | Avatar & suara tambahan (paket konten) | P1 | Konten lokal, tanpa jaringan |
-| FR-27 | Mode "quiet hours" (jeda notifikasi) | P2 | Melengkapi FR-15/16/17 |
+| ID | Usulan | Prioritas | Status | Catatan |
+| --- | --- | --- | --- | --- |
+| FR-21 | Mood history & tren | P2 | Backlog | butuh entity baru |
+| FR-22 | Good night / momen harian | P2 | Backlog | memperluas FR-15 |
+| FR-23 | Ekspor/cadangan JSON | P2 | Backlog | tetap on-device |
+| FR-24 | Ringkasan harian "kenangan bersama" | P2 | Backlog | memanfaatkan FR-13 |
+| FR-25 | Multi-persona | P2 | Backlog | perubahan skema besar |
+| FR-26 | Paket avatar/suara tambahan | P1 | Backlog | konten lokal, tanpa jaringan |
+| FR-27 | Quiet hours notifikasi | P2 | Backlog | melengkapi FR-15/16/17 |
 
 ---
 
-## 5. Edge Cases Umum (Seluruh Fitur)
+## Edge Cases Umum
 
-Daftar skenario lintas fitur yang wajib ditangani dengan **gagal-gracefully** (fallback
-jelas, tanpa crash):
+| Kondisi | Perilaku saat ini |
+| --- | --- |
+| Model belum siap | guard menjaga di `/model-download`; aksi chat tidak tersedia |
+| Model gagal dimuat | status error ramah di layar model, bisa unduh ulang |
+| Izin mikrofon/notifikasi ditolak | fitur terkait nonaktif dengan pesan hangat |
+| Penyimpanan penuh | tidak ditangani (KI-09/KI-14) |
+| App dibunuh saat generasi | pesan user sudah tersimpan; jawaban parsial tidak |
+| Data DB korup | tidak ada pemulihan otomatis (KI-14) |
+| Tidak ada jaringan saat install | error ramah + tombol retry |
+| Bahasa UI diganti | string, locale Material, TTS/STT, dan instruksi AI ikut berubah |
 
-| Skenario | Perilaku yang diharapkan |
-|---|---|
-| Model AI belum siap / gagal init | Tombol aksi nonaktif + pesan hangat; layar retry (FR-04) |
-| Permission ditolak (mikrofon, notifikasi, storage) | Fitur nonaktif dengan penjelasan + arahkan ke pengaturan |
-| Database korup / gagal buka | Inisialisasi ulang aman, data default; jangan crash |
-| Input kosong / terlalu panjang | Validasi + batasan karakter di UI |
-| Safety gate aktif | Pesan pengalihan hangat, bukan error teknis |
-| Storage hampir penuh | Peringatan sebelum unpack model / ekspor |
-| App di-background saat generasi | Hentikan generasi, simpan state parsial |
-| Device low-RAM | Peringatan performa saat model dipakai |
+## Matriks Rujukan
 
----
-
-## 6. Matriks Rujukan
-
-| Fitur | File/Modul Target (hasil refactor) | Entity/Service Terkait |
-|---|---|---|
-| FR-01 | `features/onboarding/` (age gate) | `AppSettings.isAgeVerified` |
-| FR-02 | `features/onboarding/` | `AppSettings.isOnboardingDone` |
-| FR-03 | `features/persona/` | `PersonaConfig`, `PersonalityPreset`, `PersonaGender` |
-| FR-04 | `features/model/` | `model_service.dart`, `model_catalog.dart`, `assets/models/*` |
-| FR-05 | `features/chat/` | `Message`, `services/ai/prompt_builder.dart` |
-| FR-06 | `features/chat/` (input bar) | `services/stt_service.dart` (flutter_gemma_speech) |
-| FR-07 | `features/chat/` + `features/settings/` | `services/tts_service.dart`, `AppSettings.tts*` |
-| FR-08 | `features/chat/widgets/` | — |
-| FR-09 | `features/chat/` + mood engine | `MoodState`, `MoodType`, `services/ai/mood` |
-| FR-10 | `features/chat/widgets/` | `PersonaConfig`, `MoodState` |
-| FR-11 | `features/memory/` | `MemoryFact`, `MemoryCategory`, `memory_extractor.dart` |
-| FR-12 | `features/memory/` | `MemoryFact` |
-| FR-13 | `features/chat/` + `services/ai/` | `AppSettings.conversationSummary` |
-| FR-14 | `services/ai/` | `content_safety.dart` |
-| FR-15 | `features/notifications/` | `notification_service.dart` |
-| FR-16 | `features/notifications/` | `notification_service.dart` |
-| FR-17 | `features/notifications/` + `features/memory/` | `notification_service.dart` |
-| FR-18 | `features/settings/` | `AppSettings` |
-| FR-19 | `features/settings/` | ObjectBox (semua box) |
-| FR-20 | `core/l10n/` + `features/settings/` | `AppLanguage` |
-
-> Tabel ini menunjukkan **target modul hasil refactor** — bukan lokasi file saat ini.
-> Implementasi wajib mengikuti struktur `lib/features/` (lihat `AGENTS.md` §3 &
-> `DESIGN.md` §6).
+| FR | Fitur UI | Data / layanan |
+| --- | --- | --- |
+| FR-01 | `features/onboarding/age_gate_screen.dart` | `AppSettings.isAgeVerified` |
+| FR-02 | `features/onboarding/onboarding_screen.dart` | `AppSettings.isOnboardingDone` |
+| FR-03 | `features/persona/` | `PersonaConfig` |
+| FR-04 | `features/model/model_download_screen.dart` | `services/ai/model_service.dart`, `model_catalog.dart` |
+| FR-05 | `features/chat/chat_screen.dart` | `Message`, `services/ai/prompt_builder.dart` |
+| FR-06 | `features/chat/widgets/input_bar.dart` | `services/stt_service.dart`, `core/utils/wav_pcm.dart` |
+| FR-07 | `features/chat/widgets/chat_bubble.dart` | `services/tts_service.dart`, `AppSettings.tts*` |
+| FR-08 | `features/chat/widgets/typing_indicator.dart` | `ChatState.isTyping` |
+| FR-09 | `features/chat/widgets/mood_indicator.dart` | `MoodState`, `services/mood_service.dart` |
+| FR-10 | `features/persona/persona_profile_sheet.dart` | `PersonaConfig`, `MoodState` |
+| FR-11 | `features/chat/` (post-process) | `MemoryFact`, `services/ai/memory_extractor.dart` |
+| FR-12 | `features/memory/memory_screen.dart` | `MemoryFact` |
+| FR-13 | `features/settings/` | `AppSettings.conversationSummary` |
+| FR-14 | `features/chat/` (gates) | `services/ai/content_safety.dart` |
+| FR-15 | `features/settings/widgets/notifications_section.dart` | `services/notification_service.dart` |
+| FR-16 | `features/notifications/app_lifecycle_observer.dart` | `services/notification_service.dart` |
+| FR-17 | — (belum ada UI) | `services/notification_service.dart` |
+| FR-18 | `features/settings/settings_screen.dart` | `AppSettings` |
+| FR-19 | `features/settings/widgets/data_privacy_section.dart` | ObjectBox (semua box) |
+| FR-20 | `features/settings/widgets/language_section.dart` | `core/l10n/app_strings.dart`, `AppLanguage` |

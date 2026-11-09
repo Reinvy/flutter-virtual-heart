@@ -16,264 +16,125 @@
 
 ## 📖 About
 
-**VirtualHeart** is a privacy-first AI companion app built with Flutter. It lets users create and interact with a personalized virtual partner — fully powered by an on-device Small Language Model (SLM). No data is ever sent to external servers; all AI inference runs locally on the device using [MediaPipe](https://ai.google.dev/edge/mediapipe/solutions/guide) via the [`flutter_gemma`](https://pub.dev/packages/flutter_gemma) package.
+**VirtualHeart** is a privacy-first AI companion app built with Flutter. Users create a
+personalized virtual partner and talk to it while a Small Language Model runs **on the device**
+via [`flutter_edge_ai`](https://pub.dev/packages/flutter_edge_ai) — no application server, no
+account, no telemetry.
 
-The AI companion adapts its personality, remembers past conversations, expresses dynamic moods, and can speak and listen — all without an internet connection.
+Network is used for exactly two things: downloading the model file from HuggingFace (once) and
+fetching Google Fonts at runtime. Chat, memory, persona, and mood never leave the device.
 
----
+## ✨ Features (current state)
 
-## ✨ Features
+| Area | Status | Notes |
+| --- | --- | --- |
+| Age gate (13+) | ✅ Implemented | persisted in `AppSettings.isAgeVerified` |
+| Onboarding (3 pages) | ✅ Implemented | |
+| Persona setup & edit | ✅ Implemented | gender, name, nickname, personality, hobbies, avatar; editing reuses the same form |
+| Model catalog & install | ✅ Implemented | 5 models (`.litertlm`/`.task`), download with progress + cancel, or upload your own file |
+| Streaming chat | ⚠️ Partial | token streaming + typing indicator; **no stop-generation** yet |
+| Conversation summary | ✅ Implemented | every 30 messages, injected as context |
+| Memory extraction | ✅ Implemented | facts merged by key, source snippet kept, last-referenced timestamp |
+| Dynamic mood engine | ✅ Implemented | 5 moods, intensity 0–1, idle decay |
+| Content safety | ✅ Implemented | input + output gates with warm in-character deflections |
+| Voice input (STT) | ⚠️ Partial | on-device Moonshine or OS dictation; no waveform UI |
+| Voice output (TTS) | ⚠️ Partial | on-device (Inflect/Matcha/Qwen3) or OS voice; completion estimated by timer |
+| Persona profile sheet | ✅ Implemented | avatar, mood, hobbies, personality, edit |
+| Notifications | ⚠️ Partial | morning message + 1-hour check-in, local timezone, tap opens chat; special-day API has no UI |
+| Settings | ✅ Implemented | theme light/dark/system, language (ID/EN/mixed), voice, notifications, data & privacy |
+| Data privacy | ✅ Implemented | delete conversations, delete memory, reset persona, reset all data; export chat as `.txt` |
 
-### 🎯 Personalized Companion Setup
-- Choose companion gender (girlfriend / boyfriend)
-- Set a custom name and a nickname for yourself
-- Pick a **personality preset**: Gentle, Cheerful, Mature, or Mysterious
-- Add hobbies that shape the AI's conversational style
-- Select from 6 avatar options per gender
-- Choose a voice for text-to-speech responses
+Voice selection is **global**, not per-persona. Known gaps are tracked in
+[`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md).
 
-### 💬 Rich Chat Experience
-- **Streaming AI responses** — tokens rendered as they are generated
-- **Voice input** via Speech-to-Text (microphone button in chat)
-- **Voice output** via Text-to-Speech with play / stop controls
-- **Typing indicator** animation while the AI processes a response
-- **Mood indicator** chip showing the companion's current emotional state
-- **Persona profile sheet** — swipe up to view companion details
-- Full **chat history** persisted in a local database
+## 🏗️ Tech Stack
 
-### 🧠 Memory System
-- Automatically extracts facts from conversations
-- Four memory categories: **Personal**, **Events**, **Preferences**, **Important Dates**
-- Dedicated **Memory Screen** to browse, search, and delete stored facts
-- AI actively references memories to make responses feel personal
+- **Flutter 3.47.1 / Dart 3.13.1** — SDK version is pinned in `.fvmrc`
+- **flutter_edge_ai** family — LiteRT-LM (`.litertlm`), MediaPipe (`.task`), on-device speech
+- **Riverpod 3** — manual `Notifier`/`AsyncNotifier` providers (no codegen)
+- **ObjectBox** — local-first storage for chat, memory, persona, mood, settings
+- **go_router** — declarative routing with a pure redirect guard
+- **material_ui** — Material widgets; custom Sakura design system
+- Exact versions and pinned transitive dependencies: [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md)
 
-### 🎭 Dynamic Mood Engine
-- Five mood types: **Happy**, **Longing**, **Playful**, **Sad**, **Excited**
-- Mood intensity on a continuous 0.0 – 1.0 scale
-- Mood state evolves naturally based on conversation content
-- Current mood is injected into the AI's system prompt
+Architecture:
 
-### 🛡️ Content Safety
-- **Input gate** — blocks harmful user messages (explicit content, self-harm, hate speech, violence)
-- **Output gate** — validates AI-generated responses before displaying
-- Warm, in-character deflection messages when content is filtered
-
-### 🔔 Smart Notifications
-- **Morning greeting** notification at a user-configured time
-- **Check-in reminder** to keep the relationship active
-- Built with `flutter_local_notifications` + timezone support
-
-### ⚙️ Comprehensive Settings
-- **Appearance**: Toggle Dark / Light theme
-- **Language**: Switch system and AI response language (Indonesian, English, or Mixed)
-- **Voice**: Enable / disable TTS and auto-play AI responses
-- **Persona**: Edit companion profile and preferences at any time
-- **Data Privacy**: Clear chat history or wipe memory completely
-- View privacy policy
-
-### 🔒 Privacy-First Architecture
-- All AI inference runs **100% on-device** (no cloud calls)
-- Chat history and memory stored only in a **local ObjectBox database**
-- No analytics, no telemetry, no account required
-
----
-
-## 🏗️ Architecture
-
-```text
+```
 lib/
-├── main.dart                  # Entry point — initializes Gemma & ObjectBox
-├── app.dart                   # Root widget — MaterialApp, Riverpod, GoRouter
-│
-├── core/
-│   ├── design/                # Design tokens, tema, komponen UI shared
-│   │   ├── tokens/            # app_colors, app_sizes, app_durations, text_styles
-│   │   ├── app_theme.dart     # Light/Dark ThemeData (Material 3 lengkap)
-│   │   └── components/        # PrimaryButton, SectionCard, SakuraBackground, ...
-│   ├── router/                # GoRouter + route guards
-│   ├── errors/                # AppLogger, AppException (error handling terpusat)
-│   ├── l10n/                  # Lokalisasi ID/EN (AppStrings)
-│   └── utils/                 # Date formatters, Dart extensions
-│
-├── features/                  # Feature-first modular
-│   ├── onboarding/            # Splash, age gate, onboarding
-│   ├── persona/               # Persona setup, profile sheet
-│   ├── model/                 # Model install
-│   ├── chat/                  # Chat screen + widgets + controller
-│   ├── memory/                # Memory screen + controller
-│   ├── notifications/         # Notification scheduling
-│   └── settings/              # Settings sections
-│
-├── services/
-│   ├── ai/                    # Prompt builder, memory extractor, content safety
-│   ├── database/              # ObjectBox service
-│   ├── mood_service.dart      # Mood state transitions
-│   ├── notification_service.dart # Schedule morning, check-in & special day alerts
-│   ├── tts_service.dart       # Text-to-Speech wrapper
-│   └── stt_service.dart       # Speech-to-Text wrapper
-│
-└── models/                    # ObjectBox entities (Message, MemoryFact, MoodState, ...)
+├── main.dart, app.dart        # engine + notifications + DB init, MaterialApp.router
+├── core/                      # design system, l10n, router, logger, pure utils
+├── models/                     # ObjectBox entities (+ generated bindings)
+├── services/                   # ai/, database/, mood, notification, stt, tts
+└── features/                   # onboarding, persona, model, chat, memory, settings
 ```
 
-### Navigation Flow
-
-```text
-Splash → Age Gate → Onboarding → Persona Setup → Model Installation → Chat
-```
-
-GoRouter guards redirect the user back to the appropriate screen if a required setup step has not been completed (age verification, persona creation, model installation).
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|---|---|
-| **Framework** | Flutter 3.47.1 / Dart 3.13.1 |
-| **State Management** | Riverpod 3.4.2 |
-| **Navigation** | GoRouter 18.0.0 with route guards |
-| **Local Database** | ObjectBox 5.3.2 (embedded NoSQL) |
-| **On-Device AI** | flutter_gemma 1.6.5 + flutter_gemma_mediapipe 1.0.5 (MediaPipe LLM — Qwen2.5-1.5B-Instruct) |
-| **Text-to-Speech** | flutter_tts 4.2.5 |
-| **Speech-to-Text** | speech_to_text 7.4.0 |
-| **Notifications** | flutter_local_notifications 22.3.0 |
-| **Typography** | Google Fonts — Shippori Mincho (heading) + Nunito (body) |
-| **Icons** | Material Icons + flutter_svg (sakura icon) |
-| **Animations** | flutter_animate 4.5.2 + Lottie 3.5.1 |
-| **Markdown Rendering** | gpt_markdown 1.2.1 |
-| **Code Generation** | build_runner + objectbox_generator |
-
----
-
-## ⚙️ Prerequisites
-
-Before running VirtualHeart, make sure you have the following installed:
-
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) **3.47.1** (use [FVM](https://fvm.app/) — see `.fvmrc`)
-- Dart **3.13.1+**
-- Android Studio / Xcode (for mobile targets)
-- A physical device with **sufficient RAM** (the 1.5B model requires ~2 GB free RAM to run smoothly)
-
-### Install FVM (recommended)
-
-```bash
-dart pub global activate fvm
-fvm install         # reads .fvmrc and installs the correct Flutter version
-fvm use             # sets this project to use the pinned version
-```
-
----
+Details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## 🚀 Getting Started
 
-### 1. Clone the repository
+### Prerequisites
+
+- Flutter **3.47.1** (recommended via [FVM](https://fvm.app))
+- JDK 17+ for Android builds
+- An Android device/emulator with **arm64-v8a** (minSdk 30), or an iOS 16+ device
+
+### Run
 
 ```bash
-git clone https://github.com/Reinvy/flutter-virtual-heart.git
-cd flutter-virtual-heart
-```
-
-### 2. Install dependencies
-
-```bash
-flutter pub get
-# or, if using FVM:
 fvm flutter pub get
+fvm dart run build_runner build --delete-conflicting-outputs   # generate ObjectBox bindings
+fvm flutter run                                                 # or `make apk`
 ```
 
-### 3. Run code generation
+Or: `make setup && make gen && make apk`.
 
-ObjectBox and Riverpod use code generation. Run this once before building:
+### Model
 
-```bash
-flutter pub run build_runner build --delete-conflicting-outputs
-# or:
-fvm flutter pub run build_runner build --delete-conflicting-outputs
-```
+The model is **not bundled**. On first launch the app opens the model screen and either:
 
-### 4. Setup the AI Model (Required)
+1. downloads a model from HuggingFace (135 MB – 1.7 GB; internet required once), or
+2. installs a local `.litertlm` / `.task` file you provide.
 
-Due to its large size (~1.5 GB), the LLM model is **not** included in the repository by default (it is ignored via `.gitignore`). This app uses the heavily optimized Qwen model adapted for MediaPipe (`Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv4096.task`).
+Gated models (Gemma 3 1B) need a HuggingFace token entered on that screen. After installation,
+inference is fully offline. Make sure you have enough free storage and RAM — see
+[`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md).
 
-1. Download the correct quantized `.task` file supported by `flutter_gemma`.
-2. Determine if the `assets/models/` directory already exists in your root folder. If not, create it.
-3. Place the downloaded `.task` file into the `assets/models/` directory and ensure its name matches exactly what is required in `lib/services/ai/model_service.dart`.
-
-> **Important:** The app's `ModelDownloadScreen` does **not** download the model from the internet! It unpacks and installs this local `.task` asset directly to the smartphone's internal memory during the very first launch. **It requires no internet connection**, but ensures the device has at least 2 GB of free storage.
-
-### 5. Run the app
-
-```bash
-flutter run
-# or:
-fvm flutter run
-```
-
----
-
-## 📱 Supported Platforms
+## 🖥️ Platform Support
 
 | Platform | Status |
-|---|---|
-| Android | ✅ Supported |
-| iOS | ✅ Supported |
-| macOS | ⚠️ Experimental |
-| Linux | ⚠️ Experimental |
-| Windows | ⚠️ Experimental |
-| Web | ⚠️ Experimental |
+| --- | --- |
+| Android (arm64-v8a, minSdk 30) | ✅ Supported |
+| iOS (16.0+) | ✅ Supported by design — not verified in CI |
+| macOS (14.0+) | 🧪 Experimental |
+| Linux / Windows | 🧪 Experimental |
+| Web | ❌ Not supported (`dart:io` dependencies, no on-device speech) |
 
-> **Note:** On-device LLM inference via MediaPipe is officially supported on **Android** and **iOS**. Desktop/web platforms may have limited AI functionality and require different underlying implementations depending on the MediaPipe plugin's capabilities.
-
----
+Setup details per platform: [`docs/PLATFORM_SETUP.md`](docs/PLATFORM_SETUP.md).
 
 ## 🎨 Design System
 
-Tema visual: **"Sakura Romance"** — terinspirasi Yae Miko & estetika Inazuma
-(Genshin Impact). Lihat `docs/DESIGN.md` untuk detail lengkap.
+Sakura Romance theme: blush pink surfaces, electric purple accent, Shippori Mincho headings and
+Nunito body text, light/dark/system modes. Tokens live in
+`lib/core/design/tokens/` (`AppColors`, `AppSizes`, `AppDurations`, `AppTextStyles`).
+See [`docs/DESIGN.md`](docs/DESIGN.md).
 
-### Color Palette
+## 🔐 Privacy
 
-| Token | Dark Mode | Light Mode |
-|---|---|---|
-| Background | `#120D14` | `#FDF4F7` |
-| Surface | `#1D1420` | `#FFFFFF` |
-| Primary (Sakura Pink) | `#F28CB0` | `#C24D7E` |
-| Primary Deep (teks kecil) | `#F8A9C6` | `#9E3A63` |
-| Secondary (Electro Purple) | `#B79BE0` | `#6D4FA8` |
-| Accent (Heart Red) | `#F4778C` | `#E8546E` |
-| Gold (sparkle) | `#E8C766` | `#C9A227` |
-| Text Primary | `#F7EFF5` | `#241021` |
+All data is stored locally (ObjectBox). The only outbound requests are model downloads from
+HuggingFace and Google Fonts at runtime. There is no analytics, no account, and no server-side
+processing. Read [`docs/PRIVACY.md`](docs/PRIVACY.md) for permissions, data deletion, and
+limitations.
 
-### Typography
-- **Headings:** Shippori Mincho (serif Jepang — elegan, romantis)
-- **Body / UI:** Nunito (rounded sans-serif — friendly, readable)
+## 📚 Documentation
 
-### Motion & Components
-- Partikel kelopak sakura (`SakuraBackground`, CustomPainter — tanpa aset raster).
-- Target sentuh minimum 48×48 dp; hormati reduced-motion (`MediaQuery.disableAnimations`).
-- Semua nilai visual dari design tokens `lib/core/design/tokens/`.
-
----
+Start at [`docs/README.md`](docs/README.md) (index). Working rules for humans and AI agents:
+[`AGENTS.md`](AGENTS.md). Contribution guide: [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feat/your-feature`
-3. Commit your changes following [Conventional Commits](https://www.conventionalcommits.org/)
-4. Push to your fork and open a Pull Request
-
-Please make sure your code passes the linter before submitting:
-
-```bash
-flutter analyze
-```
-
----
+Read `AGENTS.md` first, then `docs/WORKFLOW.md` and `docs/TESTING.md`. Every change must pass
+`make check`; behavior changes update the relevant doc in the same commit.
 
 ## 📄 License
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
-
-© 2025 [Bahrul Ulumul Haq](https://github.com/Reinvy)

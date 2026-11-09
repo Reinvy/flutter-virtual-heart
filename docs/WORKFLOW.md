@@ -1,161 +1,102 @@
-# WORKFLOW.md — VirtualHeart
+# WORKFLOW — Branch, Commit, PR, Rilis
 
-Dokumen ini menjelaskan **alur kerja pengembangan** (workflow) yang wajib diikuti oleh
-semua developer dan coding agent di project VirtualHeart. Panduan ini dirancang selaras
-dengan aturan di `docs/AGENTS.md` dan tidak bergantung pada kode lama.
+Aturan kerja lengkap ada di [`../AGENTS.md`](../AGENTS.md). Dokumen ini operasional.
 
-**Set dokumen fondasi:** `AGENTS.md` (aturan), `DESIGN.md` (desain & arsitektur),
-`FEATURES.md` (spesifikasi fitur), dan dokumen ini (alur kerja). Baca semuanya sebelum
-memulai pekerjaan.
+## 1. Branch
 
----
+| Prefix | Dipakai untuk |
+| --- | --- |
+| `feat/<ringkas>` | fitur baru |
+| `fix/<ringkas>` | perbaikan bug |
+| `chore/<ringkas>` | dependency, build, konfigurasi |
+| `docs/<ringkas>` | dokumentasi saja |
 
-## 1. Strategi Branch
+Branch utama pengembangan: `development`. Jangan menulis langsung ke `main`/`development`.
 
-Project menggunakan alur berbasis **trunk-based** yang disederhanakan:
+## 2. Commit
+
+Conventional Commits, satu commit = satu perubahan logis:
 
 ```
-main ─────────────────────────────────────── (stabil, hanya dari merge PR)
-  └── development ───────────────────────── (integrasi harian)
-        ├── feat/fitur-xxx                 (fitur baru)
-        ├── fix/bug-xxx                    (perbaikan bug)
-        ├── refactor/xxx                   (perubahan struktur)
-        └── docs/xxx                       (dokumentasi)
+feat(chat): add memory merge by key
+fix(notifications): schedule with device timezone
+chore(deps): migrate to flutter_edge_ai and material_ui
+docs: overhaul README and add current-state docs
 ```
 
-### Aturan
-| Branch | Sifat | Siapa yang menulis |
-|---|---|---|
-| `main` | Stabil, siap rilis | Hanya dari merge PR |
-| `development` | Integrasi harian | Bebas komit langsung untuk perubahan kecil |
-| `feat/*`, `fix/*`, dst. | Sementara utk satu unit kerja | Bebas |
+Aturan:
 
-- **Perubahan kecil/dokumentasi:** boleh komit langsung ke `development`.
-- **Fitur/perubahan besar atau arsitektural:** wajib lewat branch fitur + PR.
-- **Hanya `main`** menerima kode yang sudah direview & lolos.
+- Jangan mencampur perubahan perilaku dengan perubahan dokumentasi yang tidak terkait.
+- Perubahan entity + binding generated masuk commit yang sama.
+- Sertakan alasan pada commit yang memilih pin versi (`build:`/`chore(deps):`).
 
----
+## 3. Pemeriksaan sebelum push
 
-## 2. Alur Pengembangan Sebuah Fitur
-
-Ikuti langkah berikut untuk setiap fitur dari `docs/FEATURES.md`:
-
-1. **Pilih task** dari daftar fitur / backlog (`docs/FEATURES.md`).
-2. **Baca dokumen terkait** — `AGENTS.md`, `FEATURES.md`, `DESIGN.md` untuk spesifikasi
-   & aturan desain.
-3. **Buat branch** dari `development`:
-   ```bash
-   git checkout development
-   git pull
-   git checkout -b feat/nama-fitur
-   ```
-4. **Implementasi** mengikuti struktur `lib/features/<fitur>/` (UI + controller + state);
-   semua nilai UI memakai design tokens dari `core/design/` (lihat `DESIGN.md`).
-5. **Tulis test** untuk logic & widget utama.
-6. **Verifikasi lokal**:
-   ```bash
-   flutter analyze            # wajib: 0 error
-   flutter test               # wajib: semua pass
-   flutter pub run build_runner build --delete-conflicting-outputs   # bila perlu
-   ```
-7. **Komit secara atomik** (pesan `type(scope): deskripsi`).
-8. **Push & buka PR** ke `development` (atau `main` untuk rilis).
-9. **Review** oleh developer lain (atau self-review bila solo).
-10. **Merge** setelah lolos semua pemeriksaan.
-
----
-
-## 3. Siklus Komit & Pesan
-
-Pesan komit mengikuti **Conventional Commits** (lihat `AGENTS.md` §4).
-
-### Batching commit
-- Satu komit = satu tanggung jawab logis.
-- Jangan mencampur `feat` dan `fix` dalam satu komit.
-- Dokumentasi bisa digabung bila sangat kecil, tetapi lebih baik `docs:` terpisah.
-
-### Contoh yang baik
-```
-feat(chat): tambah streaming respon AI
-fix(memory): perbaiki ekstraksi dob pada langsung ke kategori tanggal penting
-refactor(router): pisahkan guard setup dari definisi rute
-docs(features): perbarui prioritas fitur notifikasi
+```bash
+fvm flutter analyze         # 0 error, 0 warning
+fvm flutter test            # semua lulus
+make check-docs             # docs ↔ pubspec/.fvmrc konsisten
+fvm flutter build apk --debug   # bila menyentuh Android/manifest/plugin
 ```
 
----
+`make check` menjalankan analyze + test + check-docs sekaligus.
 
-## 4. Golden Path vs Edge Cases
+Bila mengubah entity ObjectBox, jalankan `make gen` dan pastikan
+`lib/objectbox.g.dart` + `lib/objectbox-model.json` ikut ter-stage (CI memeriksa drift generated).
 
-Ketika mengerjakan fitur, selalu bedakan dua jalur:
+## 4. Pull Request
 
-### Golden path (jalur ideal)
-Alur yang paling umum & diharapkan — harus berjalan mulus dan diuji penuh:
-- Onboarding → set persona → model siap → chat → respon AI tampil.
-- Untuk tiap fitur, tulis test yang melindungi jalur ini.
+Checklist:
 
-### Edge cases (kasus tepi)
-Skenario tak terduga yang tetap harus ditangani dengan gagal-gracefully:
-- Model belum diunduh / gagal diinisialisasi.
-- Koneksi TTS/STT tidak tersedia atau permission ditolak.
-- Input pengguna melewati content safety gate.
-- Database belum siap atau korup.
-- String kosong / terlalu panjang dari pengguna.
+- [ ] Deskripsi menjelaskan masalah & solusi, bukan hanya daftar file.
+- [ ] `make check` lulus (tempel output ringkas).
+- [ ] `make apk` lulus bila Android tersentuh; sebutkan bila tidak dijalankan.
+- [ ] Fitur baru/berubah: `docs/FEATURES.md` (status + acceptance) diperbarui.
+- [ ] Dependency berubah: `docs/DEPENDENCIES.md` + blok mesin diperbarui.
+- [ ] Entity berubah: `docs/DATA_MODEL.md` diperbarui.
+- [ ] Keterbatasan baru dicatat di `docs/KNOWN_ISSUES.md`.
+- [ ] Tidak ada klaim yang belum diverifikasi (tandai **unverified**).
 
-> Setiap edge case penting harus **tertangani** (fallback yang jelas, bukan crash).
-> Dokumentasikan di `FEATURES.md` bila mengubah perilaku.
+## 5. Sinkronisasi dokumen
 
----
+Dokumen dan kode harus bergerak bersama:
 
-## 5. Alur Handling Bug
+| Perubahan kode | Dokumen |
+| --- | --- |
+| Struktur/provider/routing | `docs/ARCHITECTURE.md` |
+| Perilaku fitur | `docs/FEATURES.md` |
+| Token/komponen UI | `docs/DESIGN.md` |
+| Entity/box | `docs/DATA_MODEL.md` |
+| Prompt/model/speech | `docs/AI_PIPELINE.md` |
+| Dependency/toolchain | `docs/DEPENDENCIES.md` + `README.md` badge |
+| Config platform | `docs/PLATFORM_SETUP.md` |
+| Perilaku data/jaringan | `docs/PRIVACY.md` + `README.md` |
+| Test/CI | `docs/TESTING.md` |
 
-1. **Reproduksi** — buat langkah reproduksi yang jelas.
-2. **Isolasi** — tentukan lapisan (UI / controller / service / data).
-3. **Tulis test yang gagal** mencerminkan bug (sebaiknya sebelum perbaikan).
-4. **Perbaiki** dengan perubahan terkecil & tepat.
-5. **Pastikan test pass** dan tidak ada regresi (`flutter test`).
-6. **Cek `flutter analyze` bersih.**
-7. **Komit** `fix(scope): deskripsi`, push branch `fix/...`, buka PR.
+`tool/check_docs.dart` memverifikasi: keberadaan file wajib, sinkronisasi blok dependency dengan
+`pubspec.yaml`/`.fvmrc`, tidak ada `dependency_overrides`/paket lama, link markdown relatif
+valid, dan ID FR unik. Jalankan lewat `make check-docs`.
 
----
+## 6. Rilis
 
-## 6. QA & Quality Gate
+Kondisi saat ini (lihat `KNOWN_ISSUES.md`):
 
-Sebelum setiap merge, pemeriksaan otomatis minimum:
+- Application ID masih `com.example.edge_chat`.
+- Build release memakai kunci debug.
 
-- [ ] `flutter analyze` → 0 error, 0 warning.
-- [ ] `flutter test` → semua test pass.
-- [ ] Tidak ada `TODO`/`FIXME` yang ditinggalkan tanpa keterangan.
-- [ ] Tidak ada `print`/`debugPrint` di kode produksi.
-- [ ] Semua string UI menggunakan konstanta/resource (i18n, `core/l10n/`).
-- [ ] Semua warna/spacing/radius/durasi memakai design tokens `core/design/`.
-- [ ] Perubahan mengikuti struktur feature-first (`lib/features/`).
+Karena itu **belum ada rilis produksi**. Sebelum rilis pertama, wajib:
 
-> Bila gagal salah satu, **jangan merge**. Perbaiki lalu ulangi.
+1. Ganti `applicationId`/`namespace` dan bundle identifier iOS/macOS.
+2. Buat keystore release + `signingConfig` (jangan commit secret).
+3. Jalankan build release di perangkat nyata dan verifikasi unduhan model, chat, STT/TTS,
+   notifikasi.
+4. Perbarui `CHANGELOG`/versi di `pubspec.yaml` (`version: x.y.z+build`).
+5. Tandai status verifikasi platform di `docs/PLATFORM_SETUP.md`.
 
----
+## 7. Hal yang tidak boleh dilakukan
 
-## 7. Rilis (Release)
-
-Untuk setiap rilis ke `main`:
-
-1. Pastikan fitur lengkap & semua test hijau pada `development`.
-2. Buat PR `development → main`.
-3. Review akhir & merge.
-4. Tag versi (semver) sesuai `version:` di `pubspec.yaml`.
-5. Tulis catatan rilis ringkas (fitur baru, perbaikan, catatan model).
-
----
-
-## 8. Kolaborasi & Review
-
-- **Solo developer:** lakukan "self-review" — komit dengan jarak waktu, baca ulang diff
-  sebelum merge, dan jangan merge karya sendiri di hari yang sama jika memungkinkan.
-- **Reviewer:** periksa kepatuhan terhadap `AGENTS.md` (arsitektur, penamaan, kualitas).
-- Setiap orang **bertanggung jawab** menjaga `docs/` tetap sinkron dengan kode.
-
----
-
-## 9. Definisi Selesai
-
-Sebuah tugas dianggap selesai hanya jika **semua** kondisi di `AGENTS.md` §7 terpenuhi
-serta seluruh *quality gate* di atas sudah lolos.
+- `git commit`/`git push` otomatis oleh agent tanpa instruksi eksplisit pengguna.
+- Menyunting `lib/objectbox.g.dart` / `lib/objectbox-model.json` manual.
+- Menambah `dependency_overrides` untuk menyelesaikan konflik versi.
+- Menambah klaim fitur yang belum ada di kode.
+- Menghapus/skip test tanpa mencatat alasannya di `docs/KNOWN_ISSUES.md` atau `docs/TESTING.md`.
