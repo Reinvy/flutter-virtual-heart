@@ -3,9 +3,10 @@
 ## 1. Command
 
 ```bash
-make check        # flutter analyze + flutter test + dart run tool/check_docs.dart
+make check        # analyze + test + check-docs + gen-check
 make setup        # fvm flutter pub get
 make gen          # build_runner (regenerasi ObjectBox)
+make gen-check    # regen + git diff binding (deteksi drift)
 make analyze
 make test
 make check-docs
@@ -23,26 +24,33 @@ bash <(curl -s https://raw.githubusercontent.com/objectbox/objectbox-dart/main/i
 OBJECTBOX_LIB_DIR=$PWD fvm flutter test test/core/objectbox_settings_test.dart
 ```
 
-Tanpa library native, test tersebut **di-skip** (bukan dihapus).
+Tanpa library native, test tersebut **di-skip** di mesin lokal (bukan dihapus). Di CI
+(`CI=true`) library wajib ada — test **gagal** bila tidak, supaya regresi persistensi tidak lolos
+diam-diam.
 
 ## 2. Inventaris test
 
 | File | Cakupan |
 | --- | --- |
-| `test/core/app_strings_test.dart` | kelengkapan & konsistensi string ID/EN |
-| `test/core/content_safety_test.dart` | gate input/output + redirect |
-| `test/core/design_tokens_test.dart` | nilai token warna/ukuran/durasi |
+| `test/core/app_strings_test.dart` | tabel kunci baru ID/EN, copy privasi/age gate, daftar notifikasi, plural Inggris |
+| `test/core/content_safety_test.dart` | gate input/output, `SafetyRedirect`, kategori `personaBreak` |
+| `test/core/design_contrast_test.dart` | kontras token ≥ 4.5:1 (light & dark) |
+| `test/core/memory_fact_merger_test.dart` | `mergeFacts`: key case-insensitive, duplikat batch, batas panjang, hapus tertua |
 | `test/core/model_catalog_test.dart` | katalog LLM, `modelOptionByFileName`, pemetaan tipe engine, katalog speech |
-| `test/core/mood_service_test.dart` | transisi mood & idle time (fake `MoodStore`) |
+| `test/core/model_error_test.dart` | `classifyModelError` (404/401/429/cancel/storage/engine/network) |
+| `test/core/mood_service_test.dart` | batas kata (remain/crystal), skor user+AI, tie-break, transisi, peluruhan, idle |
 | `test/core/notification_time_test.dart` | `nextInstanceOf` (hari ini/besok/akhir bulan, `Asia/Jakarta`) |
-| `test/core/objectbox_settings_test.dart` | persistensi 7 field `AppSettings` lintas close/reopen |
-| `test/core/prompt_builder_test.dart` | system prompt, batas riwayat, ringkasan, instruksi bahasa |
-| `test/core/router_guard_test.dart` | matriks `resolveRedirect` (gate & redirect) |
+| `test/core/objectbox_settings_test.dart` | persistensi **semua** field `AppSettings` + `normalized()` |
+| `test/core/prompt_builder_test.dart` | batas karakter prompt, 12 fakta, sanitasi, pesan blokir, `selectMemoryFacts` |
+| `test/core/router_guard_test.dart` | matriks `resolveRedirect` (gate, `/privacy`, `/model-download`) |
 | `test/core/wav_pcm_test.dart` | parser WAV: chunk `LIST`/`JUNK`, padding ganjil, tanpa `data` |
-| `test/features/chat/chat_bubble_test.dart` | bubble user/AI, timestamp, tombol speaker |
-| `test/features/chat/input_bar_test.dart` | hint, tombol kirim, batas 2000 karakter, mic |
+| `test/features/chat/chat_bubble_test.dart` | bubble user/AI, timestamp, speaker, gambar markdown tidak dirender |
+| `test/features/chat/input_bar_test.dart` | hint, kirim, batas 2000 karakter, counter, tombol stop |
 | `test/features/memory/memory_screen_test.dart` | empty state, grouping kategori, pencarian |
-| `test/features/onboarding/age_gate_test.dart` | teks ID/EN, tombol confirm/decline |
+| `test/features/model/model_error_text_test.dart` | setiap `ModelErrorKind` punya pesan ID/EN |
+| `test/features/onboarding/age_gate_test.dart` | teks ID/EN, konfirmasi menyimpan `isAgeVerified`, tautan privasi |
+| `test/features/settings/privacy_screen_test.dart` | judul/kebijakan/tombol kembali (ID + EN) |
+| `test/features/settings/section_overflow_test.dart` | Appearance/Language/Model tidak overflow di 320 dp |
 
 **Gap yang diketahui** (lihat `KNOWN_ISSUES.md`): tidak ada test untuk `ChatNotifier`
 end-to-end (butuh engine), `TtsService`/`SttService` (butuh plugin native), widget notifikasi,
@@ -67,23 +75,32 @@ Bug yang diperbaiki sebaiknya mendapat regression test (contoh: parser WAV, pers
 `.github/workflows/ci.yml` menjalankan pada setiap push/PR:
 
 1. `flutter pub get`
-2. `dart run build_runner build --delete-conflicting-outputs`
-3. `git diff --exit-code -- lib/objectbox.g.dart lib/objectbox-model.json` (drift generated)
-4. `flutter analyze`
-5. `flutter test`
-6. `dart run tool/check_docs.dart`
+2. `bash <(curl -s .../objectbox-dart/main/install.sh)` (library native ObjectBox)
+3. `dart run build_runner build --delete-conflicting-outputs`
+4. `git diff --exit-code -- lib/objectbox.g.dart lib/objectbox-model.json` (drift generated)
+5. `flutter analyze`
+6. `flutter test` dengan `CI=true` + `OBJECTBOX_LIB_DIR=$GITHUB_WORKSPACE`
+7. `dart run tool/check_docs.dart`
 
-CI memakai Flutter 3.47.1 + JDK 17. Test ObjectBox ter-skip di CI (tanpa library native).
+CI memakai Flutter 3.47.1 + JDK 17. Test ObjectBox **berjalan** di CI; bila library native hilang,
+test gagal (bukan skip). `make check` menjalankan langkah yang sama secara lokal, termasuk
+`gen-check`.
 
 ## 5. Checklist manual (perangkat Android)
 
 - [ ] Install model default dari layar model (progress berjalan, bisa dibatalkan).
 - [ ] Upload file `.litertlm`/`.task` dengan nama kustom → model dikenali setelah restart.
 - [ ] Chat streaming: token muncul bertahap, typing indicator hilang di akhir.
+- [ ] Stop generation: tekan tombol stop saat AI menjawab → jawaban parsial tersimpan + banner.
+- [ ] Ganti model dari Settings → Model AI: model lain terpasang, chat memakai model baru.
 - [ ] Gate keamanan: pesan terlarang → deflection tampil, tidak ada jawaban model.
 - [ ] STT: rekam → transkrip masuk ke input, terkirim dengan flag voice.
 - [ ] TTS: aktifkan di Settings → tombol speaker di bubble; ganti model suara berfungsi.
 - [ ] Notifikasi pagi: atur jam, tutup app, verifikasi muncul pada jam lokal perangkat.
+- [ ] Check-in: pilih interval 1/3/6/12 jam, matikan layar, verifikasi waktu munculnya.
+- [ ] Izin notifikasi ditolak → sakelar menolak aktif + SnackBar panduan.
+- [ ] Ekspor chat: dialog simpan OS muncul, file bisa dibuka dari pengelola file.
+- [ ] STT izin ditolak → SnackBar dengan aksi "Buka Pengaturan".
 - [ ] Tap notifikasi saat app tertutup → langsung ke chat (setelah setup selesai).
 - [ ] Dark/light/system theme tanpa warna token yang salah.
 - [ ] Memori: fakta baru muncul, edit/hapus berfungsi, `lastReferencedAt` bertambah.

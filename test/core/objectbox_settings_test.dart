@@ -1,13 +1,13 @@
 // Integration test — persistensi AppSettings di ObjectBox.
 //
-// Regresi yang dijaga: binding ObjectBox pernah stale sehingga 6 field
-// (`ttsBackend`, `sttBackend`, `ttsModel`, `sttModel`, `modelSource`,
-// `modelUrl`) tidak ikut tersimpan. Test ini menulis nilai non-default,
-// menutup store, membuka ulang, lalu memastikan semua nilai kembali.
+// Regresi yang dijaga: binding ObjectBox pernah stale sehingga beberapa field
+// tidak ikut tersimpan, dan baris settings lama bisa berisi nilai kosong.
+// Test ini menulis nilai non-default untuk SETIAP field, menutup store,
+// membuka ulang, lalu memastikan semua nilai kembali apa adanya.
 //
 // Catatan: test butuh library native ObjectBox di host (`libobjectbox.so` di
-// folder kerja atau path sistem). Bila tidak ada, test di-skip — lihat
-// docs/TESTING.md.
+// folder kerja atau path sistem). Di CI library wajib ada (langkah install di
+// workflow); di mesin lokal tanpa library test di-skip — lihat docs/TESTING.md.
 import 'dart:ffi';
 import 'dart:io';
 
@@ -44,6 +44,7 @@ String? _objectBoxLibDir() {
 
 void main() {
   final libDir = _objectBoxLibDir();
+  final isCi = Platform.environment['CI'] == 'true';
 
   group('AppSettings persistence', () {
     late Directory tempDir;
@@ -56,42 +57,102 @@ void main() {
       if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
     });
 
-    test(
-      'semua field model & suara bertahan setelah store dibuka ulang',
-      () async {
-        final path = tempDir.path;
-        final previousDir = Directory.current.path;
-        // Bindings ObjectBox mencari library di `./lib` relatif terhadap
-        // direktori kerja proses.
-        if (libDir != null) Directory.current = libDir;
+    test('semua field bertahan setelah store dibuka ulang', () async {
+      if (libDir == null && isCi) {
+        fail('Library native ObjectBox wajib tersedia di CI');
+      }
 
-        final first = await openStore(directory: path);
-        first.box<AppSettings>().put(
-          AppSettings(
-            ttsBackend: 'system',
-            sttBackend: 'system',
-            ttsModel: 'qwen3',
-            sttModel: 'moonshine',
-            modelSource: 'file',
-            modelUrl: 'https://example.com/model.litertlm',
-            modelVariant: 'model-kustom.litertlm',
-          ),
-        );
-        first.close();
+      final previousDir = Directory.current.path;
+      // Bindings ObjectBox mencari library di `./lib` relatif terhadap
+      // direktori kerja proses.
+      Directory.current = libDir ?? previousDir;
+      addTearDown(() => Directory.current = previousDir);
 
-        final reopened = await openStore(directory: path);
-        final stored = reopened.box<AppSettings>().getAll().single;
-        expect(stored.ttsBackend, 'system');
-        expect(stored.sttBackend, 'system');
-        expect(stored.ttsModel, 'qwen3');
-        expect(stored.sttModel, 'moonshine');
-        expect(stored.modelSource, 'file');
-        expect(stored.modelUrl, 'https://example.com/model.litertlm');
-        expect(stored.modelVariant, 'model-kustom.litertlm');
-        reopened.close();
-        Directory.current = previousDir;
-      },
-      skip: libDir == null ? 'Library native ObjectBox tidak tersedia di host' : false,
-    );
+      const summary = 'Ringkasan percakapan lama yang harus ikut tersimpan.';
+
+      final first = await openStore(directory: tempDir.path);
+      first.box<AppSettings>().put(
+        AppSettings(
+          theme: AppThemeSetting.system,
+          language: AppLanguage.english,
+          ttsEnabled: true,
+          ttsAutoPlay: true,
+          ttsBackend: 'system',
+          sttBackend: 'system',
+          ttsModel: 'qwen3',
+          sttModel: 'moonshine',
+          notificationMorningEnabled: true,
+          notificationMorningTime: '06:45',
+          notificationCheckinEnabled: true,
+          notificationCheckinHours: 12,
+          modelVariant: 'model-kustom.litertlm',
+          modelSource: 'file',
+          modelUrl: 'https://example.com/model.litertlm',
+          isAgeVerified: true,
+          isOnboardingDone: true,
+          isPersonaSetup: true,
+          conversationSummary: summary,
+          summaryMessageCount: 30,
+        ),
+      );
+      first.close();
+
+      final reopened = await openStore(directory: tempDir.path);
+      final stored = reopened.box<AppSettings>().getAll().single;
+
+      expect(stored.theme, AppThemeSetting.system);
+      expect(stored.themeIndex, 2);
+      expect(stored.language, AppLanguage.english);
+      expect(stored.languageIndex, 1);
+      expect(stored.ttsEnabled, isTrue);
+      expect(stored.ttsAutoPlay, isTrue);
+      expect(stored.ttsBackend, 'system');
+      expect(stored.sttBackend, 'system');
+      expect(stored.ttsModel, 'qwen3');
+      expect(stored.sttModel, 'moonshine');
+      expect(stored.notificationMorningEnabled, isTrue);
+      expect(stored.notificationMorningTime, '06:45');
+      expect(stored.notificationCheckinEnabled, isTrue);
+      expect(stored.notificationCheckinHours, 12);
+      expect(stored.modelVariant, 'model-kustom.litertlm');
+      expect(stored.modelSource, 'file');
+      expect(stored.modelUrl, 'https://example.com/model.litertlm');
+      expect(stored.isAgeVerified, isTrue);
+      expect(stored.isOnboardingDone, isTrue);
+      expect(stored.isPersonaSetup, isTrue);
+      expect(stored.conversationSummary, summary);
+      expect(stored.summaryMessageCount, 30);
+      reopened.close();
+    }, skip: libDir == null && !isCi ? 'Library native ObjectBox tidak tersedia di host' : false);
+
+    test('baris lama tanpa nilai baru dinormalkan', () {
+      final legacy = AppSettings()
+        ..ttsBackend = ''
+        ..sttBackend = 'aneh'
+        ..ttsModel = 'tidak-ada'
+        ..notificationMorningTime = '99:99'
+        ..notificationCheckinHours = 0
+        ..modelSource = 'sideload'
+        ..themeIndex = 99
+        ..languageIndex = -4;
+
+      final fixed = legacy.normalized();
+
+      expect(fixed.ttsBackend, 'system');
+      expect(fixed.sttBackend, 'system');
+      expect(fixed.ttsModel, 'inflect');
+      expect(fixed.notificationMorningTime, '08:00');
+      expect(fixed.notificationCheckinHours, 6);
+      expect(fixed.modelSource, '');
+      expect(fixed.themeIndex, AppThemeSetting.values.length - 1);
+      expect(fixed.languageIndex, 0);
+      // Getter tidak boleh melempar RangeError untuk index rusak.
+      expect(legacy.theme, AppThemeSetting.values.last);
+      expect(legacy.language, AppLanguage.indonesian);
+    });
+
+    test('modelVariant kosong dipertahankan (belum memilih model)', () {
+      expect(AppSettings().normalized().modelVariant, '');
+    });
   });
 }

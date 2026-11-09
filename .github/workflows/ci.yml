@@ -21,6 +21,9 @@ jobs:
 
       - run: flutter pub get
 
+      - name: Install ObjectBox native library
+        run: bash <(curl -s https://raw.githubusercontent.com/objectbox/objectbox-dart/main/install.sh)
+
       - run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Generated ObjectBox bindings are up to date
@@ -28,6 +31,10 @@ jobs:
 
       - run: flutter analyze
 
-      - run: flutter test
+      - name: Test
+        run: flutter test
+        env:
+          CI: 'true'
+          OBJECTBOX_LIB_DIR: ${{ github.workspace }}
 
       - run: dart run tool/check_docs.dart

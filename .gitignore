@@ -50,3 +50,9 @@ app.*.map.json
 # Gradle/Kotlin tooling caches
 android/.kotlin/
 android/.gradle/
+
+# ObjectBox native library (diunduh oleh install.sh, dipakai test lokal)
+/lib/libobjectbox.*
+/lib/objectbox-*.so
+/lib/objectbox-*.dylib
+/download/

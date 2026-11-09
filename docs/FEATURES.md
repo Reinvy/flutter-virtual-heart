@@ -36,21 +36,31 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
   edit terpisah.
 - `PersonaConfig` tidak menyimpan `voiceId` (lihat FR-07).
 - ⚠️ `Partial`: pemilihan suara tidak per-persona, melainkan global.
+- Edit memakai `Form` dengan validator yang sama seperti setup (nama 2–32, panggilan wajib),
+  termasuk pemilihan hobi; keyboard tidak menutupi tombol simpan, dan menutup sheet dengan
+  perubahan belum disimpan meminta konfirmasi "Buang perubahan?".
 - Edge case: nama kosong/terlalu pendek → error inline; edit tanpa mengubah field tetap menyimpan
   `id` yang sama (tidak membuat duplikat).
 - Ref: `lib/features/persona/`, `lib/models/persona_config.dart`.
 
-### FR-04 — Model Install & Katalog — `Partial`
+### FR-04 — Model Install & Katalog — `Implemented`
 
 - 5 model (Qwen 2.5 1.5B default, Qwen 2.5 0.5B, SmolLM 135M, DeepSeek R1 1.5B, Gemma 3 1B)
   diunduh dari HuggingFace dengan progress dan tombol batal, **atau** file `.litertlm`/`.task`
   di-upload dari perangkat.
 - Token HuggingFace opsional (model gated) disimpan di `SharedPreferences`.
 - Setelah sukses: `modelVariant` = nama file, `modelSource` = `network`/`file`, `modelUrl` = URL.
-- Restart: model terpasang dikenali lewat `isModelInstalled(nama file)`.
-- ⚠️ `Partial`: belum ada preflight ruang penyimpanan/peringatan RAM rendah.
-- Edge case: file dengan nama kustom tetap dikenali (identitas = nama file); upload ekstensi lain
-  ditolak dengan pesan `modelFileInvalid`; batal unduhan menghasilkan status error yang ramah.
+- Restart: model terpasang dikenali lewat `isModelInstalled(nama file)`. **Tidak ada**
+  auto-download saat pertama buka — pengguna memilih model (atau satu-satunya model terpasang
+  dipakai otomatis).
+- Ganti model kapan saja lewat Settings → Model AI atau `/model-download` (ada tombol kembali,
+  badge "Aktif", label tombol Pakai/Aktif, dan tombol Coba Lagi saat gagal).
+- Error instalasi dipetakan ke kind (`network`/`auth`/`notFound`/`rateLimited`/`storage`/
+  `invalidFile`/`engine`/`unknown`) dan ditampilkan lewat `AppStrings`; batal unduhan memulihkan
+  status sebelumnya tanpa banner error.
+- ⚠️ Belum ada preflight ruang penyimpanan/peringatan RAM rendah (KI-09).
+- Edge case: file kustom tetap dikenali (identitas = nama file); ekstensi lain, file kosong, atau
+  pemilihan jenis model yang dibatalkan tidak memulai instalasi.
 - Ref: `lib/features/model/model_download_screen.dart`, `lib/services/ai/model_service.dart`,
   `lib/services/ai/model_catalog.dart`.
 
@@ -58,12 +68,17 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
 
 ## Chat & Suara
 
-### FR-05 — Chat Streaming — `Partial`
+### FR-05 — Chat Streaming — `Implemented`
 
-- Input maksimum 2000 karakter; pesan user langsung dipersist dan tampil.
+- Input maksimum 2000 karakter (counter muncul di atas 1800); pesan user dipersist setelah gate
+  keamanan dan langsung tampil.
 - Token AI muncul bertahap (bubble streaming), `TypingIndicator` sebelum token pertama.
-- Riwayat lengkap dipersist di ObjectBox dan dimuat ulang saat app dibuka.
-- ⚠️ `Partial`: tidak ada tombol stop-generation; input dinonaktifkan selama AI menjawab.
+- Tombol stop menggantikan tombol kirim selama generasi; jawaban parsial disimpan dan banner
+  "Jawaban terhenti" muncul. Kegagalan generasi menampilkan error terlokalisasi + Coba Lagi.
+- Riwayat lengkap dipersist di ObjectBox, diurutkan `(timestamp, id)`, dimuat ulang saat app
+  dibuka, dan langsung menggulir ke pesan terbaru; auto-scroll hanya saat pengguna berada di
+  bawah. Teks bubble bisa diseleksi.
+- Markdown dari model tidak pernah memuat gambar jaringan (privacy).
 - Ref: `lib/features/chat/chat_screen.dart`, `lib/features/chat/chat_controller.dart`,
   `lib/services/ai/model_service.dart`.
 
@@ -71,7 +86,9 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
 
 - Dua backend: on-device (Moonshine, rekam WAV 16 kHz mono) dan sistem (`speech_to_text`).
 - Transkrip masuk ke input untuk diedit, lalu terkirim dengan `Message.isVoice = true`.
-- Izin mikrofon diminta saat dipakai; penolakan → pesan `chatSttUnavailable`.
+- Izin mikrofon diminta saat dipakai; penolakan → SnackBar `chatMicPermission` dengan aksi
+  "Buka Pengaturan". Transkrip disisipkan di posisi kursor, bukan menimpa teks yang ada.
+- TTS dihentikan sebelum mikrofon aktif; sesi ganda ditolak (`busy`).
 - ⚠️ `Partial`: tidak ada visualisasi waveform/progress transkripsi.
 - Edge case: rekaman tanpa akhir → `stopListening` mengembalikan string kosong (tanpa error ke
   UI); WAV tanpa chunk `data` ditolak parser (`FormatException`) dan sesi dianggap gagal.
@@ -81,9 +98,11 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
 ### FR-07 — Voice Output (TTS) — `Partial`
 
 - Dua backend: on-device (Inflect default, Matcha, Qwen3) dan suara sistem (`flutter_tts`).
-- Play/stop per bubble AI; auto-play opsional setelah jawaban selesai.
-- Bahasa TTS mengikuti `AppSettings.language` (`id-ID`/`en-US`).
-- Ganti model benar-benar memasang/mengaktifkan model yang dipilih.
+- Play/stop per bubble AI (tombol disembunyikan saat TTS mati); auto-play opsional setelah
+  jawaban selesai, hanya jika layar chat sedang aktif.
+- Bahasa TTS mengikuti `AppSettings.language` (`id-ID`/`en-US`) dan diteruskan ke engine.
+- Ganti model benar-benar memasang/mengaktifkan model yang dipilih; status "Terpasang" hanya
+  muncul bila model benar-benar aktif. Utterance baru membatalkan yang lama.
 - ⚠️ `Partial`: selesai playback diperkirakan dari durasi PCM (bukan callback plugin).
 - Edge case: model belum tersedia → SnackBar `chatTtsUnavailable`, chat tetap jalan; meninggalkan
   layar chat menghentikan audio.
@@ -119,7 +138,8 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
 - Setiap jawaban AI memicu ekstraksi fakta `FACT: category | key | value` (best-effort).
 - Fakta digabung berdasarkan `key` (case-insensitive): nilai/kategori/sumber diperbarui, bukan
   duplikat. `sourceSnippet` menyimpan pesan user pemicu.
-- `lastReferencedAt` diperbarui untuk setiap fakta yang dipakai menyusun prompt.
+- `lastReferencedAt` hanya diperbarui untuk fakta yang dipakai menyusun prompt, setelah generasi
+  sukses. Maksimum 12 fakta per prompt, 50 fakta tersimpan (tertua dihapus), panjang field dibatasi.
 - Kategori: personal, event, preference, date.
 - Edge case: model mengembalikan format salah → tidak ada fakta baru, chat tidak gagal.
 - Ref: `lib/services/ai/memory_extractor.dart`, `lib/features/chat/chat_controller.dart`.
@@ -131,17 +151,21 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
 
 ### FR-13 — Conversation Summarization — `Implemented`
 
-- Setiap 30 pesan, ringkasan 3–5 kalimat dibuat (maks. 60 pesan terakhir) dan disimpan di
-  `AppSettings.conversationSummary` lewat `AppSettingsNotifier.setConversationSummary`.
-- Ringkasan diinjeksikan ke system prompt sebagai `[CONTEXT SUMMARY]`.
-- Hapus semua percakapan dan reset persona menghapus ringkasan.
+- Saat pesan tak-terblokir bertambah ≥ 30 sejak `summaryMessageCount`, ringkasan 3–5 kalimat
+  dibuat (maks. 60 pesan terakhir, prompt berbatas karakter) dan disimpan bersama
+  `summaryMessageCount` baru.
+- Ringkasan (maks. 500 karakter) diinjeksikan ke system prompt sebagai `[CONTEXT SUMMARY]`.
+- Hapus semua percakapan, reset persona, dan reset total menghapus ringkasan + counternya.
 - Ref: `lib/services/ai/prompt_builder.dart`, `lib/features/settings/settings_controller.dart`.
 
 ### FR-14 — Content Safety — `Implemented`
 
-- Gate input (sebelum prompt) dan output (setelah generasi) dengan kategori: explicit sexual,
-  self-harm, professional advice, hate speech, violence instruction, PII.
-- Konten terblokir diganti deflection hangat; tidak ada pesan error teknis ke UI.
+- Gate input berjalan **sebelum** pesan dipersist; gate output berjalan selama streaming
+  (holdback 64 karakter) dan sekali lagi di akhir. Kategori: explicit sexual, self-harm,
+  professional advice, hate speech, violence instruction, persona break.
+- Pesan terblokir ditandai `Message.isBlocked` dan tidak pernah masuk prompt, ringkasan, memori,
+  atau mood. Konten terblokir diganti deflection `AppStrings` yang terlokalisasi; tidak ada pesan
+  error teknis ke UI.
 - Ref: `lib/services/ai/content_safety.dart`, `test/core/content_safety_test.dart`.
 
 ---
@@ -157,11 +181,12 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
 - Ref: `lib/services/notification_service.dart`,
   `lib/features/notifications/notification_controller.dart`.
 
-### FR-16 — Check-in Notification — `Implemented` (interval tetap)
+### FR-16 — Check-in Notification — `Implemented`
 
-- Saat app masuk background (`paused`) dan fitur aktif, check-in dijadwalkan **1 jam** ke depan;
-  dibatalkan saat app kembali (`resumed`).
-- Interval belum bisa diubah pengguna (KI-07).
+- Saat app masuk background (`paused`) dan fitur aktif, check-in dijadwalkan sesuai
+  `AppSettings.notificationCheckinHours` (pilihan 1/3/6/12 jam di Settings); dibatalkan saat app
+  kembali (`resumed`).
+- Penjadwalan hanya terjadi bila izin notifikasi ada; body memakai `AppStrings.checkinMessages`.
 - Ref: `lib/features/notifications/app_lifecycle_observer.dart`,
   `lib/services/notification_service.dart`.
 
@@ -178,30 +203,35 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
 ### FR-18 — Settings — `Implemented`
 
 - Section: Persona (ringkasan + edit + reset), Tampilan (light/dark/system), Bahasa
-  (ID/EN/mixed), Suara (TTS on/off, auto-play, backend, model), Notifikasi (morning message,
-  jam, check-in, izin), Data & Privasi.
-- ⚠️ Belum ada layar Privacy Policy in-app (lihat FR-19/KI-10).
+  (ID/EN/mixed), **Model AI** (model aktif + Ganti Model), Suara (TTS on/off, auto-play, backend,
+  model), Notifikasi (morning message, jam, check-in + interval, izin), Data & Privasi.
+- Izin ditampilkan apa adanya: tile izin tidak memunculkan dialog saat layar dibuka, dan sakelar
+  notifikasi menolak aktif tanpa izin OS (SnackBar panduan).
+- Section memakai warna `ColorScheme` (kontras AA di light & dark) dan tidak overflow pada 320 dp.
 - Ref: `lib/features/settings/`.
 
 ### FR-19 — Data & Privasi — `Implemented`
 
-- Hapus semua percakapan (+ ringkasan) → `chatProvider` disegarkan.
-- Ekspor riwayat chat ke `.txt` di direktori dokumen.
-- Reset persona: persona, memori, mood, ringkasan dihapus; kembali ke `/persona-setup`.
-- Reset semua data: persona, memori, mood, pesan, settings dihapus; notifikasi dibatalkan;
-  kembali ke `/age-gate`. File model + identitasnya dipertahankan (tidak unduh ulang).
-- Semua aksi destruktif memakai dialog konfirmasi dengan label batal terlokalisasi.
+- Hapus semua percakapan (+ ringkasan + counter) dalam satu transaksi → `chatProvider` disegarkan.
+- Ekspor riwayat chat ke `.txt` lewat dialog simpan OS (`FilePicker.saveFile`) dengan header
+  terlokalisasi; platform tanpa dialog simpan memakai dokumen aplikasi + path lengkap di SnackBar.
+- Reset persona: persona, memori, mood, **percakapan**, ringkasan dihapus; kembali ke
+  `/persona-setup`.
+- Reset semua data: persona, memori, mood, pesan, settings, token HuggingFace, dan file ekspor
+  dihapus; notifikasi dibatalkan; kembali ke `/age-gate`. File model + identitasnya dipertahankan.
+- Aksi destruktif menunggu generasi/unduhan berhenti dan memakai dialog konfirmasi terlokalisasi.
+- Kebijakan privasi bisa dibaca di aplikasi (`/privacy`) dari age gate maupun Settings.
 - Ref: `lib/features/settings/widgets/data_privacy_section.dart`,
   `lib/features/settings/widgets/persona_section.dart`,
   `lib/features/settings/settings_controller.dart`.
 
-### FR-20 — Bahasa (Indonesia / English / Mixed) — `Partial`
+### FR-20 — Bahasa (Indonesia / English / Mixed) — `Implemented`
 
 - `AppSettings.language` mengatur: string UI (`AppStrings`), locale Material
-  (`GlobalMaterialLocalizations`), bahasa keluaran AI (instruksi di system prompt), dan bahasa
-  TTS/STT.
-- ⚠️ `Partial`: teks notifikasi, deflection safety, header ekspor, katalog hobi, dan
-  `_friendlyError` masih Inggris/hardcode (KI-11).
+  (`GlobalMaterialLocalizations`), bahasa keluaran AI (instruksi di system prompt), bahasa
+  TTS/STT, body notifikasi, deflection safety, error model, header ekspor, dan kebijakan privasi.
+- Katalog hobi tetap berbahasa Inggris sebagai nama tag (bukan kalimat UI) — dicatat di
+  `KNOWN_ISSUES` bila ingin diterjemahkan.
 - Ref: `lib/core/l10n/app_strings.dart`, `lib/services/ai/prompt_builder.dart`, `lib/app.dart`.
 
 ---
@@ -224,13 +254,14 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
 
 | Kondisi | Perilaku saat ini |
 | --- | --- |
-| Model belum siap | guard menjaga di `/model-download`; aksi chat tidak tersedia |
-| Model gagal dimuat | status error ramah di layar model, bisa unduh ulang |
-| Izin mikrofon/notifikasi ditolak | fitur terkait nonaktif dengan pesan hangat |
-| Penyimpanan penuh | tidak ditangani (KI-09/KI-14) |
+| Model belum siap | banner `chatModelUnavailable` + guard `/model-download` |
+| Model gagal dimuat | error kind + tombol Coba Lagi di layar model |
+| Izin mikrofon/notifikasi ditolak | fitur terkait nonaktif, SnackBar dengan aksi pengaturan |
+| Penyimpanan penuh | belum ada preflight (KI-09) |
 | App dibunuh saat generasi | pesan user sudah tersimpan; jawaban parsial tidak |
-| Data DB korup | tidak ada pemulihan otomatis (KI-14) |
-| Tidak ada jaringan saat install | error ramah + tombol retry |
+| Data DB korup | direktori store diganti nama `.corrupt-<ts>` dan store dibuka ulang (KI-14) |
+| Bootstrap gagal total | `BootstrapErrorApp` dua bahasa, bukan layar kosong |
+| Tidak ada jaringan saat install | error kind network + tombol Coba Lagi |
 | Bahasa UI diganti | string, locale Material, TTS/STT, dan instruksi AI ikut berubah |
 
 ## Matriks Rujukan
@@ -255,5 +286,5 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
 | FR-16 | `features/notifications/app_lifecycle_observer.dart` | `services/notification_service.dart` |
 | FR-17 | — (belum ada UI) | `services/notification_service.dart` |
 | FR-18 | `features/settings/settings_screen.dart` | `AppSettings` |
-| FR-19 | `features/settings/widgets/data_privacy_section.dart` | ObjectBox (semua box) |
+| FR-19 | `features/settings/widgets/data_privacy_section.dart`, `features/settings/privacy_screen.dart` | ObjectBox (semua box), `SharedPreferences` |
 | FR-20 | `features/settings/widgets/language_section.dart` | `core/l10n/app_strings.dart`, `AppLanguage` |

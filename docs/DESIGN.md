@@ -128,7 +128,15 @@ Animasi deklaratif memakai `flutter_animate`. Semua animasi loop/dekoratif memer
 
 ## 9. Aksesibilitas
 
-- Target sentuh minimum 48 dp; kontras teks kecil memakai `primaryDeep`/`textSecondary`.
+- Target sentuh minimum 48 dp (chip hobi memakai `minHeight: AppSizes.touchTarget`); kontras teks
+  kecil memakai `primaryDeep`/`textSecondary` di light dan `*Dark` di dark.
+- Widget yang butuh warna eksplisit memakai `AppColors.primaryDeepFor(context)` /
+  `accentFor` / `textSecondaryFor` — bukan token light langsung. Invarian kontras ≥ 4.5:1 dijaga
+  `test/core/design_contrast_test.dart`.
+- Ikon aksi tanpa teks wajib punya `tooltip`/`Semantics`; animasi dekoratif (titik mengetik,
+  sparkle) dimatikan saat `MediaQuery.disableAnimationsOf(context)`.
+- `sectionCard` memakai `Material` (bukan `Container` berwarna) agar ink `ListTile` terlihat;
+  `sectionHeader` memakai `AppTextStyles.sectionLabel` (11/w700/letterSpacing 1.1).
 - `Semantics` baru sebagian dipakai (mis. dekorasi sparkle diberi label `null`); label eksplisit
   untuk tombol ikon belum menyeluruh — lihat `KNOWN_ISSUES.md`.
 - Reduced motion dihormati pada animasi dekoratif.

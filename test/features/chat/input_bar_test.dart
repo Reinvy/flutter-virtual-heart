@@ -26,7 +26,7 @@ Widget wrap(Widget child) {
 }
 
 void main() {
-  testWidgets('menampilkan hint dan tombol kirim nonaktif saat kosong', (tester) async {
+  testWidgets('menampilkan hint input', (tester) async {
     await tester.pumpWidget(wrap(InputBar(onSend: (_) {})));
 
     expect(find.text('Ceritakan harimu...'), findsOneWidget);

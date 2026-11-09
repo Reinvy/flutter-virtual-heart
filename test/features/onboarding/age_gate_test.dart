@@ -1,29 +1,57 @@
-// Widget test — AgeGateScreen (FR-01): verifikasi 13+ & konfirmasi.
+// Widget test — AgeGateScreen (FR-01): verifikasi 13+, konfirmasi, privasi.
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:virtual_heart/core/l10n/app_strings.dart';
 import 'package:virtual_heart/features/onboarding/age_gate_screen.dart';
-import 'package:virtual_heart/services/settings/settings_service.dart';
 import 'package:virtual_heart/models/app_settings.dart';
+import 'package:virtual_heart/services/settings/settings_service.dart';
 
-class _TestSettingsNotifier extends AppSettingsNotifier {
-  _TestSettingsNotifier(this.value);
-  final AppSettings value;
+class FakeSettingsNotifier extends AppSettingsNotifier {
+  FakeSettingsNotifier(this.initial);
+
+  final AppSettings initial;
+  AppSettings? saved;
 
   @override
-  AppSettings build() => value;
+  AppSettings build() => initial;
+
+  @override
+  void save(AppSettings updated) {
+    saved = updated;
+    state = updated;
+  }
 }
 
-Widget wrap({AppSettings? settings, AppStrings? strings}) {
+Widget wrap({
+  FakeSettingsNotifier? notifier,
+  AppSettings? settings,
+  AppStrings? strings,
+}) {
+  final router = GoRouter(
+    initialLocation: '/age-gate',
+    routes: [
+      GoRoute(path: '/age-gate', builder: (_, _) => const AgeGateScreen()),
+      GoRoute(
+        path: '/onboarding',
+        builder: (_, _) => const Scaffold(body: Text('ONBOARDING')),
+      ),
+      GoRoute(
+        path: '/privacy',
+        builder: (_, _) => const Scaffold(body: Text('PRIVACY')),
+      ),
+    ],
+  );
+
   return ProviderScope(
     overrides: [
       appSettingsProvider.overrideWith(
-        () => _TestSettingsNotifier(settings ?? AppSettings()),
+        () => notifier ?? FakeSettingsNotifier(settings ?? AppSettings()),
       ),
       appStringsProvider.overrideWith((ref) => strings ?? const IndonesianStrings()),
     ],
-    child: const MaterialApp(home: AgeGateScreen()),
+    child: MaterialApp.router(routerConfig: router),
   );
 }
 
@@ -52,19 +80,35 @@ void main() {
     expect(find.text('Tidak, keluar dari aplikasi'), findsOneWidget);
   });
 
-  testWidgets('tombol confirm & decline tersedia', (tester) async {
+  testWidgets('konfirmasi menandai isAgeVerified dan lanjut ke onboarding', (tester) async {
+    final notifier = FakeSettingsNotifier(AppSettings());
+    await tester.pumpWidget(wrap(notifier: notifier));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Ya, saya 13 tahun ke atas'));
+    await tester.pumpAndSettle();
+
+    expect(notifier.saved?.isAgeVerified, isTrue);
+    expect(find.text('ONBOARDING'), findsOneWidget);
+  });
+
+  testWidgets('tautan kebijakan privasi bisa dibuka sebelum menyetujui', (tester) async {
     await tester.pumpWidget(wrap());
     await tester.pumpAndSettle();
 
-    expect(find.text('Ya, saya 13 tahun ke atas'), findsOneWidget);
-    expect(find.text('Tidak, keluar dari aplikasi'), findsOneWidget);
+    await tester.tap(find.text('Baca Kebijakan Privasi'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('PRIVACY'), findsOneWidget);
   });
 
   testWidgets('bahasa Inggris tampil saat language = english', (tester) async {
-    await tester.pumpWidget(wrap(
-      settings: AppSettings(language: AppLanguage.english),
-      strings: const EnglishStrings(),
-    ));
+    await tester.pumpWidget(
+      wrap(
+        settings: AppSettings(language: AppLanguage.english),
+        strings: const EnglishStrings(),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Age Verification'), findsOneWidget);

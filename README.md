@@ -31,8 +31,8 @@ fetching Google Fonts at runtime. Chat, memory, persona, and mood never leave th
 | Age gate (13+) | ✅ Implemented | persisted in `AppSettings.isAgeVerified` |
 | Onboarding (3 pages) | ✅ Implemented | |
 | Persona setup & edit | ✅ Implemented | gender, name, nickname, personality, hobbies, avatar; editing reuses the same form |
-| Model catalog & install | ✅ Implemented | 5 models (`.litertlm`/`.task`), download with progress + cancel, or upload your own file |
-| Streaming chat | ⚠️ Partial | token streaming + typing indicator; **no stop-generation** yet |
+| Model catalog & install | ✅ Implemented | 5 models (`.litertlm`/`.task`), explicit model choice, download with progress + cancel, upload your own file, switch anytime from Settings |
+| Streaming chat | ✅ Implemented | token streaming, typing indicator, stop-generation, partial-reply persistence, localized error banner + retry |
 | Conversation summary | ✅ Implemented | every 30 messages, injected as context |
 | Memory extraction | ✅ Implemented | facts merged by key, source snippet kept, last-referenced timestamp |
 | Dynamic mood engine | ✅ Implemented | 5 moods, intensity 0–1, idle decay |
@@ -40,9 +40,9 @@ fetching Google Fonts at runtime. Chat, memory, persona, and mood never leave th
 | Voice input (STT) | ⚠️ Partial | on-device Moonshine or OS dictation; no waveform UI |
 | Voice output (TTS) | ⚠️ Partial | on-device (Inflect/Matcha/Qwen3) or OS voice; completion estimated by timer |
 | Persona profile sheet | ✅ Implemented | avatar, mood, hobbies, personality, edit |
-| Notifications | ⚠️ Partial | morning message + 1-hour check-in, local timezone, tap opens chat; special-day API has no UI |
-| Settings | ✅ Implemented | theme light/dark/system, language (ID/EN/mixed), voice, notifications, data & privacy |
-| Data privacy | ✅ Implemented | delete conversations, delete memory, reset persona, reset all data; export chat as `.txt` |
+| Notifications | ⚠️ Partial | morning message + check-in (1/3/6/12 h), localized copy, permission-aware, tap opens chat; special-day API has no UI |
+| Settings | ✅ Implemented | theme light/dark/system, language (ID/EN/mixed), AI model, voice, notifications, data & privacy |
+| Data privacy | ✅ Implemented | delete conversations/memory, reset persona, reset all data (also clears HF token + exports), in-app privacy policy, export chat via the OS save dialog |
 
 Voice selection is **global**, not per-persona. Known gaps are tracked in
 [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md).

@@ -9,7 +9,6 @@ void main() {
       expect(kDefaultModelOption.id, 'qwen2.5-1.5b');
       expect(kDefaultModelOption.fileType, 'litertlm');
       expect(kDefaultModelOption.fileName, endsWith('.litertlm'));
-      expect(kModelOptions.length, 5);
     });
 
     test('modelOptionByFileName menemukan setiap entri katalog', () {

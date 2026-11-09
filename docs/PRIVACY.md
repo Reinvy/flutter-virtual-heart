@@ -12,7 +12,10 @@ dan `AppStrings.ageGateTerms`/`ageGateBody` bila menyangkut komitmen privasi.
 | Memori | `memoryFactBox` | fakta tentang user (key/value, kategori, potongan sumber) |
 | Persona | `personaBox` | nama, gender, kepribadian, hobi, avatar |
 | Mood | `moodStateBox` | mood + intensitas + waktu interaksi terakhir |
-| Pengaturan | `appSettingsBox` | bahasa, tema, TTS/STT, jadwal notifikasi, ringkasan percakapan, identitas model |
+| Pengaturan | `appSettingsBox` | bahasa, tema, TTS/STT, jadwal + interval check-in, ringkasan percakapan, jumlah pesan terakhir yang diringkas, identitas model |
+
+Pesan yang diblokir content safety tetap disimpan dengan flag `isBlocked` + deflection-nya, tetapi
+tidak pernah dikirim ke model pada giliran berikutnya, tidak masuk ringkasan, memori, atau mood.
 
 Ditambah `SharedPreferences` untuk token HuggingFace opsional (`hf_token`).
 
@@ -48,20 +51,25 @@ terkait menampilkan pesan hangat (`chatSttUnavailable`, dsb.).
 
 | Aksi | Efek |
 | --- | --- |
-| Settings → Hapus semua percakapan | semua pesan + ringkasan konteks dihapus |
-| Settings → Reset persona | persona, memori, mood, ringkasan dihapus; setup persona diulang |
-| Settings → Reset semua data | persona, memori, mood, pesan, pengaturan dihapus; notifikasi dibatalkan; aplikasi kembali ke gerbang usia |
+| Settings → Hapus semua percakapan | semua pesan + ringkasan konteks + counter ringkasan dihapus |
+| Settings → Reset persona | persona, memori, mood, **seluruh percakapan**, dan ringkasan dihapus; setup persona diulang |
+| Settings → Reset semua data | persona, memori, mood, pesan, pengaturan, token HuggingFace, dan file ekspor `virtualheart_*.txt` dihapus; notifikasi dibatalkan; aplikasi kembali ke gerbang usia |
 | Uninstall aplikasi | seluruh data lokal + file model ikut terhapus |
 
 File model yang sudah diunduh **tidak** dihapus oleh tombol reset (agar tidak mengunduh ulang
 1–2 GB). Hapus lewat uninstall atau pengelola penyimpanan OS.
+
+Ekspor chat memakai dialog simpan OS sehingga pengguna memilih lokasi file; pada platform tanpa
+dialog simpan, file ditulis ke dokumen aplikasi dan path lengkapnya ditampilkan di SnackBar.
+Kebijakan privasi yang sama bisa dibaca di aplikasi (age gate → "Baca Kebijakan Privasi", atau
+Settings → Data & Privasi → "Kebijakan Privasi").
 
 ## 5. Batasan usia & keselamatan
 
 - Aplikasi untuk pengguna **13 tahun ke atas** (gerbang usia di awal, `isAgeVerified`).
 - Bukan pengganti bantuan profesional: prompt melarang nasihat medis/hukum/finansial, dan
   `ContentSafety` memblokir kategori `selfHarm`, `professionalAdvice`, `explicitSexual`,
-  `hateSpeech`, `violenceInstruction`, `pii` dengan deflection hangat.
+  `hateSpeech`, `violenceInstruction`, `personaBreak` dengan deflection hangat.
 - Aplikasi tidak memverifikasi identitas dan tidak menghubungi layanan darurat.
 
 ## 6. Model AI

@@ -1,7 +1,8 @@
 # DATA_MODEL — Skema ObjectBox
 
-ObjectBox **5.3.2**, model version **5** (`lib/objectbox-model.json`). Binding di
-`lib/objectbox.g.dart` **generated** — jangan diedit manual.
+ObjectBox **5.3.2**, model version **6** (`lib/objectbox-model.json`). Binding di
+`lib/objectbox.g.dart` **generated** — jangan diedit manual (`make gen-check` memastikan tidak
+ada drift).
 
 Regenerasi setelah mengubah entity:
 
@@ -14,32 +15,36 @@ fvm dart run build_runner build --delete-conflicting-outputs
 
 ## 1. Entity
 
-### `AppSettings` (19 field)
+### `AppSettings` (21 field)
 
 | Field | Tipe | Default | Catatan |
 | --- | --- | --- | --- |
 | `id` | int | 0 | `@Id` |
 | `ttsEnabled` | bool | `false` | FR-07 |
 | `ttsAutoPlay` | bool | `false` | auto-play jawaban AI |
-| `ttsBackend` | String | `'gemma'` | `'gemma'` = on-device, `'system'` |
-| `sttBackend` | String | `'gemma'` | idem |
+| `ttsBackend` | String | `'system'` | `'gemma'` = on-device, `'system'` |
+| `sttBackend` | String | `'system'` | idem |
 | `ttsModel` | String | `'inflect'` | `inflect`/`matcha`/`qwen3` |
 | `sttModel` | String | `'moonshine'` | |
 | `notificationMorningEnabled` | bool | `false` | FR-15 |
 | `notificationMorningTime` | String | `'08:00'` | `HH:mm` |
 | `notificationCheckinEnabled` | bool | `false` | FR-16 |
-| `modelVariant` | String | `'qwen2.5-1.5b'` | setelah install berisi **nama file** model |
+| `notificationCheckinHours` | int | `6` | 1/3/6/12 (dipilih di Settings) |
+| `modelVariant` | String | `''` | **nama file** model; kosong = belum dipilih |
 | `modelSource` | String | `''` | `''`/`network`/`file` |
 | `modelUrl` | String | `''` | URL asal (kosong untuk upload file) |
 | `isAgeVerified` | bool | `false` | FR-01 |
 | `isOnboardingDone` | bool | `false` | FR-02 |
 | `isPersonaSetup` | bool | `false` | FR-03 |
-| `conversationSummary` | String | `''` | FR-13 |
+| `conversationSummary` | String | `''` | FR-13, dipotong 600 karakter |
+| `summaryMessageCount` | int | `0` | jumlah pesan saat ringkasan terakhir dibuat |
 | `themeIndex` | int | `0` | backing field `AppThemeSetting {light, dark, system}` |
 | `languageIndex` | int | `0` | backing field `AppLanguage {indonesian, english, mixed}` |
 
 `theme`/`language` diekspos sebagai getter/setter di atas `themeIndex`/`languageIndex`
-(enum tidak disimpan langsung — ObjectBox melewati properti bertipe enum).
+(enum tidak disimpan langsung — ObjectBox melewati properti bertipe enum). Getter meng-clamp
+index sehingga baris rusak tidak melempar `RangeError`, dan `normalized()` memperbaiki nilai
+string/int yang tidak valid saat boot (backend suara, model, jam pagi, interval check-in).
 
 ### `PersonaConfig`
 
@@ -51,7 +56,9 @@ Tidak ada `voiceId` — pemilihan suara bersifat global (`AppSettings.tts*`), bu
 ### `Message`
 
 `id`, `content`, `isVoice` (bool), `mood` (String?, nama `MoodType` saat jawaban dibuat),
-`timestamp` (`date`), `roleIndex` (`MessageRole {user, assistant}`).
+`timestamp` (`date`), `roleIndex` (`MessageRole {user, assistant}`), `isBlocked` (bool, default
+`false`). Pesan `isBlocked` tetap tampil di UI tetapi tidak pernah masuk prompt, ringkasan,
+ekstraksi memori, maupun skoring mood.
 
 ### `MemoryFact`
 
@@ -74,9 +81,9 @@ Tidak ada `voiceId` — pemilihan suara bersifat global (`AppSettings.tts*`), bu
 | `memoryFactBox` | `MemoryFact` |
 | `moodStateBox` | `MoodState` |
 
-- **Single-row convention**: `AppSettings`, `PersonaConfig`, `MoodState` dibaca via
-  `box.getAll().first`; `ObjectBoxService.getOrCreateSettings()` membuat baris default bila
-  kosong. Tidak ada unique constraint/`@Unique` — lihat [`KNOWN_ISSUES.md`](KNOWN_ISSUES.md).
+- **Single-row convention**: `AppSettings`, `PersonaConfig`, `MoodState` dibaca dengan memilih
+  baris **id terkecil** lalu menghapus duplikat (`getOrCreateSettings`, `PersonaNotifier.build`,
+  `MoodService.getCurrentMood`). Tidak ada `@Unique`, jadi kanonikalisasi dilakukan di kode.
 - Tidak ada relasi ObjectBox; seluruh asosiasi dilakukan lewat query/box langsung.
 - Store dibuka di `getApplicationDocumentsDirectory()/virtualheartdb`.
 
@@ -84,21 +91,33 @@ Tidak ada `voiceId` — pemilihan suara bersifat global (`AppSettings.tts*`), bu
 
 | Aksi | Yang dihapus | Yang dipertahankan |
 | --- | --- | --- |
-| Hapus semua percakapan (`AppSettingsNotifier.deleteAllConversations`) | semua `Message` + `conversationSummary` | persona, memori, mood, settings lain |
-| Reset persona (`PersonaSection`) | `personaBox`, `memoryFactBox`, `moodStateBox`; `isPersonaSetup=false`; `conversationSummary=''` | percakapan, settings lain |
-| Reset semua data (`AppSettingsNotifier.resetAllData`) | persona, memori, mood, pesan, settings | **file model** + identitas model (`modelVariant`/`modelSource`/`modelUrl` disalin ke settings baru) |
+| Hapus semua percakapan (`AppSettingsNotifier.deleteAllConversations`) | semua `Message` + `conversationSummary` + `summaryMessageCount=0` (satu transaksi) | persona, memori, mood, settings lain |
+| Reset persona (`AppSettingsNotifier.resetPersonaData`) | `personaBox`, `memoryFactBox`, `moodStateBox`, `messageBox`; `isPersonaSetup=false`; `conversationSummary=''`; `summaryMessageCount=0` (satu transaksi) | model + settings lain (tema/bahasa/suara/notifikasi) |
+| Reset semua data (`AppSettingsNotifier.resetAllData`) | persona, memori, mood, pesan, settings, token `hf_token`, file `virtualheart_*.txt` (satu transaksi untuk box) | **file model** + identitas model (`modelVariant`/`modelSource`/`modelUrl` disalin ke settings baru) |
 
 `resetAllData` mempertahankan identitas model agar model 1–2 GB yang sudah diunduh tidak perlu
-diunduh ulang. Semua aksi di atas juga meng-invalidate provider terkait di UI
-(`chatProvider`, `memoryFactsProvider`, `personaProvider`, `moodProvider`,
+diunduh ulang. Aksi destruktif menunggu `ChatNotifier.cancelGeneration()` (generasi +
+post-process) dan `ModelServiceNotifier.cancelDownload()` selesai, lalu meng-invalidate provider
+terkait di UI (`chatProvider`, `memoryFactsProvider`, `personaProvider`, `moodProvider`,
 `modelServiceProvider`, `modelReadyProvider`).
 
-## 4. Test persistensi
+## 4. Pemulihan store korup
 
-`test/core/objectbox_settings_test.dart` menulis `AppSettings` dengan nilai non-default,
-menutup store, membuka ulang, lalu memeriksa 7 field (`ttsBackend`, `sttBackend`, `ttsModel`,
-`sttModel`, `modelSource`, `modelUrl`, `modelVariant`). Test ini menjaga regresi binding stale
-yang dulu membuat 6 field tidak pernah tersimpan.
+Bila `openStore` gagal (file store korup/tidak kompatibel), `ObjectBoxService.create()`:
+1. mencatat kegagalan (`AppLogger.warn`),
+2. mengganti nama direktori `virtualheartdb` menjadi `virtualheartdb.corrupt-<timestamp>`,
+3. mencoba `openStore` sekali lagi.
 
-Test membutuhkan `libobjectbox.so`/`.dylib` di host; bila tidak tersedia test **di-skip**
-(bukan dihapus). Cara menyediakannya: lihat [`TESTING.md`](TESTING.md).
+Bila percobaan kedua gagal, error dilempar dan `main()` menampilkan `BootstrapErrorApp`. Data
+lama tidak dihapus — hanya dipindahkan, sehingga masih bisa diperiksa manual.
+
+## 5. Test persistensi
+
+`test/core/objectbox_settings_test.dart` menulis **setiap** field `AppSettings` non-default
+(tema, bahasa, suara, notifikasi + interval check-in, model + sumber/URL, flag, ringkasan +
+`summaryMessageCount`), menutup store, membuka ulang, lalu memeriksa semuanya kembali. File yang
+sama juga memeriksa `normalized()` untuk baris lama yang rusak.
+
+Test membutuhkan `libobjectbox.so`/`.dylib` di host; bila tidak tersedia test **di-skip** di
+mesin lokal dan **gagal** di CI (`CI=true`), sehingga regresi tidak bisa lolos diam-diam. Cara
+menyediakan library: lihat [`TESTING.md`](TESTING.md).
