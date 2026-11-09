@@ -146,11 +146,16 @@ class MoodService {
 
   /// Returns the current [MoodState], creating a default one if none exists.
   MoodState getCurrentMood() {
-    final all = _db.moodStateBox.getAll();
-    if (all.isNotEmpty) return all.first;
-    final initial = MoodState();
-    _db.moodStateBox.put(initial);
-    return initial;
+    final all = _db.moodStateBox.getAll()..sort((a, b) => a.id.compareTo(b.id));
+    if (all.isEmpty) {
+      final initial = MoodState();
+      _db.moodStateBox.put(initial);
+      return initial;
+    }
+    if (all.length > 1) {
+      _db.moodStateBox.removeMany(all.skip(1).map((row) => row.id).toList());
+    }
+    return all.first;
   }
 
   /// Updates mood from sentiment in the user's message and the AI reply.

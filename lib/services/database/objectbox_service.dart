@@ -1,5 +1,9 @@
 // Service database — ObjectBox (init & box access)
+import 'dart:io';
+
 import 'package:path_provider/path_provider.dart';
+
+import '../../core/errors/app_logger.dart';
 
 import '../../models/app_settings.dart';
 import '../../models/memory_fact.dart';
@@ -30,7 +34,25 @@ class ObjectBoxService implements MoodStore {
 
     final service = ObjectBoxService._();
     final appDir = await getApplicationDocumentsDirectory();
-    service.store = await openStore(directory: '${appDir.path}/virtualheartdb');
+    final directory = '${appDir.path}/virtualheartdb';
+    try {
+      service.store = await openStore(directory: directory);
+    } catch (e) {
+      // Store tidak bisa dibuka (korup/versi tidak kompatibel): pindahkan
+      // direktori lama agar aplikasi tetap bisa jalan dengan data kosong.
+      AppLogger.warn('ObjectBox open failed, attempting recovery', e);
+      final dir = Directory(directory);
+      if (!await dir.exists()) rethrow;
+      final backup = '$directory.corrupt-${DateTime.now().millisecondsSinceEpoch}';
+      try {
+        await dir.rename(backup);
+        AppLogger.warn('Corrupt store moved to $backup', null);
+      } catch (renameError) {
+        AppLogger.error('Corrupt store backup failed', renameError);
+        rethrow;
+      }
+      service.store = await openStore(directory: directory);
+    }
 
     service.personaBox = service.store.box<PersonaConfig>();
     service.messageBox = service.store.box<Message>();
@@ -47,13 +69,23 @@ class ObjectBoxService implements MoodStore {
     return _instance!;
   }
 
-  /// Mengembalikan [AppSettings] yang ada atau membuat default baru (light).
+  /// Mengembalikan [AppSettings] kanonik (baris id terkecil) atau membuat
+  /// default baru, lalu menormalkan nilai yang mungkin rusak.
+  ///
+  /// Baris duplikat (bug lama) dihapus agar tidak ada dua sumber kebenaran.
   AppSettings getOrCreateSettings() {
-    final existing = appSettingsBox.getAll();
-    if (existing.isNotEmpty) return existing.first;
-    final defaults = AppSettings(); // default theme = light
-    appSettingsBox.put(defaults);
-    return defaults;
+    final all = appSettingsBox.getAll()..sort((a, b) => a.id.compareTo(b.id));
+    if (all.isEmpty) {
+      final defaults = AppSettings().normalized();
+      appSettingsBox.put(defaults);
+      return defaults;
+    }
+    if (all.length > 1) {
+      appSettingsBox.removeMany(all.skip(1).map((row) => row.id).toList());
+    }
+    final canonical = all.first.normalized();
+    appSettingsBox.put(canonical);
+    return canonical;
   }
 
   void close() {

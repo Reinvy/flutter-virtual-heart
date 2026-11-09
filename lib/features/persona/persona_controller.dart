@@ -13,15 +13,19 @@ class PersonaNotifier extends Notifier<PersonaConfig?> {
   @override
   PersonaConfig? build() {
     final db = ref.read(objectBoxServiceProvider);
-    final personas = db.personaBox.getAll();
-    return personas.isNotEmpty ? personas.first : null;
+    final personas = db.personaBox.getAll()..sort((a, b) => a.id.compareTo(b.id));
+    if (personas.isEmpty) return null;
+    if (personas.length > 1) {
+      db.personaBox.removeMany(personas.skip(1).map((row) => row.id).toList());
+    }
+    return personas.first;
   }
 
   /// Menyimpan [persona]. Jika sudah ada record, pertahankan [id] agar
   /// ObjectBox meng-update, bukan menambah duplikat.
   void save(PersonaConfig persona) {
     final db = ref.read(objectBoxServiceProvider);
-    final existing = db.personaBox.getAll();
+    final existing = db.personaBox.getAll()..sort((a, b) => a.id.compareTo(b.id));
     if (existing.isNotEmpty && persona.id == 0) {
       persona.id = existing.first.id;
       persona.createdAt = existing.first.createdAt;
