@@ -81,6 +81,14 @@ class AgeGateScreen extends ConsumerWidget {
                 style: AppTextStyles.timestamp(),
                 textAlign: TextAlign.center,
               ).animate().fadeIn(duration: 500.ms, delay: 600.ms),
+
+              TextButton(
+                onPressed: () => context.push(AppRoutes.privacy),
+                child: Text(
+                  strings.ageGatePrivacyLink,
+                  style: AppTextStyles.timestamp(color: scheme.primary),
+                ),
+              ).animate().fadeIn(duration: 500.ms, delay: 650.ms),
             ],
           ),
         ),

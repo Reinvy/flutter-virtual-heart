@@ -10,8 +10,8 @@ import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/design/tokens/app_sizes.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../models/app_settings.dart';
-import '../../../models/objectbox_provider.dart';
 import '../../../models/persona_config.dart';
+import '../../chat/chat_controller.dart';
 import '../../chat/mood_provider.dart';
 import '../../memory/memory_controller.dart';
 import '../../notifications/notification_controller.dart';
@@ -46,21 +46,21 @@ class PersonaSection extends ConsumerWidget {
     if (!confirmed || !context.mounted) return;
     HapticFeedback.heavyImpact();
 
-    ref.read(personaProvider.notifier).reset();
-    ref.read(objectBoxServiceProvider).memoryFactBox.removeAll();
-    ref.read(objectBoxServiceProvider).moodStateBox.removeAll();
+    // Hentikan generasi yang sedang berjalan sebelum data dihapus.
+    await ref.read(chatProvider.notifier).cancelGeneration();
+    if (!context.mounted) return;
+
+    await ref.read(appSettingsProvider.notifier).resetPersonaData();
+    ref.invalidate(chatProvider);
     ref.invalidate(memoryFactsProvider);
     ref.invalidate(moodProvider);
+    ref.invalidate(personaProvider);
 
-    // Ringkasan percakapan lama tidak relevan lagi untuk persona baru.
-    final updated = settings.copyWith(
-      isPersonaSetup: false,
-      conversationSummary: '',
-    );
-    ref.read(appSettingsProvider.notifier).save(updated);
     // Nama persona lama harus hilang dari jadwal notifikasi.
     try {
-      await ref.read(notificationProvider.notifier).applySettings(updated);
+      await ref
+          .read(notificationProvider.notifier)
+          .applySettings(ref.read(appSettingsProvider));
     } catch (_) {
       // Notifikasi opsional: abaikan kegagalan sinkronisasi.
     }

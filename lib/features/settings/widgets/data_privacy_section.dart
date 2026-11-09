@@ -1,6 +1,8 @@
 // Settings — Data & Privasi (FR-19): hapus percakapan, ekspor chat, reset total.
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -39,13 +41,15 @@ class DataPrivacySection extends ConsumerWidget {
 
     if (!confirmed || !context.mounted) return;
     HapticFeedback.heavyImpact();
+
+    // Tunggu generasi & tulis post-process selesai sebelum tabel dikosongkan.
+    await ref.read(chatProvider.notifier).cancelGeneration();
+    if (!context.mounted) return;
+
     ref.read(appSettingsProvider.notifier).deleteAllConversations();
     ref.invalidate(chatProvider);
-    if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(strings.settingsDeletedSnack)));
-    }
+    if (!context.mounted) return;
+    _snack(context, strings.settingsDeletedSnack);
   }
 
   /// Reset total: semua data lokal dihapus, notifikasi dibatalkan, lalu kembali
@@ -63,8 +67,17 @@ class DataPrivacySection extends ConsumerWidget {
     if (!confirmed || !context.mounted) return;
     HapticFeedback.heavyImpact();
 
-    await ref.read(notificationServiceProvider).cancelAll();
-    ref.read(appSettingsProvider.notifier).resetAllData();
+    // Hentikan pekerjaan yang masih menulis ke database.
+    await ref.read(chatProvider.notifier).cancelGeneration();
+    await ref.read(modelServiceProvider.notifier).cancelDownload();
+    if (!context.mounted) return;
+
+    try {
+      await ref.read(notificationServiceProvider).cancelAll();
+    } catch (_) {
+      // Notifikasi opsional: hapus data tetap dilanjutkan.
+    }
+    await ref.read(appSettingsProvider.notifier).resetAllData();
 
     ref.invalidate(chatProvider);
     ref.invalidate(memoryFactsProvider);
@@ -74,9 +87,7 @@ class DataPrivacySection extends ConsumerWidget {
     ref.invalidate(modelReadyProvider);
 
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(strings.settingsResetAllDone)));
+    _snack(context, strings.settingsResetAllDone);
     context.go(AppRoutes.ageGate);
   }
 
@@ -86,26 +97,24 @@ class DataPrivacySection extends ConsumerWidget {
     final messages = db.messageBox.getAll()..sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
     if (messages.isEmpty) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(strings.settingsExportEmptySnack)));
-      }
+      if (context.mounted) _snack(context, strings.settingsExportEmptySnack);
       return;
     }
 
     final persona = ref.read(personaProvider);
-    final personaName = (persona?.name.isNotEmpty == true) ? persona!.name : 'AI';
+    final personaName = (persona?.name.isNotEmpty == true)
+        ? persona!.name
+        : strings.settingsExportAiFallback;
     final userNickname = (persona?.nicknameForUser.isNotEmpty == true)
         ? persona!.nicknameForUser
-        : 'You';
+        : strings.settingsExportUserFallback;
 
     final fmt = DateFormat('dd/MM/yyyy HH:mm');
     final fmtShort = DateFormat('dd/MM HH:mm');
     final buffer = StringBuffer()
-      ..writeln('VirtualHeart — Chat Export')
-      ..writeln('Export date: ${fmt.format(DateTime.now())}')
-      ..writeln('Persona: $personaName')
+      ..writeln(strings.settingsExportTitle)
+      ..writeln(strings.settingsExportDate(fmt.format(DateTime.now())))
+      ..writeln(strings.settingsExportPersona(personaName))
       ..writeln('=' * 40)
       ..writeln();
 
@@ -117,27 +126,56 @@ class DataPrivacySection extends ConsumerWidget {
         ..writeln();
     }
 
+    final fileName =
+        'virtualheart_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.txt';
+    final bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
+
+    try {
+      final uri = await FilePicker.saveFile(
+        fileName: fileName,
+        bytes: bytes,
+        mimeType: 'text/plain',
+        dialogTitle: strings.settingsExportChat,
+      );
+      if (!context.mounted) return;
+      _snack(
+        context,
+        uri == null ? strings.settingsExportCancelled : strings.settingsExportSaved,
+      );
+    } on UnimplementedError {
+      await _exportToAppDocuments(context, strings, buffer.toString(), fileName);
+    } catch (_) {
+      if (context.mounted) _snack(context, strings.settingsExportFailed);
+    }
+  }
+
+  /// Fallback platform tanpa dialog simpan: tulis ke dokumen aplikasi dan
+  /// tampilkan path lengkapnya agar pengguna tahu di mana file berada.
+  Future<void> _exportToAppDocuments(
+    BuildContext context,
+    AppStrings strings,
+    String content,
+    String fileName,
+  ) async {
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final fileName = 'virtualheart_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.txt';
       final file = File('${dir.path}/$fileName');
-      await file.writeAsString(buffer.toString(), flush: true);
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(strings.settingsExportSuccess.replaceAll('{file}', fileName)),
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
+      await file.writeAsString(content, flush: true);
+      if (!context.mounted) return;
+      _snack(
+        context,
+        strings.settingsExportSuccess.replaceAll('{file}', file.path),
+        duration: const Duration(seconds: 6),
+      );
     } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(strings.settingsExportFailed)));
-      }
+      if (context.mounted) _snack(context, strings.settingsExportFailed);
     }
+  }
+
+  static void _snack(BuildContext context, String message, {Duration? duration}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: duration ?? const Duration(seconds: 4)),
+    );
   }
 
   @override
@@ -158,6 +196,13 @@ class DataPrivacySection extends ConsumerWidget {
               title: Text(strings.settingsLocalStorage),
               subtitle: Text(strings.settingsLocalStorageBody),
               isThreeLine: true,
+            ),
+            ListTile(
+              dense: true,
+              leading: Icon(Icons.privacy_tip_outlined, color: subtleColor),
+              title: Text(strings.settingsPrivacyPolicy),
+              trailing: Icon(Icons.chevron_right_rounded, color: subtleColor),
+              onTap: () => context.push(AppRoutes.privacy),
             ),
             ListTile(
               dense: true,
