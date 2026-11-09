@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/design/components/empty_state.dart';
+import '../../core/design/mood_visuals.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
@@ -122,7 +123,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         _scrollToBottom(animate: false);
       }
 
-      if (!next.isTyping && prev?.isTyping == true && next.messages.isNotEmpty) {
+      if (!next.isTyping &&
+          prev?.isTyping == true &&
+          next.messages.isNotEmpty) {
         final last = next.messages.last;
         if (last.role == MessageRole.assistant) {
           if (!_sparkleShown) {
@@ -154,15 +157,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           Column(
             children: [
               Expanded(
-                child: _buildMessageList(strings, chatState.messages, chatState.isTyping,
-                    chatState.streamingBuffer, persona, settings.ttsEnabled),
+                child: _buildMessageList(
+                  strings,
+                  chatState.messages,
+                  chatState.isTyping,
+                  chatState.streamingBuffer,
+                  persona,
+                  settings.ttsEnabled,
+                ),
               ),
               if (chatState.error != null)
                 _ChatErrorBanner(
                   message: _chatErrorText(strings, chatState.error!.kind),
-                  retryLabel: chatState.error!.canRetry ? strings.chatRetry : null,
+                  retryLabel: chatState.error!.canRetry
+                      ? strings.chatRetry
+                      : null,
                   dismissLabel: strings.chatDismiss,
-                  onRetry: () => ref.read(chatProvider.notifier).retryLastResponse(),
+                  onRetry: () =>
+                      ref.read(chatProvider.notifier).retryLastResponse(),
                   onDismiss: () => ref.read(chatProvider.notifier).clearError(),
                 ),
               InputBar(
@@ -171,28 +183,35 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 isListening: _isListening,
                 controller: _inputTextController,
                 onMicTap: _handleMicTap,
-                onStop: () => ref.read(chatProvider.notifier).cancelGeneration(),
+                onStop: () =>
+                    ref.read(chatProvider.notifier).cancelGeneration(),
                 onSend: (text) {
                   HapticFeedback.lightImpact();
                   final isVoice = _voiceDraft != null;
                   _voiceDraft = null;
-                  ref.read(chatProvider.notifier).sendMessage(text, isVoice: isVoice);
+                  ref
+                      .read(chatProvider.notifier)
+                      .sendMessage(text, isVoice: isVoice);
                 },
               ),
             ],
           ),
-          if (_showSparkle) const IgnorePointer(child: SizedBox.expand(child: _SparkleOverlay())),
+          if (_showSparkle)
+            const IgnorePointer(
+              child: SizedBox.expand(child: _SparkleOverlay()),
+            ),
         ],
       ),
     );
   }
 
-  static String _chatErrorText(AppStrings strings, ChatErrorKind kind) => switch (kind) {
-    ChatErrorKind.modelUnavailable => strings.chatModelUnavailable,
-    ChatErrorKind.contextLimit => strings.chatContextLimit,
-    ChatErrorKind.generationFailed => strings.chatGenerationFailed,
-    ChatErrorKind.interrupted => strings.chatInterrupted,
-  };
+  static String _chatErrorText(AppStrings strings, ChatErrorKind kind) =>
+      switch (kind) {
+        ChatErrorKind.modelUnavailable => strings.chatModelUnavailable,
+        ChatErrorKind.contextLimit => strings.chatContextLimit,
+        ChatErrorKind.generationFailed => strings.chatGenerationFailed,
+        ChatErrorKind.interrupted => strings.chatInterrupted,
+      };
 
   PreferredSizeWidget _buildAppBar(
     AppStrings strings,
@@ -213,19 +232,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                personaAvatar(name: persona?.name, avatarId: persona?.avatarId, size: 36),
+                personaAvatar(
+                  name: persona?.name,
+                  avatarId: persona?.avatarId,
+                  size: 36,
+                ),
                 Positioned(
                   right: -2,
                   bottom: -2,
-                  child: Text(_moodEmoji(currentMood),
-                          style: const TextStyle(fontSize: 12, height: 1))
-                      .animate(onPlay: (c) => c.repeat(reverse: true))
-                      .scaleXY(
-                        begin: 0.85,
-                        end: 1.05,
-                        duration: 1400.ms,
-                        curve: Curves.easeInOut,
-                      ),
+                  child:
+                      Text(
+                            moodEmoji(currentMood),
+                            style: const TextStyle(fontSize: 12, height: 1),
+                          )
+                          .animate(onPlay: (c) => c.repeat(reverse: true))
+                          .scaleXY(
+                            begin: 0.85,
+                            end: 1.05,
+                            duration: 1400.ms,
+                            curve: Curves.easeInOut,
+                          ),
                 ),
               ],
             ),
@@ -258,7 +284,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           onPressed: () => _leaveChat(AppRoutes.memory),
         ),
         IconButton(
-          icon: Icon(Icons.settings_outlined, color: textColor.withValues(alpha: 0.6)),
+          icon: Icon(
+            Icons.settings_outlined,
+            color: textColor.withValues(alpha: 0.6),
+          ),
           tooltip: strings.settingsTitle,
           onPressed: () => _leaveChat(AppRoutes.settings),
         ),
@@ -286,14 +315,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (mounted) setState(() => _isListening = false);
     if (mounted) await context.push(route);
   }
-
-  static String _moodEmoji(MoodType mood) => switch (mood) {
-    MoodType.happy => '😊',
-    MoodType.longing => '🥺',
-    MoodType.playful => '😄',
-    MoodType.sad => '😔',
-    MoodType.excited => '🤩',
-  };
 
   Future<void> _speakMessage(Message message, PersonaConfig? persona) async {
     final settings = ref.read(appSettingsProvider);
@@ -432,7 +453,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final itemCount = messages.length + (isTyping ? 1 : 0);
 
     if (itemCount == 0) {
-      return _EmptyChat(strings: strings, personaName: persona?.name, persona: persona);
+      return _EmptyChat(
+        strings: strings,
+        personaName: persona?.name,
+        persona: persona,
+      );
     }
 
     return SelectionArea(
@@ -502,7 +527,12 @@ class _ChatErrorBanner extends StatelessWidget {
         AppSizes.spaceMd,
         AppSizes.spaceXs,
       ),
-      padding: const EdgeInsets.fromLTRB(AppSizes.spaceSm, AppSizes.spaceXs, 0, AppSizes.spaceXs),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.spaceSm,
+        AppSizes.spaceXs,
+        0,
+        AppSizes.spaceXs,
+      ),
       decoration: BoxDecoration(
         color: scheme.errorContainer,
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
@@ -526,7 +556,11 @@ class _ChatErrorBanner extends StatelessWidget {
               ),
             ),
           IconButton(
-            icon: Icon(Icons.close_rounded, size: 18, color: scheme.onErrorContainer),
+            icon: Icon(
+              Icons.close_rounded,
+              size: 18,
+              color: scheme.onErrorContainer,
+            ),
             tooltip: dismissLabel,
             onPressed: onDismiss,
           ),
@@ -545,27 +579,33 @@ class _EmptyChat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const Spacer(flex: 3),
-        Expanded(
-          flex: 5,
-          child: EmptyState(
-            icon: Icons.favorite_rounded,
-            iconColor: AppColors.accent,
-            title: fillPlaceholders(strings.chatEmptyGreeting, {
-              'name': personaName ?? strings.chatFallbackName,
-            }),
-            body: strings.chatEmptyBody,
-            action: personaAvatar(
-              name: personaName,
-              avatarId: persona?.avatarId,
-              size: 72,
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spaceMd,
+          vertical: AppSizes.spaceLg,
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: constraints.maxHeight - AppSizes.spaceLg * 2,
+          ),
+          child: Center(
+            child: EmptyState(
+              icon: Icons.favorite_rounded,
+              iconColor: AppColors.accentFor(context),
+              title: fillPlaceholders(strings.chatEmptyGreeting, {
+                'name': personaName ?? strings.chatFallbackName,
+              }),
+              body: strings.chatEmptyBody,
+              action: personaAvatar(
+                name: personaName,
+                avatarId: persona?.avatarId,
+                size: 72,
+              ),
             ),
           ),
         ),
-        const Spacer(flex: 4),
-      ],
+      ),
     );
   }
 }
@@ -591,7 +631,8 @@ class _SparkleOverlay extends StatelessWidget {
     final size = MediaQuery.of(context).size;
     return Stack(
       children: [
-        for (int i = 0; i < _configs.length; i++) _SparkleParticle(index: i, screenSize: size),
+        for (int i = 0; i < _configs.length; i++)
+          _SparkleParticle(index: i, screenSize: size),
       ],
     );
   }
@@ -613,28 +654,34 @@ class _SparkleParticle extends StatelessWidget {
         ? AppColors.primary
         : AppColors.accent;
 
+    final icon = Icon(
+      index.isEven ? Icons.star_rounded : Icons.auto_awesome_rounded,
+      size: cfg[2],
+      color: color,
+    );
+
     return Positioned(
       left: screenSize.width * cfg[0],
       bottom: screenSize.height * cfg[1],
-      child: Semantics(
-        label: null,
-        child: Icon(
-              index.isEven ? Icons.star_rounded : Icons.auto_awesome_rounded,
-              size: cfg[2],
-              color: color,
-            )
-            .animate(
-              delay: motionOk ? Duration(milliseconds: cfg[3].toInt()) : Duration.zero,
-            )
-            .scale(
-              begin: const Offset(0.1, 0.1),
-              end: const Offset(1, 1),
-              duration: 350.ms,
-              curve: Curves.elasticOut,
-            )
-            .then()
-            .moveY(begin: 0, end: -60, duration: 750.ms, curve: Curves.easeOut)
-            .fadeOut(duration: 600.ms),
+      child: IgnorePointer(
+        child: motionOk
+            ? icon
+                  .animate(delay: Duration(milliseconds: cfg[3].toInt()))
+                  .scale(
+                    begin: const Offset(0.1, 0.1),
+                    end: const Offset(1, 1),
+                    duration: 350.ms,
+                    curve: Curves.elasticOut,
+                  )
+                  .then()
+                  .moveY(
+                    begin: 0,
+                    end: -60,
+                    duration: 750.ms,
+                    curve: Curves.easeOut,
+                  )
+                  .fadeOut(duration: 600.ms)
+            : icon,
       ),
     );
   }

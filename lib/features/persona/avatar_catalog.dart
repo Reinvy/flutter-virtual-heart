@@ -79,7 +79,8 @@ Widget personaAvatar({
   TextStyle? textStyle,
 }) {
   final color = avatarColor(avatarId);
-  final initial = (name?.isNotEmpty ?? false) ? name![0].toUpperCase() : '♥';
+  // Grapheme pertama, bukan code unit: nama beremoji tidak terpotong.
+  final initial = (name?.isNotEmpty ?? false) ? name!.characters.first.toUpperCase() : '♥';
   return Container(
     width: size,
     height: size,

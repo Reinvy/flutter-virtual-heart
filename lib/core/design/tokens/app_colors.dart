@@ -51,4 +51,22 @@ abstract final class AppColors {
   static const Color successDark = Color(0xFF7BC67E);
   static const Color warningDark = Color(0xFFE5B567);
   static const Color errorDark = Color(0xFFEE6B77);
+
+  // ── Helper brightness-aware ───────────────────────────────────────────
+  //
+  // Token `primaryDeep`/`accent`/`textSecondary` hanya aman di light mode.
+  // Widget yang memakai warna eksplisit (bukan ColorScheme) wajib lewat
+  // helper ini supaya kontras di dark mode tidak rusak.
+
+  static Color primaryDeepFor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? primaryDeepDark : primaryDeep;
+
+  static Color accentFor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? accentDark : accent;
+
+  static Color secondaryFor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? secondaryDark : secondary;
+
+  static Color textSecondaryFor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? textSecondaryDark : textSecondary;
 }

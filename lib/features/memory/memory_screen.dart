@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/design/components/confirm_dialog.dart';
 import '../../core/design/components/empty_state.dart';
-import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../models/memory_fact.dart';
@@ -31,12 +30,15 @@ class _MemoryScreenState extends ConsumerState<MemoryScreen> {
     MemoryCategory.date: Icons.calendar_today_outlined,
   };
 
-  static const Map<MemoryCategory, Color> _categoryColor = {
-    MemoryCategory.personal: AppColors.primaryDeep,
-    MemoryCategory.event: AppColors.gold,
-    MemoryCategory.preference: AppColors.accent,
-    MemoryCategory.date: AppColors.secondary,
-  };
+  /// Aksen kategori dari ColorScheme (aman di light & dark).
+  static Color _categoryColor(ColorScheme scheme, MemoryCategory category) {
+    return switch (category) {
+      MemoryCategory.personal => scheme.primary,
+      MemoryCategory.event => scheme.tertiary,
+      MemoryCategory.preference => scheme.error,
+      MemoryCategory.date => scheme.secondary,
+    };
+  }
 
   @override
   void dispose() {
@@ -156,7 +158,7 @@ class _MemoryScreenState extends ConsumerState<MemoryScreen> {
                             facts: grouped[category]!,
                             label: _categoryLabel(strings, category),
                             icon: _categoryIcon[category]!,
-                            color: _categoryColor[category]!,
+                            color: _categoryColor(Theme.of(context).colorScheme, category),
                             onDelete: (id) =>
                                 ref.read(memoryFactsProvider.notifier).deleteFact(id),
                           ),
@@ -215,12 +217,16 @@ class _CategorySection extends StatelessWidget {
                 child: Icon(icon, size: 16, color: color),
               ),
               const SizedBox(width: 8),
-              Text(
-                label.toUpperCase(),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: color,
-                  letterSpacing: 1.2,
-                  fontWeight: FontWeight.w700,
+              Expanded(
+                child: Text(
+                  label.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -232,7 +238,9 @@ class _CategorySection extends StatelessWidget {
                 ),
                 child: Text(
                   '${facts.length}',
-                  style: theme.textTheme.labelSmall?.copyWith(color: color),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ],

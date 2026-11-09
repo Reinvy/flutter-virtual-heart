@@ -2,6 +2,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/design/mood_visuals.dart';
 import '../../../core/design/tokens/text_styles.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../models/mood_state.dart';
@@ -10,14 +11,6 @@ import '../mood_provider.dart';
 /// Subtitle AppBar chat: emoji + label mood persona.
 class MoodIndicator extends ConsumerWidget {
   const MoodIndicator({super.key});
-
-  static const Map<MoodType, String> _emoji = {
-    MoodType.happy: '😊',
-    MoodType.longing: '🥺',
-    MoodType.playful: '😄',
-    MoodType.sad: '😢',
-    MoodType.excited: '🤩',
-  };
 
   String _label(AppStrings strings, MoodType mood) => switch (mood) {
     MoodType.happy => strings.moodHappy,
@@ -31,7 +24,7 @@ class MoodIndicator extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(appStringsProvider);
     final mood = ref.watch(moodProvider);
-    final emoji = _emoji[mood.current] ?? '😊';
+    final emoji = moodEmoji(mood.current);
     final label = _label(strings, mood.current);
 
     return Text(

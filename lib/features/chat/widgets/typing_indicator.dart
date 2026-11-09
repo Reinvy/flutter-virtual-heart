@@ -2,7 +2,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/design/tokens/app_sizes.dart';
 
 class TypingIndicator extends StatelessWidget {
@@ -11,10 +10,13 @@ class TypingIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final dotColor = AppColors.primaryDeep;
+    final dotColor = scheme.primary;
     final bubbleBg = scheme.surfaceContainerLow;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceMd, vertical: AppSizes.spaceXxs),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spaceMd,
+        vertical: AppSizes.spaceXxs,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisAlignment: MainAxisAlignment.start,
@@ -34,7 +36,10 @@ class TypingIndicator extends StatelessWidget {
           ),
           const SizedBox(width: AppSizes.spaceXs),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceMd, vertical: AppSizes.spaceSm),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.spaceMd,
+              vertical: AppSizes.spaceSm,
+            ),
             decoration: BoxDecoration(
               color: bubbleBg,
               borderRadius: const BorderRadius.only(
@@ -49,7 +54,10 @@ class TypingIndicator extends StatelessWidget {
               children: [
                 for (int i = 0; i < 3; i++) ...[
                   if (i > 0) const SizedBox(width: 5),
-                  _Dot(delay: Duration(milliseconds: i * 160), color: dotColor),
+                  _Dot(
+                    delay: Duration(milliseconds: i * 160),
+                    color: dotColor,
+                  ),
                 ],
               ],
             ),
@@ -68,11 +76,14 @@ class _Dot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-          width: 7,
-          height: 7,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        )
+    final dot = Container(
+      width: 7,
+      height: 7,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+    // Hormati pengaturan "kurangi animasi": titik tetap diam.
+    if (MediaQuery.disableAnimationsOf(context)) return dot;
+    return dot
         .animate(delay: delay, onPlay: (c) => c.repeat(reverse: true))
         .moveY(begin: 0, end: -6, duration: 380.ms, curve: Curves.easeInOut);
   }

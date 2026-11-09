@@ -25,71 +25,91 @@ class AgeGateScreen extends ConsumerWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceXl),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: 112,
-                height: 112,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: scheme.primaryContainer,
-                ),
-                child: Icon(Icons.lock_outline, size: 52, color: scheme.primary),
-              )
-                  .animate()
-                  .fadeIn(duration: 500.ms)
-                  .scale(begin: const Offset(0.7, 0.7), duration: 500.ms, curve: Curves.easeOut),
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.spaceXl,
+              vertical: AppSizes.spaceLg,
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                        width: 112,
+                        height: 112,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: scheme.primaryContainer,
+                        ),
+                        child: Icon(
+                          Icons.lock_outline,
+                          size: 52,
+                          color: scheme.primary,
+                        ),
+                      )
+                      .animate()
+                      .fadeIn(duration: 500.ms)
+                      .scale(
+                        begin: const Offset(0.7, 0.7),
+                        duration: 500.ms,
+                        curve: Curves.easeOut,
+                      ),
 
-              const SizedBox(height: AppSizes.spaceLg),
+                  const SizedBox(height: AppSizes.spaceLg),
 
-              Text(
-                strings.ageGateTitle,
-                style: AppTextStyles.headingLarge(color: AppColors.primaryDeep),
-                textAlign: TextAlign.center,
-              ).animate().fadeIn(duration: 500.ms, delay: 150.ms),
+                  Text(
+                    strings.ageGateTitle,
+                    style: AppTextStyles.headingLarge(
+                      color: AppColors.primaryDeepFor(context),
+                    ),
+                    textAlign: TextAlign.center,
+                  ).animate().fadeIn(duration: 500.ms, delay: 150.ms),
 
-              const SizedBox(height: AppSizes.spaceMd),
+                  const SizedBox(height: AppSizes.spaceMd),
 
-              Text(
-                strings.ageGateBody,
-                style: AppTextStyles.bodyMedium(color: scheme.onSurfaceVariant),
-                textAlign: TextAlign.center,
-              ).animate().fadeIn(duration: 500.ms, delay: 250.ms),
+                  Text(
+                    strings.ageGateBody,
+                    style: AppTextStyles.bodyMedium(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ).animate().fadeIn(duration: 500.ms, delay: 250.ms),
 
-              const SizedBox(height: AppSizes.spaceXxl),
+                  const SizedBox(height: AppSizes.spaceXxl),
 
-              PrimaryButton(
-                label: strings.ageGateConfirm,
-                onPressed: () => _confirm(context, ref),
-              ).animate().fadeIn(duration: 500.ms, delay: 400.ms),
+                  PrimaryButton(
+                    label: strings.ageGateConfirm,
+                    onPressed: () => _confirm(context, ref),
+                  ).animate().fadeIn(duration: 500.ms, delay: 400.ms),
 
-              const SizedBox(height: AppSizes.spaceMd),
+                  const SizedBox(height: AppSizes.spaceMd),
 
-              SecondaryButton(
-                label: strings.ageGateDecline,
-                onPressed: () => _decline(context, ref),
-              ).animate().fadeIn(duration: 500.ms, delay: 500.ms),
+                  SecondaryButton(
+                    label: strings.ageGateDecline,
+                    onPressed: () => _decline(context, ref),
+                  ).animate().fadeIn(duration: 500.ms, delay: 500.ms),
 
-              const SizedBox(height: AppSizes.spaceXxl),
+                  const SizedBox(height: AppSizes.spaceXxl),
 
-              Text(
-                strings.ageGateTerms,
-                style: AppTextStyles.timestamp(),
-                textAlign: TextAlign.center,
-              ).animate().fadeIn(duration: 500.ms, delay: 600.ms),
+                  Text(
+                    strings.ageGateTerms,
+                    style: AppTextStyles.timestamp(),
+                    textAlign: TextAlign.center,
+                  ).animate().fadeIn(duration: 500.ms, delay: 600.ms),
 
-              TextButton(
-                onPressed: () => context.push(AppRoutes.privacy),
-                child: Text(
-                  strings.ageGatePrivacyLink,
-                  style: AppTextStyles.timestamp(color: scheme.primary),
-                ),
-              ).animate().fadeIn(duration: 500.ms, delay: 650.ms),
-            ],
+                  TextButton(
+                    onPressed: () => context.push(AppRoutes.privacy),
+                    child: Text(
+                      strings.ageGatePrivacyLink,
+                      style: AppTextStyles.timestamp(color: scheme.primary),
+                    ),
+                  ).animate().fadeIn(duration: 500.ms, delay: 650.ms),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -99,7 +119,9 @@ class AgeGateScreen extends ConsumerWidget {
   void _confirm(BuildContext context, WidgetRef ref) {
     HapticFeedback.lightImpact();
     final settings = ref.read(appSettingsProvider);
-    ref.read(appSettingsProvider.notifier).save(settings.copyWith(isAgeVerified: true));
+    ref
+        .read(appSettingsProvider.notifier)
+        .save(settings.copyWith(isAgeVerified: true));
     context.go(AppRoutes.onboarding);
   }
 

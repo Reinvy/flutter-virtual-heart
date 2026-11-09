@@ -22,11 +22,18 @@ class SecondaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final enabled = onPressed != null;
+    final contentColor = enabled
+        ? scheme.secondary
+        : scheme.onSurface.withValues(alpha: 0.38);
+    final borderColor = enabled
+        ? scheme.secondary
+        : scheme.onSurface.withValues(alpha: 0.12);
     final button = OutlinedButton(
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
-        foregroundColor: scheme.secondary,
-        side: BorderSide(color: scheme.secondary),
+        foregroundColor: contentColor,
+        side: BorderSide(color: borderColor),
         minimumSize: const Size.fromHeight(52),
         padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceLg, vertical: AppSizes.spaceMd),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusFull)),
@@ -36,10 +43,10 @@ class SecondaryButton extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: AppSizes.iconMd, color: scheme.secondary),
+            Icon(icon, size: AppSizes.iconMd, color: contentColor),
             const SizedBox(width: AppSizes.spaceXs),
           ],
-          Text(label, style: AppTextStyles.button(color: scheme.secondary)),
+          Text(label, style: AppTextStyles.button(color: contentColor)),
         ],
       ),
     );
@@ -62,7 +69,10 @@ class GhostButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effective = color ?? Theme.of(context).colorScheme.primary;
+    final scheme = Theme.of(context).colorScheme;
+    final effective = onPressed == null
+        ? scheme.onSurface.withValues(alpha: 0.38)
+        : (color ?? scheme.primary);
     return TextButton(
       onPressed: onPressed,
       style: TextButton.styleFrom(foregroundColor: effective),

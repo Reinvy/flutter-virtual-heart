@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/design/components/primary_button.dart';
+import '../../core/design/mood_visuals.dart';
 import '../../core/design/components/sakura_divider.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
@@ -32,13 +33,16 @@ class PersonaProfileSheet extends ConsumerWidget {
 
   final PersonaConfig? persona;
 
-  static const Map<MoodType, Color> _moodColors = {
-    MoodType.happy: AppColors.primaryDeep,
-    MoodType.longing: AppColors.secondary,
-    MoodType.playful: Color(0xFFD4739D),
-    MoodType.sad: AppColors.secondarySoft,
-    MoodType.excited: AppColors.accent,
-  };
+  /// Warna mood dari ColorScheme — kontras aman di light & dark.
+  static Color _moodColor(ColorScheme scheme, MoodType mood) {
+    return switch (mood) {
+      MoodType.happy => scheme.primary,
+      MoodType.longing => scheme.secondary,
+      MoodType.playful => scheme.tertiary,
+      MoodType.sad => scheme.secondary,
+      MoodType.excited => scheme.primary,
+    };
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -59,7 +63,14 @@ class PersonaProfileSheet extends ConsumerWidget {
             controller: scrollController,
             padding: const EdgeInsets.fromLTRB(AppSizes.md, AppSizes.sm, AppSizes.md, AppSizes.xl),
             children: [
-              const SizedBox(height: AppSizes.md),
+              Align(
+                alignment: Alignment.centerRight,
+                child: IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  tooltip: ref.read(appStringsProvider).commonClose,
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
               _buildAvatar(),
               const SizedBox(height: AppSizes.md),
               _buildNameSection(context, ref),
@@ -128,13 +139,7 @@ class PersonaProfileSheet extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final subtleColor = scheme.onSurfaceVariant;
     final strings = ref.read(appStringsProvider);
-    final emoji = switch (mood.current) {
-      MoodType.happy => '😊',
-      MoodType.longing => '🥺',
-      MoodType.playful => '😄',
-      MoodType.sad => '😢',
-      MoodType.excited => '🤩',
-    };
+    final emoji = moodEmoji(mood.current);
     final label = switch (mood.current) {
       MoodType.happy => strings.moodHappy,
       MoodType.longing => strings.moodLonging,
@@ -142,15 +147,21 @@ class PersonaProfileSheet extends ConsumerWidget {
       MoodType.sad => strings.moodSad,
       MoodType.excited => strings.moodExcited,
     };
-    final color = _moodColors[mood.current] ?? AppColors.primaryDeep;
+    final color = _moodColor(scheme, mood.current);
     final intensityPct = (mood.intensity * 100).round();
 
     return Container(
       padding: const EdgeInsets.all(AppSizes.md),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: mood.current == MoodType.sad
+            ? scheme.secondaryContainer
+            : color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
+        border: Border.all(
+          color: mood.current == MoodType.sad
+              ? scheme.secondary
+              : color.withValues(alpha: 0.4),
+        ),
       ),
       child: Row(
         children: [
@@ -195,7 +206,7 @@ class PersonaProfileSheet extends ConsumerWidget {
       children: [
         Text(
           strings.personaHobbies,
-          style: AppTextStyles.headingSmall(color: AppColors.primaryDeep),
+          style: AppTextStyles.headingSmall(color: AppColors.primaryDeepFor(context)),
         ),
         const SizedBox(height: AppSizes.sm),
         Wrap(
@@ -242,7 +253,7 @@ class PersonaProfileSheet extends ConsumerWidget {
       children: [
         Text(
           strings.personaPersonality,
-          style: AppTextStyles.headingSmall(color: AppColors.primaryDeep),
+          style: AppTextStyles.headingSmall(color: AppColors.primaryDeepFor(context)),
         ),
         const SizedBox(height: AppSizes.sm),
         Container(
@@ -296,11 +307,11 @@ class _HobbyChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.primaryContainer,
         borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-        border: Border.all(color: AppColors.primaryDeep.withValues(alpha: 0.4)),
+        border: Border.all(color: AppColors.primaryDeepFor(context).withValues(alpha: 0.4)),
       ),
       child: Text(
         label,
-        style: AppTextStyles.bodyMedium(color: AppColors.primaryDeep),
+        style: AppTextStyles.bodyMedium(color: AppColors.primaryDeepFor(context)),
       ),
     );
   }

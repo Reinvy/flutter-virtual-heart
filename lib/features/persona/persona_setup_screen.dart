@@ -18,6 +18,7 @@ import '../model/model_ready_provider.dart';
 import '../notifications/notification_controller.dart';
 import '../settings/settings_controller.dart';
 import 'avatar_catalog.dart';
+import 'persona_options.dart';
 import 'persona_controller.dart';
 
 /// Layar setup persona. Mendukung dua mode:
@@ -67,7 +68,8 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
     super.dispose();
   }
 
-  List<AvatarOpt> get _currentAvatars => avatarsFor(isGirlfriend: _gender == PersonaGender.girlfriend);
+  List<AvatarOpt> get _currentAvatars =>
+      avatarsFor(isGirlfriend: _gender == PersonaGender.girlfriend);
 
   void _switchGender(PersonaGender gender) {
     if (_gender == gender) return;
@@ -96,7 +98,9 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
       ref.read(personaProvider.notifier).save(persona);
 
       final settings = ref.read(appSettingsProvider);
-      ref.read(appSettingsProvider.notifier).save(settings.copyWith(isPersonaSetup: true));
+      ref
+          .read(appSettingsProvider.notifier)
+          .save(settings.copyWith(isPersonaSetup: true));
 
       // Judul notifikasi memakai nama persona baru.
       try {
@@ -128,7 +132,12 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
               _buildHeader(strings),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(AppSizes.xl, 0, AppSizes.xl, AppSizes.xxl),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSizes.xl,
+                    0,
+                    AppSizes.xl,
+                    AppSizes.xxl,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -158,38 +167,58 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
   Widget _buildHeader(AppStrings strings) {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSizes.xl, AppSizes.lg, AppSizes.xl, AppSizes.lg),
-      child: Row(
-        children: [
-          SvgPicture.asset(
-            'assets/icons/sakura.svg',
-            width: AppSizes.iconLg,
-            height: AppSizes.iconLg,
-            colorFilter: ColorFilter.mode(AppColors.accent, BlendMode.srcIn),
+          padding: const EdgeInsets.fromLTRB(
+            AppSizes.xl,
+            AppSizes.lg,
+            AppSizes.xl,
+            AppSizes.lg,
           ),
-          const SizedBox(width: AppSizes.sm),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              Text(
-                _isEditing ? strings.settingsEditPersona : strings.personaCreateTitle,
-                style: AppTextStyles.headingLarge(),
+              SvgPicture.asset(
+                'assets/icons/sakura.svg',
+                width: AppSizes.iconLg,
+                height: AppSizes.iconLg,
+                colorFilter: ColorFilter.mode(
+                  AppColors.accentFor(context),
+                  BlendMode.srcIn,
+                ),
               ),
-              Text(
-                strings.personaCreateSubtitle,
-                style: AppTextStyles.moodIndicator(color: scheme.onSurfaceVariant),
+              const SizedBox(width: AppSizes.sm),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _isEditing
+                        ? strings.settingsEditPersona
+                        : strings.personaCreateTitle,
+                    style: AppTextStyles.headingLarge(),
+                  ),
+                  Text(
+                    strings.personaCreateSubtitle,
+                    style: AppTextStyles.moodIndicator(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
-    ).animate().fadeIn(duration: 500.ms).slideY(begin: -0.1, end: 0, duration: 500.ms);
+        )
+        .animate()
+        .fadeIn(duration: 500.ms)
+        .slideY(begin: -0.1, end: 0, duration: 500.ms);
   }
 
   Widget _buildSectionLabel(String label) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSizes.sm),
-      child: Text(label, style: AppTextStyles.headingSmall(color: AppColors.primaryDeep)),
+      child: Text(
+        label,
+        style: AppTextStyles.headingSmall(
+          color: AppColors.primaryDeepFor(context),
+        ),
+      ),
     );
   }
 
@@ -258,7 +287,10 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
           style: AppTextStyles.bodyMedium(),
           cursorColor: AppColors.primary,
           textCapitalization: TextCapitalization.words,
-          decoration: _inputDecoration(hint: strings.personaNameHint, icon: Icons.badge_outlined),
+          decoration: _inputDecoration(
+            hint: strings.personaNameHint,
+            icon: Icons.badge_outlined,
+          ),
           validator: (v) {
             if (v == null || v.trim().isEmpty) return strings.personaNameEmpty;
             if (v.trim().length < 2) return strings.personaNameMin;
@@ -295,7 +327,10 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
     ).animate().fadeIn(duration: 500.ms, delay: 400.ms);
   }
 
-  (String, String, String) _personalityData(AppStrings strings, PersonalityPreset preset) {
+  (String, String, String) _personalityData(
+    AppStrings strings,
+    PersonalityPreset preset,
+  ) {
     return switch (preset) {
       PersonalityPreset.gentle => (
         '🌸',
@@ -332,11 +367,10 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
           runSpacing: AppSizes.sm,
           children: [
             for (final hobby in kHobbiesList)
-              _HobbyChip(
+              HobbyChip(
                 label: hobby,
                 isSelected: _selectedHobbies.contains(hobby),
                 onTap: () {
-                  HapticFeedback.selectionClick();
                   setState(() {
                     if (_selectedHobbies.contains(hobby)) {
                       _selectedHobbies.remove(hobby);
@@ -367,7 +401,9 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
             icon: Icons.person_outline,
           ),
           validator: (v) {
-            if (v == null || v.trim().isEmpty) return strings.personaNicknameEmpty;
+            if (v == null || v.trim().isEmpty) {
+              return strings.personaNicknameEmpty;
+            }
             return null;
           },
         ),
@@ -377,7 +413,12 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
 
   Widget _buildSaveButton(AppStrings strings) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSizes.xl, AppSizes.md, AppSizes.xl, AppSizes.lg),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.xl,
+        AppSizes.md,
+        AppSizes.xl,
+        AppSizes.lg,
+      ),
       child: PrimaryButton(
         label: strings.personaSave,
         loading: _isSaving,
@@ -386,11 +427,18 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
     ).animate().fadeIn(duration: 500.ms, delay: 700.ms);
   }
 
-  InputDecoration _inputDecoration({required String hint, required IconData icon}) {
+  InputDecoration _inputDecoration({
+    required String hint,
+    required IconData icon,
+  }) {
     return InputDecoration(
       hintText: hint,
       hintStyle: AppTextStyles.inputHint(),
-      prefixIcon: Icon(icon, color: AppColors.textSecondary, size: AppSizes.iconMd),
+      prefixIcon: Icon(
+        icon,
+        color: AppColors.textSecondaryFor(context),
+        size: AppSizes.iconMd,
+      ),
       filled: true,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
@@ -412,22 +460,6 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
   }
 }
 
-/// Daftar hobi pilihan (katalog tunggal).
-const kHobbiesList = [
-  'Reading',
-  'Music',
-  'Cooking',
-  'Sports',
-  'Watching Movies',
-  'Gaming',
-  'Art & Design',
-  'Traveling',
-  'Yoga & Meditation',
-  'Anime & Manga',
-  'Photography',
-  'Writing',
-];
-
 // ── Sub-widgets ───────────────────────────────────────────────────────────────
 
 class _GenderCard extends StatelessWidget {
@@ -446,34 +478,45 @@ class _GenderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: AppSizes.md),
-        decoration: BoxDecoration(
-          color: selected ? scheme.primaryContainer : scheme.surface,
-          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-          border: Border.all(
-            color: selected ? AppColors.primaryDeep : Colors.transparent,
-            width: 1.5,
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: AppSizes.md),
+          decoration: BoxDecoration(
+            color: selected ? scheme.primaryContainer : scheme.surface,
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            border: Border.all(
+              color: selected
+                  ? AppColors.primaryDeepFor(context)
+                  : Colors.transparent,
+              width: 1.5,
+            ),
           ),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              color: selected ? AppColors.primaryDeep : scheme.onSurfaceVariant,
-              size: 32,
-            ),
-            const SizedBox(height: AppSizes.xs),
-            Text(
-              label,
-              style: AppTextStyles.settingsLabel(
-                color: selected ? AppColors.primaryDeep : scheme.onSurfaceVariant,
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                color: selected
+                    ? AppColors.primaryDeepFor(context)
+                    : scheme.onSurfaceVariant,
+                size: 32,
               ),
-            ),
-          ],
+              const SizedBox(height: AppSizes.xs),
+              Text(
+                label,
+                style: AppTextStyles.settingsLabel(
+                  color: selected
+                      ? AppColors.primaryDeepFor(context)
+                      : scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -509,9 +552,18 @@ class _AvatarTile extends StatelessWidget {
               option.base.withValues(alpha: isSelected ? 0.8627 : 0.4706),
             ],
           ),
-          border: Border.all(color: isSelected ? option.base : Colors.transparent, width: 2.5),
+          border: Border.all(
+            color: isSelected ? option.base : Colors.transparent,
+            width: 2.5,
+          ),
           boxShadow: isSelected
-              ? [BoxShadow(color: option.base.withValues(alpha: 0.3922), blurRadius: 12, spreadRadius: 2)]
+              ? [
+                  BoxShadow(
+                    color: option.base.withValues(alpha: 0.3922),
+                    blurRadius: 12,
+                    spreadRadius: 2,
+                  ),
+                ]
               : null,
         ),
         child: Stack(
@@ -565,73 +617,52 @@ class _PersonalityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(AppSizes.md),
-        decoration: BoxDecoration(
-          color: isSelected ? scheme.primaryContainer : scheme.surface,
-          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-          border: Border.all(
-            color: isSelected ? AppColors.primaryDeep : Colors.transparent,
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 24)),
-            const SizedBox(width: AppSizes.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: AppTextStyles.headingSmall(
-                      color: isSelected ? AppColors.primaryDeep : scheme.onSurface,
-                    ),
-                  ),
-                  Text(description, style: AppTextStyles.moodIndicator()),
-                ],
-              ),
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(AppSizes.md),
+          decoration: BoxDecoration(
+            color: isSelected ? scheme.primaryContainer : scheme.surface,
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.primaryDeepFor(context)
+                  : Colors.transparent,
+              width: 1.5,
             ),
-            if (isSelected)
-              const Icon(Icons.check_circle, color: AppColors.primaryDeep, size: AppSizes.iconMd),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HobbyChip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _HobbyChip({required this.label, required this.isSelected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? scheme.primaryContainer : scheme.surface,
-          borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-          border: Border.all(
-            color: isSelected ? AppColors.primaryDeep : scheme.outlineVariant,
-            width: 1.5,
           ),
-        ),
-        child: Text(
-          label,
-          style: AppTextStyles.settingsLabel(
-            color: isSelected ? AppColors.primaryDeep : scheme.onSurfaceVariant,
+          child: Row(
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 24)),
+              const SizedBox(width: AppSizes.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: AppTextStyles.headingSmall(
+                        color: isSelected
+                            ? AppColors.primaryDeepFor(context)
+                            : scheme.onSurface,
+                      ),
+                    ),
+                    Text(description, style: AppTextStyles.moodIndicator()),
+                  ],
+                ),
+              ),
+              if (isSelected)
+                Icon(
+                  Icons.check_circle,
+                  color: AppColors.primaryDeepFor(context),
+                  size: AppSizes.iconMd,
+                ),
+            ],
           ),
         ),
       ),

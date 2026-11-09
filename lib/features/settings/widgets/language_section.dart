@@ -20,55 +20,69 @@ class LanguageSection extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final subtleColor = scheme.onSurfaceVariant;
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        sectionHeader(context, strings.settingsLanguage, Icons.translate_rounded),
-        sectionCard(
-          context: context,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceMd, vertical: AppSizes.spaceMd),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    strings.settingsAiLanguageDesc,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: subtleColor),
+            sectionHeader(
+              context,
+              strings.settingsLanguage,
+              Icons.translate_rounded,
+            ),
+            sectionCard(
+              context: context,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.spaceMd,
+                    vertical: AppSizes.spaceMd,
                   ),
-                  const SizedBox(height: AppSizes.spaceXs),
-                  SegmentedButton<AppLanguage>(
-                    showSelectedIcon: false,
-                    segments: [
-                      ButtonSegment(
-                        value: AppLanguage.indonesian,
-                        label: Text(strings.settingsLanguageIndonesian),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        strings.settingsAiLanguageDesc,
+                        style: Theme.of(context).textTheme.bodyMedium
+                            ?.copyWith(color: subtleColor),
                       ),
-                      ButtonSegment(
-                        value: AppLanguage.english,
-                        label: Text(strings.settingsLanguageEnglish),
-                      ),
-                      ButtonSegment(
-                        value: AppLanguage.mixed,
-                        label: Text(strings.settingsLanguageMixed),
+                      const SizedBox(height: AppSizes.spaceXs),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SegmentedButton<AppLanguage>(
+                          showSelectedIcon: false,
+                          segments: [
+                            ButtonSegment(
+                              value: AppLanguage.indonesian,
+                              label: Text(strings.settingsLanguageIndonesian),
+                            ),
+                            ButtonSegment(
+                              value: AppLanguage.english,
+                              label: Text(strings.settingsLanguageEnglish),
+                            ),
+                            ButtonSegment(
+                              value: AppLanguage.mixed,
+                              label: Text(strings.settingsLanguageMixed),
+                            ),
+                          ],
+                          selected: {settings.language},
+                          onSelectionChanged: (s) {
+                            if (s.isNotEmpty) {
+                              HapticFeedback.selectionClick();
+                              ref
+                                  .read(appSettingsProvider.notifier)
+                                  .save(settings.copyWith(language: s.first));
+                            }
+                          },
+                        ),
                       ),
                     ],
-                    selected: {settings.language},
-                    onSelectionChanged: (s) {
-                      if (s.isNotEmpty) {
-                        HapticFeedback.selectionClick();
-                        ref
-                            .read(appSettingsProvider.notifier)
-                            .save(settings.copyWith(language: s.first));
-                      }
-                    },
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
-        ),
-      ],
-    ).animate().fadeIn(duration: 300.ms, delay: 120.ms).slideY(begin: 0.04, end: 0);
+        )
+        .animate()
+        .fadeIn(duration: 300.ms, delay: 120.ms)
+        .slideY(begin: 0.04, end: 0);
   }
 }

@@ -49,7 +49,12 @@ class PrimaryButton extends StatelessWidget {
       onPressed: loading ? null : onPressed,
       style: FilledButton.styleFrom(
         backgroundColor: scheme.primary,
-        disabledBackgroundColor: scheme.onSurface.withValues(alpha: 0.12),
+        disabledBackgroundColor: loading
+            ? scheme.primary
+            : scheme.onSurface.withValues(alpha: 0.12),
+        disabledForegroundColor: loading
+            ? scheme.onPrimary
+            : scheme.onSurface.withValues(alpha: 0.38),
         foregroundColor: scheme.onPrimary,
         minimumSize: const Size.fromHeight(52),
         padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceLg, vertical: AppSizes.spaceMd),

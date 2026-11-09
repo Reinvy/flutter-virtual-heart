@@ -58,4 +58,12 @@ abstract final class AppTextStyles {
   /// Label tombol — 14sp SemiBold.
   static TextStyle button({Color? color}) =>
       GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w600, color: color);
+
+  /// Label section uppercase — 11sp Bold, letterSpacing 1.1.
+  static TextStyle sectionLabel({Color? color}) => GoogleFonts.nunito(
+    fontSize: 11,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 1.1,
+    color: color,
+  );
 }

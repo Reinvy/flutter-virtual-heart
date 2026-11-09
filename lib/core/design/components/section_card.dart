@@ -4,23 +4,26 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../tokens/app_sizes.dart';
+import '../tokens/text_styles.dart';
 
 /// Judul section: ikon + teks uppercase berwarna primary.
 Widget sectionHeader(BuildContext context, String title, IconData icon) {
   final scheme = Theme.of(context).colorScheme;
   return Padding(
-    padding: const EdgeInsets.only(bottom: AppSizes.spaceXs, left: AppSizes.spaceXxs),
+    padding: const EdgeInsets.only(
+      bottom: AppSizes.spaceXs,
+      left: AppSizes.spaceXxs,
+    ),
     child: Row(
       children: [
         Icon(icon, size: AppSizes.iconSm + 2, color: scheme.primary),
         const SizedBox(width: AppSizes.spaceXs),
-        Text(
-          title.toUpperCase(),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: scheme.primary,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.1,
-            fontSize: 11,
+        Expanded(
+          child: Text(
+            title.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.sectionLabel(color: scheme.onSurfaceVariant),
           ),
         ),
       ],
@@ -29,13 +32,18 @@ Widget sectionHeader(BuildContext context, String title, IconData icon) {
 }
 
 /// Kartu section: surface + radius [AppSizes.radiusLg] + divider antar anak.
-Widget sectionCard({required BuildContext context, required List<Widget> children}) {
+///
+/// Memakai [Material] (bukan `Container` berwarna) agar `ListTile` di dalamnya
+/// tetap bisa menggambar ink splash dan tidak memicu debug error Flutter.
+Widget sectionCard({
+  required BuildContext context,
+  required List<Widget> children,
+}) {
   final scheme = Theme.of(context).colorScheme;
-  return Container(
-    decoration: BoxDecoration(
-      color: scheme.surface,
-      borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-    ),
+  return Material(
+    color: scheme.surface,
+    borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+    clipBehavior: Clip.antiAlias,
     child: Column(
       children: [
         for (int i = 0; i < children.length; i++) ...[

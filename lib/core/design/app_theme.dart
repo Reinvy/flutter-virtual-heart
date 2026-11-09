@@ -14,7 +14,7 @@ abstract final class AppTheme {
   AppTheme._();
 
   /// Tema default: Sakura Light.
-  static ThemeData get light => _build(
+  static final ThemeData light = _build(
     brightness: Brightness.light,
     colorScheme: const ColorScheme.light(
       primary: AppColors.primary,
@@ -61,7 +61,7 @@ abstract final class AppTheme {
     statusBarBrightness: Brightness.dark,
   );
 
-  static ThemeData get dark => _build(
+  static final ThemeData dark = _build(
     brightness: Brightness.dark,
     colorScheme: const ColorScheme.dark(
       primary: AppColors.primaryDark,

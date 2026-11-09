@@ -132,8 +132,8 @@ class PersonaSection extends ConsumerWidget {
             ),
             ListTile(
               dense: true,
-              leading: const Icon(Icons.refresh_rounded, color: AppColors.accent),
-              title: Text(strings.settingsResetPersona, style: const TextStyle(color: AppColors.accent)),
+              leading: Icon(Icons.refresh_rounded, color: scheme.error),
+              title: Text(strings.settingsResetPersona, style: TextStyle(color: scheme.error)),
               onTap: () => _confirmReset(context, ref),
             ),
           ],
