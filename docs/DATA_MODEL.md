@@ -1,6 +1,6 @@
 # DATA_MODEL — Skema ObjectBox
 
-ObjectBox **5.3.2**, model version **6** (`lib/objectbox-model.json`). Binding di
+ObjectBox **5.3.2**, model version **5** (`lib/objectbox-model.json`, schema diperluas tanpa ganti versi). Binding di
 `lib/objectbox.g.dart` **generated** — jangan diedit manual (`make gen-check` memastikan tidak
 ada drift).
 
