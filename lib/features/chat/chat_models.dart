@@ -29,6 +29,14 @@ class ChatError {
   const ChatError(this.kind, {this.canRetry = false});
 }
 
+/// Urutan kronologis yang stabil: timestamp, lalu id (pesan yang dibuat pada
+/// milidetik yang sama tidak boleh bertukar posisi antar-reload).
+int compareMessages(Message a, Message b) {
+  final byTime = a.timestamp.compareTo(b.timestamp);
+  if (byTime != 0) return byTime;
+  return a.id.compareTo(b.id);
+}
+
 /// State layar chat: daftar pesan + status streaming.
 class ChatState {
   final List<Message> messages;

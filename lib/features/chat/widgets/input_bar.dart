@@ -13,15 +13,21 @@ class InputBar extends ConsumerStatefulWidget {
     super.key,
     required this.onSend,
     this.enabled = true,
+    this.isTyping = false,
     this.isListening = false,
     this.onMicTap,
+    this.onStop,
     this.controller,
   });
 
   final void Function(String text) onSend;
   final bool enabled;
+  final bool isTyping;
   final bool isListening;
   final VoidCallback? onMicTap;
+
+  /// Dipanggil saat tombol stop ditekan (menghentikan generasi).
+  final VoidCallback? onStop;
 
   /// Controller eksternal opsional (mis. untuk mengisi transkrip STT).
   final TextEditingController? controller;
@@ -81,6 +87,8 @@ class _InputBarState extends ConsumerState<InputBar> {
               icon: widget.isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
               iconColor: widget.isListening ? scheme.primary : null,
               onTap: widget.enabled ? _handleMicTap : null,
+              semanticLabel:
+                  widget.isListening ? strings.chatMicStop : strings.chatMicStart,
             ),
             const SizedBox(width: AppSizes.spaceXs),
             Expanded(
@@ -101,7 +109,8 @@ class _InputBarState extends ConsumerState<InputBar> {
                   decoration: InputDecoration(
                     hintText: strings.chatInputHint,
                     hintStyle: AppTextStyles.inputHint(color: scheme.onSurfaceVariant),
-                    counterText: '', // sembunyikan counter, batas tetap aktif
+                    // Counter hanya muncul saat mendekati batas.
+                    counterText: null,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: AppSizes.spaceMd,
                       vertical: 10,
@@ -113,6 +122,15 @@ class _InputBarState extends ConsumerState<InputBar> {
                     filled: true,
                     fillColor: scheme.surfaceContainerHigh,
                   ),
+                  buildCounter: (_, {required currentLength, required isFocused, maxLength}) =>
+                      currentLength >= 1800
+                      ? Text(
+                          '$currentLength/2000',
+                          style: AppTextStyles.timestamp(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        )
+                      : null,
                   onSubmitted: (_) => _handleSend(),
                 ),
               ),
@@ -122,7 +140,13 @@ class _InputBarState extends ConsumerState<InputBar> {
               valueListenable: _controller,
               builder: (_, value, _) {
                 final canSend = value.text.trim().isNotEmpty && widget.enabled;
-                return _SendButton(onTap: canSend ? _handleSend : null);
+                return _SendButton(
+                  isStop: widget.isTyping,
+                  semanticLabel: widget.isTyping ? strings.chatStop : strings.chatSend,
+                  onTap: widget.isTyping
+                      ? widget.onStop
+                      : (canSend ? _handleSend : null),
+                );
               },
             ),
           ],
@@ -133,18 +157,19 @@ class _InputBarState extends ConsumerState<InputBar> {
 }
 
 class _IconButton extends StatelessWidget {
-  const _IconButton({required this.icon, this.onTap, this.iconColor});
+  const _IconButton({required this.icon, this.onTap, this.iconColor, this.semanticLabel});
 
   final IconData icon;
   final VoidCallback? onTap;
   final Color? iconColor;
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
     final active = onTap != null;
     final scheme = Theme.of(context).colorScheme;
     final defaultIconColor = scheme.onSurfaceVariant;
-    return SizedBox(
+    final button = SizedBox(
       width: AppSizes.touchTarget,
       height: AppSizes.touchTarget,
       child: Material(
@@ -160,35 +185,43 @@ class _IconButton extends StatelessWidget {
         ),
       ),
     );
+    if (semanticLabel == null) return button;
+    return Semantics(button: true, label: semanticLabel, child: button);
   }
 }
 
 class _SendButton extends StatelessWidget {
-  const _SendButton({this.onTap});
+  const _SendButton({this.onTap, this.isStop = false, this.semanticLabel});
 
   final VoidCallback? onTap;
+  final bool isStop;
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
     final active = onTap != null;
     final scheme = Theme.of(context).colorScheme;
-    return GestureDetector(
+    final button = GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: AppSizes.touchTarget,
         height: AppSizes.touchTarget,
         decoration: BoxDecoration(
-          color: active ? scheme.primary : scheme.onSurface.withValues(alpha: 0.12),
+          color: active || isStop ? scheme.primary : scheme.onSurface.withValues(alpha: 0.12),
           shape: BoxShape.circle,
         ),
         alignment: Alignment.center,
         child: Icon(
-          Icons.send_rounded,
-          color: active ? scheme.onPrimary : scheme.onSurface.withValues(alpha: 0.38),
+          isStop ? Icons.stop_rounded : Icons.send_rounded,
+          color: active || isStop
+              ? scheme.onPrimary
+              : scheme.onSurface.withValues(alpha: 0.38),
           size: 20,
         ),
       ),
     );
+    if (semanticLabel == null) return button;
+    return Semantics(button: true, label: semanticLabel, child: button);
   }
 }

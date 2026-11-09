@@ -74,4 +74,39 @@ void main() {
     expect(field.maxLength, 2000);
     expect(field.controller!.text.length, 2000);
   });
+
+  testWidgets('saat isTyping tombol berubah jadi stop dan memanggil onStop', (tester) async {
+    var stopped = 0;
+    await tester.pumpWidget(
+      wrap(
+        InputBar(
+          enabled: false,
+          isTyping: true,
+          onSend: (_) {},
+          onStop: () => stopped++,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.send_rounded), findsNothing);
+    expect(tester.widget<TextField>(find.byType(TextField)).enabled, isFalse);
+
+    await tester.tap(find.byIcon(Icons.stop_rounded));
+    await tester.pump();
+    expect(stopped, 1);
+  });
+
+  testWidgets('counter baru muncul di atas 1800 karakter', (tester) async {
+    await tester.pumpWidget(wrap(InputBar(onSend: (_) {})));
+
+    await tester.enterText(find.byType(TextField), 'a' * 1200);
+    await tester.pump();
+    expect(find.text('1200/2000'), findsNothing);
+
+    await tester.enterText(find.byType(TextField), 'a' * 1900);
+    await tester.pump();
+    expect(find.text('1900/2000'), findsOneWidget);
+  });
 }

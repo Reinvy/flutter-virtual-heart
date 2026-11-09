@@ -53,6 +53,7 @@ void main() {
     test('updateMoodFromConversation: kata positif → happy', () {
       final mood = service.updateMoodFromConversation(
         'Aku senang sekali bersamamu, cinta! Kamu membuatku bahagia.',
+        '',
       );
       expect(mood.current, MoodType.happy);
       expect(mood.intensity, greaterThanOrEqualTo(0.7));
@@ -61,13 +62,48 @@ void main() {
     test('updateMoodFromConversation: kata sedih → sad', () {
       final mood = service.updateMoodFromConversation(
         'Aku sedih dan merasa kesepian hari ini...',
+        '',
       );
       expect(mood.current, MoodType.sad);
     });
 
     test('updateMoodFromConversation: kata playful → playful', () {
-      final mood = service.updateMoodFromConversation('haha lucu sekali, kamu jahil!');
+      final mood = service.updateMoodFromConversation('haha lucu sekali, kamu jahil!', '');
       expect(mood.current, MoodType.playful);
+    });
+
+    test('tidak salah cocok pada substring (remain / crystal)', () {
+      final mood = service.updateMoodFromConversation('remain calm and crystal clear', '');
+      expect(mood.current, MoodType.happy);
+      expect(mood.intensity, 0.7);
+    });
+
+    test('membaca pesan user dan balasan AI bersama', () {
+      final mood = service.updateMoodFromConversation('aku sedih', 'calm down');
+      expect(mood.current, MoodType.sad);
+    });
+
+    test('sad menang saat skor positif dan negatif imbang', () {
+      // happy: senang + bahagia = 2.0, sad: sedih × 2.0 = 2.0 → sad didahulukan.
+      final mood = service.updateMoodFromConversation('aku senang bahagia', 'sedih');
+      expect(mood.current, MoodType.sad);
+    });
+
+    test('dari playful bisa berubah ke happy', () {
+      service.updateMoodFromConversation('haha lucu', '');
+      final mood = service.updateMoodFromConversation('aku bahagia dan senang', '');
+      expect(mood.current, MoodType.happy);
+    });
+
+    test('intensitas meluruh setelah lama tidak diperbarui', () {
+      final mood = service.getCurrentMood();
+      mood.intensity = 0.8;
+      mood.lastUpdatedAt = DateTime.now().subtract(const Duration(hours: 10));
+      store.moodStateBox.put(mood);
+
+      final updated = service.updateMoodFromConversation('halo', '');
+
+      expect(updated.intensity, closeTo(0.7, 0.02));
     });
 
     test('updateMoodFromIdleTime: idle ≥ 12 jam → longing 0.90', () {

@@ -88,6 +88,19 @@ void main() {
     expect(find.text('09:05'), findsOneWidget);
   });
 
+  testWidgets('gambar markdown tidak dirender (privasi jaringan)', (tester) async {
+    final msg = Message(
+      role: MessageRole.assistant,
+      content: 'Lihat ini ![foto](https://example.com/a.png) ya',
+    );
+    await tester.pumpWidget(wrap(ChatBubble(message: msg)));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Image), findsNothing);
+    expect(find.textContaining('Lihat ini'), findsOneWidget);
+    expect(find.textContaining('https://example.com'), findsNothing);
+  });
+
   testWidgets('tombol speaker muncul untuk AI jika onSpeak diberikan', (tester) async {
     final msg = Message(role: MessageRole.assistant, content: 'Halo');
     await tester.pumpWidget(wrap(ChatBubble(message: msg, onSpeak: () {})));

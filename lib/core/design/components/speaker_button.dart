@@ -5,15 +5,24 @@ import '../tokens/app_sizes.dart';
 
 /// Tombol play/stop TTS di samping bubble AI (target sentuh 48×48).
 class SpeakerButton extends StatelessWidget {
-  const SpeakerButton({super.key, required this.isSpeaking, this.onTap});
+  const SpeakerButton({
+    super.key,
+    required this.isSpeaking,
+    this.onTap,
+    this.semanticLabel,
+  });
 
   final bool isSpeaking;
   final VoidCallback? onTap;
 
+  /// Label pembaca layar (mis. "Bacakan pesan").
+  final String? semanticLabel;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return GestureDetector(
+    final label = semanticLabel;
+    final button = GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
@@ -26,5 +35,7 @@ class SpeakerButton extends StatelessWidget {
         ),
       ),
     );
+    if (label == null) return button;
+    return Semantics(button: true, label: label, child: button);
   }
 }

@@ -15,6 +15,9 @@ class MoodService {
   MoodService(this._db);
 
   // ── Keyword lists for sentiment scoring ──────────────────────────────────
+  //
+  // Pencocokan memakai batas kata (bukan `contains`) supaya "crystal" tidak
+  // terbaca "cry" dan "remain" tidak terbaca "main".
 
   static const _happyKeywords = [
     'senang',
@@ -97,6 +100,48 @@ class MoodService {
     'hurt',
   ];
 
+  /// Bobot tiap mood: sinyal negatif lebih dipercaya daripada sinyal positif.
+  static const Map<MoodType, double> _weights = {
+    MoodType.sad: 2.0,
+    MoodType.excited: 1.5,
+    MoodType.playful: 1.5,
+    MoodType.happy: 1.0,
+  };
+
+  /// Urutan tie-break: sad, excited, playful, happy.
+  static const List<MoodType> _priority = [
+    MoodType.sad,
+    MoodType.excited,
+    MoodType.playful,
+    MoodType.happy,
+  ];
+
+  static const Map<MoodType, double> _intensityCap = {
+    MoodType.sad: 0.85,
+    MoodType.playful: 0.90,
+    MoodType.excited: 0.95,
+    MoodType.happy: 0.85,
+    MoodType.longing: 0.90,
+  };
+
+  static final Map<MoodType, List<RegExp>> _patterns = {
+    for (final entry in {
+      MoodType.happy: _happyKeywords,
+      MoodType.excited: _excitedKeywords,
+      MoodType.playful: _playfulKeywords,
+      MoodType.sad: _sadKeywords,
+    }.entries)
+      entry.key: _compile(entry.value),
+  };
+
+  static List<RegExp> _compile(List<String> keywords) => [
+    for (final keyword in keywords)
+      RegExp(
+        '(?<![A-Za-z0-9_])${RegExp.escape(keyword)}(?![A-Za-z0-9_])',
+        caseSensitive: false,
+      ),
+  ];
+
   // ── Public API ────────────────────────────────────────────────────────────
 
   /// Returns the current [MoodState], creating a default one if none exists.
@@ -108,53 +153,34 @@ class MoodService {
     return initial;
   }
 
-  /// Updates mood based on keyword sentiment in [aiResponse].
+  /// Updates mood from sentiment in the user's message and the AI reply.
   ///
-  /// Records the interaction time and persists the new state.
-  MoodState updateMoodFromConversation(String aiResponse) {
+  /// Records the interaction time, applies time-based decay, and persists.
+  MoodState updateMoodFromConversation(String userMessage, String aiResponse) {
     final mood = getCurrentMood();
-    final lower = aiResponse.toLowerCase();
+    final now = DateTime.now();
+    _applyDecay(mood, now);
 
-    int happyScore = 0;
-    int excitedScore = 0;
-    int playfulScore = 0;
-    int sadScore = 0;
-
-    for (final kw in _happyKeywords) {
-      if (lower.contains(kw)) happyScore++;
-    }
-    for (final kw in _excitedKeywords) {
-      if (lower.contains(kw)) excitedScore++;
-    }
-    for (final kw in _playfulKeywords) {
-      if (lower.contains(kw)) playfulScore++;
-    }
-    for (final kw in _sadKeywords) {
-      if (lower.contains(kw)) sadScore++;
-    }
-
-    final maxScore = max(max(happyScore, excitedScore), max(playfulScore, sadScore));
-
-    if (maxScore > 0) {
-      if (sadScore == maxScore) {
-        mood.current = MoodType.sad;
-        mood.intensity = min(0.85, mood.intensity + 0.10);
-      } else if (playfulScore == maxScore) {
-        mood.current = MoodType.playful;
-        mood.intensity = min(0.90, mood.intensity + 0.10);
-      } else if (excitedScore >= happyScore && excitedScore == maxScore) {
-        mood.current = MoodType.excited;
-        mood.intensity = min(0.95, mood.intensity + 0.15);
-      } else if (happyScore > 0) {
-        // Positive: lift from longing/sad to happy
-        if (mood.current == MoodType.longing || mood.current == MoodType.sad) {
-          mood.current = MoodType.happy;
-        }
-        mood.intensity = min(0.85, mood.intensity + 0.05);
+    final text = '$userMessage\n$aiResponse';
+    MoodType? winner;
+    var best = 0.0;
+    for (final type in _priority) {
+      final score = _matchCount(text, _patterns[type]!) * _weights[type]!;
+      if (score > best) {
+        best = score;
+        winner = type;
       }
     }
 
-    final now = DateTime.now();
+    if (winner != null) {
+      final cap = _intensityCap[winner] ?? 0.9;
+      final changed = winner != mood.current;
+      mood.current = winner;
+      mood.intensity = changed
+          ? min(cap, max(0.6, mood.intensity + 0.10))
+          : min(cap, mood.intensity + 0.05);
+    }
+
     mood.lastUpdatedAt = now;
     mood.lastInteractionAt = now;
     _db.moodStateBox.put(mood);
@@ -189,6 +215,24 @@ class MoodService {
     final mood = getCurrentMood();
     mood.lastInteractionAt = DateTime.now();
     _db.moodStateBox.put(mood);
+  }
+
+  // ── Private helpers ───────────────────────────────────────────────────────
+
+  static int _matchCount(String text, List<RegExp> patterns) {
+    var count = 0;
+    for (final pattern in patterns) {
+      if (pattern.hasMatch(text)) count++;
+    }
+    return count;
+  }
+
+  /// Intensitas meluruh pelan saat tidak ada percakapan (maks. 0.15/batch).
+  static void _applyDecay(MoodState mood, DateTime now) {
+    final hours = now.difference(mood.lastUpdatedAt).inMinutes / 60;
+    if (hours <= 0) return;
+    final decay = min(0.15, hours * 0.01);
+    mood.intensity = max(0.3, mood.intensity - decay);
   }
 }
 

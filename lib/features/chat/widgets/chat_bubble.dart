@@ -23,6 +23,7 @@ class ChatBubble extends StatefulWidget {
     this.isStreaming = false,
     this.onSpeak,
     this.isSpeaking = false,
+    this.speakerLabel,
   });
 
   final Message message;
@@ -30,6 +31,9 @@ class ChatBubble extends StatefulWidget {
   final bool isStreaming;
   final VoidCallback? onSpeak;
   final bool isSpeaking;
+
+  /// Label aksesibilitas untuk tombol speaker.
+  final String? speakerLabel;
 
   @override
   State<ChatBubble> createState() => _ChatBubbleState();
@@ -44,7 +48,7 @@ class _ChatBubbleState extends State<ChatBubble> {
     final maxWidth = MediaQuery.of(context).size.width * AppSizes.bubbleMaxWidthFraction;
     final scheme = Theme.of(context).colorScheme;
 
-    return GestureDetector(
+    final bubble = GestureDetector(
           onTap: () => setState(() => _showTimestamp = !_showTimestamp),
           behavior: HitTestBehavior.opaque,
           child: Padding(
@@ -93,7 +97,11 @@ class _ChatBubbleState extends State<ChatBubble> {
                     ),
                     if (!isUser && widget.onSpeak != null) ...[
                       const SizedBox(width: AppSizes.spaceXxs),
-                      SpeakerButton(isSpeaking: widget.isSpeaking, onTap: widget.onSpeak),
+                      SpeakerButton(
+                        isSpeaking: widget.isSpeaking,
+                        onTap: widget.onSpeak,
+                        semanticLabel: widget.speakerLabel,
+                      ),
                     ],
                   ],
                 ),
@@ -116,7 +124,11 @@ class _ChatBubbleState extends State<ChatBubble> {
               ],
             ),
           ),
-        )
+        );
+
+    // Bubble streaming tidak dianimasikan ulang pada tiap token.
+    if (widget.isStreaming) return bubble;
+    return bubble
         .animate()
         .fadeIn(duration: 200.ms)
         .slideY(begin: 0.12, end: 0, duration: 220.ms, curve: Curves.easeOut);
@@ -125,6 +137,9 @@ class _ChatBubbleState extends State<ChatBubble> {
 
 class _BubbleContent extends StatelessWidget {
   const _BubbleContent({required this.message, required this.isUser, required this.isStreaming});
+
+  /// `![alt](url)` — dibuang agar model tidak bisa memicu fetch gambar.
+  static final RegExp _markdownImagePattern = RegExp(r'!\[[^\]]*\]\([^)]*\)');
 
   final Message message;
   final bool isUser;
@@ -141,6 +156,17 @@ class _BubbleContent extends StatelessWidget {
     if (isUser) {
       return Text(text, style: AppTextStyles.bubbleText(color: textColor));
     }
-    return GptMarkdown(text, style: AppTextStyles.bubbleText(color: textColor));
+    // Privasi: markdown dari model tidak boleh memicu permintaan jaringan.
+    // `![alt](url)` dibuang sebelum render, dan `imageBuilder` menutup jalur
+    // gambar lain (HTML <img>, autolink gambar).
+    final sanitized = _markdownImagePattern.hasMatch(text)
+        ? text.replaceAll(_markdownImagePattern, '')
+        : text;
+    return GptMarkdown(
+      sanitized,
+      style: AppTextStyles.bubbleText(color: textColor),
+      html: false,
+      imageBuilder: (_, _, _, _) => const SizedBox.shrink(),
+    );
   }
 }

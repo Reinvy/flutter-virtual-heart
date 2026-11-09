@@ -1,7 +1,11 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter_edge_ai/flutter_edge_ai.dart' as edge_ai;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/errors/app_logger.dart';
 import '../../features/model/model_ready_provider.dart';
 import '../../features/settings/settings_controller.dart';
 import 'model_catalog.dart';
@@ -96,12 +100,26 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
   edge_ai.InferenceModel? _model;
   edge_ai.CancelToken? _cancelToken;
 
+  /// Chat yang sedang aktif — dipakai [stopGeneration].
+  edge_ai.InferenceChat? _activeChat;
+
+  /// Antrean inferensi: chat, ekstraksi memori, dan ringkasan tidak boleh
+  /// berjalan bersamaan pada instance engine yang sama.
+  Completer<void>? _lockHeld;
+
   // -------------------------------------------------------------------------
   // Lifecycle
   // -------------------------------------------------------------------------
 
   @override
   Future<ModelStatus> build() async {
+    ref.onDispose(() {
+      _cancelToken?.cancel('provider disposed');
+      final chat = _activeChat;
+      if (chat != null) unawaited(chat.close());
+      final model = _model;
+      if (model != null) unawaited(model.close());
+    });
     final settings = ref.read(appSettingsProvider);
 
     // Model sudah pernah dipilih & terinstal → langsung aktifkan.
@@ -257,22 +275,54 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
   // Inference
   // -------------------------------------------------------------------------
 
+  /// Menghentikan generasi yang sedang berjalan. Tidak pernah melempar.
+  Future<void> stopGeneration() async {
+    try {
+      await _activeChat?.stopGeneration();
+    } catch (e) {
+      AppLogger.debug('stopGeneration ignored', e);
+    }
+  }
+
   /// Streaming token untuk [fullPrompt].
-  Stream<String> generateResponseStream(String fullPrompt) async* {
+  ///
+  /// [isCancelled] dicek setelah antrean inferensi didapat: bila `true`, tidak
+  /// ada generasi yang dimulai.
+  Stream<String> generateResponseStream(
+    String fullPrompt, {
+    bool Function()? isCancelled,
+  }) async* {
     final model = _model;
     if (model == null) throw StateError('Model not initialized');
 
-    final chat = await model.openChat(temperature: 0.9, randomSeed: 1, topK: 50, topP: 0.95);
+    await _acquire();
     try {
-      await chat.addQueryChunk(edge_ai.Message.text(text: fullPrompt, isUser: true));
+      if (isCancelled?.call() == true) return;
 
-      await for (final chunk in chat.generateChatResponseAsync()) {
-        if (chunk is edge_ai.TextResponse) {
-          yield chunk.token;
+      final chat = await model.openChat(
+        temperature: 0.9,
+        randomSeed: Random().nextInt(1 << 31),
+        topK: 50,
+        topP: 0.95,
+        maxOutputTokens: 512,
+      );
+      _activeChat = chat;
+      try {
+        await chat.addQueryChunk(edge_ai.Message.text(text: fullPrompt, isUser: true));
+
+        await for (final chunk in chat.generateChatResponseAsync()) {
+          if (chunk is edge_ai.TextResponse) {
+            yield chunk.token;
+          }
         }
+      } finally {
+        _activeChat = null;
+        await chat.close();
       }
+    } on edge_ai.ContextLimitException {
+      throw const ContextLimitReachedException();
     } finally {
-      await chat.close();
+      _release();
     }
   }
 
@@ -283,6 +333,23 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
       buffer.write(token);
     }
     return buffer.toString();
+  }
+
+  // -------------------------------------------------------------------------
+  // Generation lock
+  // -------------------------------------------------------------------------
+
+  Future<void> _acquire() async {
+    final previous = _lockHeld;
+    final completer = Completer<void>();
+    _lockHeld = completer;
+    if (previous != null) await previous.future;
+  }
+
+  void _release() {
+    final held = _lockHeld;
+    _lockHeld = null;
+    if (held != null && !held.isCompleted) held.complete();
   }
 }
 

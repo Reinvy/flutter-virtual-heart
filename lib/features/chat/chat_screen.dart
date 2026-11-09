@@ -25,6 +25,7 @@ import '../persona/persona_edit_sheet.dart';
 import '../persona/persona_profile_sheet.dart';
 import '../settings/settings_controller.dart';
 import 'chat_controller.dart';
+import 'chat_models.dart';
 import 'mood_provider.dart';
 import 'widgets/chat_bubble.dart';
 import 'widgets/input_bar.dart';
@@ -51,6 +52,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _voiceInputPending = false;
   bool _sparkleShown = false;
   bool _showSparkle = false;
+  bool _didInitialScroll = false;
 
   @override
   void dispose() {
@@ -61,15 +63,32 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     super.dispose();
   }
 
-  void _scrollToBottom() {
+  /// Menggulir ke pesan terbaru hanya bila pengguna memang sedang di bawah
+  /// (agar membaca riwayat tidak terlempar tiap token).
+  void _scrollToBottom({bool animate = true}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
+      if (!_scrollController.hasClients) return;
+      final position = _scrollController.position;
+      if (position.pixels < position.maxScrollExtent - 120) return;
+      if (animate) {
         _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
+          position.maxScrollExtent,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
+      } else {
+        _scrollController.jumpTo(position.maxScrollExtent);
       }
+    });
+  }
+
+  /// Lompat ke pesan terbaru sekali saat riwayat pertama kali dimuat.
+  void _scrollToLatestOnOpen() {
+    if (_didInitialScroll) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      _didInitialScroll = true;
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
     });
   }
 
@@ -81,9 +100,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final currentMood = ref.watch(moodProvider).current;
 
     ref.listen(chatProvider, (prev, next) {
-      if (prev?.messages.length != next.messages.length ||
-          prev?.streamingBuffer != next.streamingBuffer) {
+      if (prev?.messages.length != next.messages.length) {
         _scrollToBottom();
+      } else if (prev?.streamingBuffer != next.streamingBuffer) {
+        _scrollToBottom(animate: false);
       }
 
       if (!next.isTyping && prev?.isTyping == true && next.messages.isNotEmpty) {
@@ -99,12 +119,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             });
           }
           final settings = ref.read(appSettingsProvider);
-          if (settings.ttsEnabled && settings.ttsAutoPlay) {
+          if (mounted &&
+              (ModalRoute.of(context)?.isCurrent ?? false) &&
+              settings.ttsEnabled &&
+              settings.ttsAutoPlay) {
             _speakMessage(last, persona);
           }
         }
       }
     });
+
+    if (chatState.messages.isNotEmpty) _scrollToLatestOnOpen();
 
     return Scaffold(
       appBar: _buildAppBar(strings, persona, currentMood),
@@ -116,11 +141,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 child: _buildMessageList(strings, chatState.messages, chatState.isTyping,
                     chatState.streamingBuffer, persona),
               ),
+              if (chatState.error != null)
+                _ChatErrorBanner(
+                  message: _chatErrorText(strings, chatState.error!.kind),
+                  retryLabel: chatState.error!.canRetry ? strings.chatRetry : null,
+                  dismissLabel: strings.chatDismiss,
+                  onRetry: () => ref.read(chatProvider.notifier).retryLastResponse(),
+                  onDismiss: () => ref.read(chatProvider.notifier).clearError(),
+                ),
               InputBar(
                 enabled: !chatState.isTyping,
+                isTyping: chatState.isTyping,
                 isListening: _isListening,
                 controller: _inputTextController,
                 onMicTap: _handleMicTap,
+                onStop: () => ref.read(chatProvider.notifier).cancelGeneration(),
                 onSend: (text) {
                   HapticFeedback.lightImpact();
                   final isVoice = _voiceInputPending;
@@ -136,6 +171,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
+  static String _chatErrorText(AppStrings strings, ChatErrorKind kind) => switch (kind) {
+    ChatErrorKind.modelUnavailable => strings.chatModelUnavailable,
+    ChatErrorKind.contextLimit => strings.chatContextLimit,
+    ChatErrorKind.generationFailed => strings.chatGenerationFailed,
+    ChatErrorKind.interrupted => strings.chatInterrupted,
+  };
+
   PreferredSizeWidget _buildAppBar(
     AppStrings strings,
     PersonaConfig? persona,
@@ -145,22 +187,32 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return AppBar(
       elevation: 0,
       automaticallyImplyLeading: false,
-      leading: GestureDetector(
-        onTap: () => _openPersonaProfile(persona),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSizes.spaceXs),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              personaAvatar(name: persona?.name, avatarId: persona?.avatarId, size: 36),
-              Positioned(
-                right: -2,
-                bottom: -2,
-                child: Text(_moodEmoji(currentMood), style: const TextStyle(fontSize: 12, height: 1))
-                    .animate(onPlay: (c) => c.repeat(reverse: true))
-                    .scaleXY(begin: 0.85, end: 1.05, duration: 1400.ms, curve: Curves.easeInOut),
-              ),
-            ],
+      leading: Semantics(
+        button: true,
+        label: strings.chatOpenProfile,
+        child: GestureDetector(
+          onTap: () => _openPersonaProfile(persona),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSizes.spaceXs),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                personaAvatar(name: persona?.name, avatarId: persona?.avatarId, size: 36),
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: Text(_moodEmoji(currentMood),
+                          style: const TextStyle(fontSize: 12, height: 1))
+                      .animate(onPlay: (c) => c.repeat(reverse: true))
+                      .scaleXY(
+                        begin: 0.85,
+                        end: 1.05,
+                        duration: 1400.ms,
+                        curve: Curves.easeInOut,
+                      ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -172,6 +224,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           children: [
             Text(
               persona?.name ?? strings.appName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: AppTextStyles.personaName(color: textColor),
             ),
             const MoodIndicator(),
@@ -189,6 +243,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ),
         IconButton(
           icon: Icon(Icons.settings_outlined, color: textColor.withValues(alpha: 0.6)),
+          tooltip: strings.settingsTitle,
           onPressed: () => _leaveChat(AppRoutes.settings),
         ),
       ],
@@ -320,38 +375,103 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return _EmptyChat(strings: strings, personaName: persona?.name, persona: persona);
     }
 
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceXs),
-      itemCount: itemCount,
-      itemBuilder: (ctx, i) {
-        if (i == messages.length) {
-          if (streamingBuffer.isNotEmpty) {
-            final streamingMsg = Message(
-              role: MessageRole.assistant,
-              content: streamingBuffer,
-              timestamp: DateTime.now(),
-            );
-            return ChatBubble(
-              key: const ValueKey('streaming'),
-              message: streamingMsg,
-              persona: persona,
-              isStreaming: true,
-            );
+    return SelectionArea(
+      child: ListView.builder(
+        controller: _scrollController,
+        padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceXs),
+        itemCount: itemCount,
+        itemBuilder: (ctx, i) {
+          if (i == messages.length) {
+            if (streamingBuffer.isNotEmpty) {
+              final streamingMsg = Message(
+                role: MessageRole.assistant,
+                content: streamingBuffer,
+                timestamp: DateTime.now(),
+              );
+              return ChatBubble(
+                key: const ValueKey('streaming'),
+                message: streamingMsg,
+                persona: persona,
+                isStreaming: true,
+              );
+            }
+            return const TypingIndicator();
           }
-          return const TypingIndicator();
-        }
 
-        return ChatBubble(
-          key: ValueKey(messages[i].id),
-          message: messages[i],
-          persona: persona,
-          onSpeak: messages[i].role == MessageRole.assistant
-              ? () => _speakMessage(messages[i], persona)
-              : null,
-          isSpeaking: _speakingMessageId == messages[i].id,
-        );
-      },
+          return ChatBubble(
+            key: ValueKey(messages[i].id),
+            message: messages[i],
+            persona: persona,
+            speakerLabel: _speakingMessageId == messages[i].id
+                ? strings.chatStopSpeaking
+                : strings.chatSpeak,
+            onSpeak: messages[i].role == MessageRole.assistant
+                ? () => _speakMessage(messages[i], persona)
+                : null,
+            isSpeaking: _speakingMessageId == messages[i].id,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ChatErrorBanner extends StatelessWidget {
+  const _ChatErrorBanner({
+    required this.message,
+    required this.retryLabel,
+    required this.dismissLabel,
+    required this.onRetry,
+    required this.onDismiss,
+  });
+
+  final String message;
+  final String? retryLabel;
+  final String dismissLabel;
+  final VoidCallback onRetry;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(
+        AppSizes.spaceMd,
+        0,
+        AppSizes.spaceMd,
+        AppSizes.spaceXs,
+      ),
+      padding: const EdgeInsets.fromLTRB(AppSizes.spaceSm, AppSizes.spaceXs, 0, AppSizes.spaceXs),
+      decoration: BoxDecoration(
+        color: scheme.errorContainer,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline_rounded, size: 18, color: scheme.error),
+          const SizedBox(width: AppSizes.spaceXs),
+          Expanded(
+            child: Text(
+              message,
+              style: AppTextStyles.bodyMedium(color: scheme.onErrorContainer),
+            ),
+          ),
+          if (retryLabel != null)
+            TextButton(
+              onPressed: onRetry,
+              child: Text(
+                retryLabel!,
+                style: AppTextStyles.button(color: scheme.error),
+              ),
+            ),
+          IconButton(
+            icon: Icon(Icons.close_rounded, size: 18, color: scheme.onErrorContainer),
+            tooltip: dismissLabel,
+            onPressed: onDismiss,
+          ),
+        ],
+      ),
     );
   }
 }
