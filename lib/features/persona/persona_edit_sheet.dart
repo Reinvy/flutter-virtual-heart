@@ -8,6 +8,8 @@ import '../../core/design/components/primary_button.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../models/persona_config.dart';
+import '../notifications/notification_controller.dart';
+import '../settings/settings_controller.dart';
 import 'avatar_catalog.dart';
 import 'persona_controller.dart';
 
@@ -69,9 +71,21 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
         ..personalityPreset = _personality
         ..avatarId = _avatarId;
       ref.read(personaProvider.notifier).save(persona);
+      await _resyncNotifications();
       if (mounted) Navigator.of(context).pop();
     } finally {
       if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  /// Judul notifikasi memakai nama persona — sinkronkan setelah edit.
+  Future<void> _resyncNotifications() async {
+    try {
+      await ref
+          .read(notificationProvider.notifier)
+          .applySettings(ref.read(appSettingsProvider));
+    } catch (_) {
+      // Notifikasi bersifat opsional; kegagalan tidak boleh membatalkan edit.
     }
   }
 

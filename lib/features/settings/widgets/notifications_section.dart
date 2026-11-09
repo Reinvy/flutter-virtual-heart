@@ -9,6 +9,7 @@ import '../../../core/design/components/section_card.dart';
 import '../../../core/design/tokens/app_sizes.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../models/app_settings.dart';
+import '../../../services/notification_service.dart';
 import '../../notifications/notification_controller.dart';
 import '../settings_controller.dart';
 
@@ -36,7 +37,65 @@ class NotificationsSection extends ConsumerWidget {
         '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
     final updated = settings.copyWith(notificationMorningTime: timeStr);
     ref.read(appSettingsProvider.notifier).save(updated);
-    await ref.read(notificationProvider.notifier).applySettings(updated);
+    await _apply(context, ref, updated);
+  }
+
+  /// Menyimpan perubahan lalu menyinkronkan jadwal; gagal → snackbar.
+  Future<void> _apply(BuildContext context, WidgetRef ref, AppSettings updated) async {
+    final strings = ref.read(appStringsProvider);
+    try {
+      ref.read(appSettingsProvider.notifier).save(updated);
+      await ref.read(notificationProvider.notifier).applySettings(updated);
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(strings.settingsNotifPermissionDeniedSnack)),
+      );
+    }
+  }
+
+  /// Mengaktifkan pengingat hanya bila izin OS benar-benar ada.
+  Future<void> _toggle(
+    BuildContext context,
+    WidgetRef ref, {
+    required AppSettings Function() build,
+    required bool enabled,
+  }) async {
+    final strings = ref.read(appStringsProvider);
+    if (enabled) {
+      final ok = await ref.read(notificationProvider.notifier).requestPermission();
+      if (!ok) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(strings.settingsNotifPermissionDeniedSnack)),
+        );
+        return;
+      }
+    }
+    if (!context.mounted) return;
+    await _apply(context, ref, build());
+  }
+
+  Future<void> _pickCheckinHours(BuildContext context, WidgetRef ref) async {
+    final strings = ref.read(appStringsProvider);
+    final selected = await showDialog<int>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(strings.settingsCheckinHours),
+        children: [
+          for (final hours in AppSettings.checkinHourOptions)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(ctx).pop(hours),
+              child: Text(strings.settingsCheckinHoursValue(hours)),
+            ),
+        ],
+      ),
+    );
+    if (selected == null || !context.mounted) return;
+
+    final updated = settings.copyWith(notificationCheckinHours: selected);
+    await _apply(context, ref, updated);
+    await ref.read(notificationProvider.notifier).handleCheckin(schedule: true);
   }
 
   @override
@@ -59,9 +118,12 @@ class NotificationsSection extends ConsumerWidget {
               value: settings.notificationMorningEnabled,
               onChanged: (v) async {
                 HapticFeedback.selectionClick();
-                final updated = settings.copyWith(notificationMorningEnabled: v);
-                ref.read(appSettingsProvider.notifier).save(updated);
-                await ref.read(notificationProvider.notifier).applySettings(updated);
+                await _toggle(
+                  context,
+                  ref,
+                  build: () => settings.copyWith(notificationMorningEnabled: v),
+                  enabled: v,
+                );
               },
             ),
             if (settings.notificationMorningEnabled)
@@ -93,11 +155,35 @@ class NotificationsSection extends ConsumerWidget {
               value: settings.notificationCheckinEnabled,
               onChanged: (v) async {
                 HapticFeedback.selectionClick();
-                final updated = settings.copyWith(notificationCheckinEnabled: v);
-                ref.read(appSettingsProvider.notifier).save(updated);
-                await ref.read(notificationProvider.notifier).applySettings(updated);
+                await _toggle(
+                  context,
+                  ref,
+                  build: () => settings.copyWith(notificationCheckinEnabled: v),
+                  enabled: v,
+                );
               },
             ),
+            if (settings.notificationCheckinEnabled)
+              ListTile(
+                dense: true,
+                leading: const Icon(Icons.hourglass_bottom_rounded),
+                title: Text(strings.settingsCheckinHours),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      strings.settingsCheckinHoursValue(settings.notificationCheckinHours),
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: scheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.spaceXs),
+                    Icon(Icons.chevron_right_rounded, color: subtleColor),
+                  ],
+                ),
+                onTap: () => _pickCheckinHours(context, ref),
+              ),
             _NotificationPermissionTile(strings: strings),
           ],
         ),
@@ -117,18 +203,43 @@ class _NotificationPermissionTile extends ConsumerStatefulWidget {
       _NotificationPermissionTileState();
 }
 
-class _NotificationPermissionTileState extends ConsumerState<_NotificationPermissionTile> {
+class _NotificationPermissionTileState extends ConsumerState<_NotificationPermissionTile>
+    with WidgetsBindingObserver {
   bool? _granted;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _load();
+  }
+
+  /// Hanya membaca status — tidak memunculkan dialog izin.
   Future<void> _load() async {
-    final ok = await ref.read(notificationProvider.notifier).requestPermission();
+    final ok = await ref.read(notificationServiceProvider).hasPermission();
     if (mounted) setState(() => _granted = ok);
+  }
+
+  Future<void> _request() async {
+    final ok = await ref.read(notificationProvider.notifier).requestPermission();
+    if (!mounted) return;
+    setState(() => _granted = ok);
+    if (ok) {
+      await ref
+          .read(notificationProvider.notifier)
+          .applySettings(ref.read(appSettingsProvider));
+    }
   }
 
   Future<void> _openSettings() async {
@@ -140,22 +251,34 @@ class _NotificationPermissionTileState extends ConsumerState<_NotificationPermis
     final scheme = Theme.of(context).colorScheme;
     final granted = _granted;
 
-    if (granted != true) {
+    if (granted == true) {
       return ListTile(
         dense: true,
-        leading: Icon(Icons.notifications_none_rounded, color: scheme.onSurfaceVariant),
-        title: Text(widget.strings.settingsNotifPermissionDenied),
-        subtitle: Text(widget.strings.settingsNotifPermissionOpenSettings),
-        trailing: Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
-        onTap: _openSettings,
+        leading: Icon(Icons.notifications_active_outlined, color: scheme.primary),
+        title: Text(widget.strings.settingsNotifPermissionGranted),
+        trailing: Icon(Icons.check_circle_outline_rounded, color: scheme.primary),
       );
     }
 
+    final undetermined = granted == null;
     return ListTile(
       dense: true,
-      leading: Icon(Icons.notifications_active_outlined, color: scheme.primary),
-      title: Text(widget.strings.settingsNotifPermissionGranted),
-      trailing: Icon(Icons.check_circle_outline_rounded, color: scheme.primary),
+      leading: Icon(Icons.notifications_none_rounded, color: scheme.onSurfaceVariant),
+      title: Text(
+        undetermined
+            ? widget.strings.settingsNotifPermissionUndetermined
+            : widget.strings.settingsNotifPermissionDenied,
+      ),
+      subtitle: Text(widget.strings.settingsNotifPermissionOpenSettings),
+      trailing: TextButton(
+        onPressed: undetermined ? _request : _openSettings,
+        child: Text(
+          undetermined
+              ? widget.strings.settingsNotifPermissionEnable
+              : widget.strings.settingsNotifPermissionOpenSettings,
+        ),
+      ),
+      onTap: undetermined ? _request : _openSettings,
     );
   }
 }

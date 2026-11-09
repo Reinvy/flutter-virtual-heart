@@ -15,6 +15,7 @@ import '../../core/router/app_router.dart';
 import '../../models/persona_config.dart';
 import '../../services/ai/model_service.dart';
 import '../model/model_ready_provider.dart';
+import '../notifications/notification_controller.dart';
 import '../settings/settings_controller.dart';
 import 'avatar_catalog.dart';
 import 'persona_controller.dart';
@@ -96,6 +97,15 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
 
       final settings = ref.read(appSettingsProvider);
       ref.read(appSettingsProvider.notifier).save(settings.copyWith(isPersonaSetup: true));
+
+      // Judul notifikasi memakai nama persona baru.
+      try {
+        await ref
+            .read(notificationProvider.notifier)
+            .applySettings(ref.read(appSettingsProvider));
+      } catch (_) {
+        // Notifikasi opsional: jangan blokir alur setup.
+      }
 
       final ready =
           (ref.read(modelServiceProvider).value?.ready ?? false) ||

@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -116,6 +117,29 @@ class NotificationService {
 
   // ── Permission ───────────────────────────────────────────────────────
 
+  /// Apakah izin notifikasi sudah diberikan. Tidak pernah memunculkan dialog.
+  Future<bool> hasPermission() async {
+    await _ensureInitialized();
+    try {
+      if (Platform.isAndroid) {
+        final android = _plugin
+            .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+        return await android?.areNotificationsEnabled() ?? false;
+      }
+      if (Platform.isIOS) {
+        final ios = _plugin
+            .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
+        final options = await ios?.checkPermissions();
+        return (options?.isEnabled ?? false) || (options?.isProvisionalEnabled ?? false);
+      }
+      // Desktop/Linux: tidak ada izin runtime.
+      return true;
+    } catch (e) {
+      AppLogger.debug('Notification permission check failed', e);
+      return false;
+    }
+  }
+
   /// Requests notification permission from the OS.
   ///
   /// Returns `true` if notification permission was granted, `false` otherwise.
@@ -132,14 +156,19 @@ class NotificationService {
     if (Platform.isAndroid) {
       final android = _plugin
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-      // Izin exact alarm terpisah di Android 12+; jangan gagalkan seluruh
-      // permintaan bila pengguna menolaknya (jadwal jatuh ke mode inexact).
-      await android?.requestExactAlarmsPermission();
+      // Izin exact alarm sengaja tidak diminta di sini: itu izin terpisah yang
+      // mengejutkan pengguna saat membuka Settings. Jadwal otomatis memakai
+      // mode inexact bila exact tidak diizinkan (lihat [_androidMode]).
       final result = await android?.requestNotificationsPermission();
-      return result ?? false;
+      return result ?? await hasPermission();
     }
 
     return false;
+  }
+
+  /// Membuka pengaturan notifikasi aplikasi di OS.
+  Future<void> openNotificationSettings() async {
+    await openAppSettings();
   }
 
   // ── FR-18: Morning Message ────────────────────────────────────────────
@@ -148,10 +177,17 @@ class NotificationService {
   ///
   /// A random romantic greeting is selected from [_morningMessages].
   /// [personaName] is used as the notification title.
-  Future<void> scheduleMorningMessage(TimeOfDay time, {String personaName = 'VirtualHeart'}) async {
+  Future<void> scheduleMorningMessage(
+    TimeOfDay time, {
+    String personaName = 'VirtualHeart',
+    List<String>? messages,
+    String? channelName,
+    String? channelDescription,
+  }) async {
     await _ensureInitialized();
 
-    final body = _morningMessages[_rng.nextInt(_morningMessages.length)];
+    final pool = (messages != null && messages.isNotEmpty) ? messages : _morningMessages;
+    final body = pool[_rng.nextInt(pool.length)];
     final scheduledDate = nextInstanceOf(time, tz.TZDateTime.now(tz.local));
 
     await _plugin.zonedSchedule(
@@ -163,8 +199,9 @@ class NotificationService {
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           _kMorningChannelId,
-          'Morning Message',
-          channelDescription: 'Romantic morning greeting from your virtual partner.',
+          channelName ?? 'Morning Message',
+          channelDescription:
+              channelDescription ?? 'Romantic morning greeting from your virtual partner.',
           importance: Importance.high,
           priority: Priority.high,
           icon: '@mipmap/ic_launcher',
@@ -197,11 +234,15 @@ class NotificationService {
   Future<void> scheduleCheckinNotification({
     int hoursFromNow = 1,
     String personaName = 'VirtualHeart',
+    List<String>? messages,
+    String? channelName,
+    String? channelDescription,
   }) async {
     if (hoursFromNow <= 0) return;
     await _ensureInitialized();
 
-    final body = _checkinMessages[_rng.nextInt(_checkinMessages.length)];
+    final pool = (messages != null && messages.isNotEmpty) ? messages : _checkinMessages;
+    final body = pool[_rng.nextInt(pool.length)];
     final scheduledDate = tz.TZDateTime.now(tz.local).add(Duration(hours: hoursFromNow));
 
     await _plugin.zonedSchedule(
@@ -213,8 +254,8 @@ class NotificationService {
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           _kCheckinChannelId,
-          'Check-in',
-          channelDescription: 'Reminder from your virtual partner.',
+          channelName ?? 'Check-in',
+          channelDescription: channelDescription ?? 'Reminder from your virtual partner.',
           importance: Importance.defaultImportance,
           priority: Priority.defaultPriority,
           icon: '@mipmap/ic_launcher',

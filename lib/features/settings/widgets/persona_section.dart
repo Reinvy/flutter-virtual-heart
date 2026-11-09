@@ -14,6 +14,7 @@ import '../../../models/objectbox_provider.dart';
 import '../../../models/persona_config.dart';
 import '../../chat/mood_provider.dart';
 import '../../memory/memory_controller.dart';
+import '../../notifications/notification_controller.dart';
 import '../../persona/avatar_catalog.dart';
 import '../../persona/persona_controller.dart';
 import '../../persona/persona_edit_sheet.dart';
@@ -57,6 +58,12 @@ class PersonaSection extends ConsumerWidget {
       conversationSummary: '',
     );
     ref.read(appSettingsProvider.notifier).save(updated);
+    // Nama persona lama harus hilang dari jadwal notifikasi.
+    try {
+      await ref.read(notificationProvider.notifier).applySettings(updated);
+    } catch (_) {
+      // Notifikasi opsional: abaikan kegagalan sinkronisasi.
+    }
     // Router guard akan redirect ke /persona-setup otomatis.
   }
 
