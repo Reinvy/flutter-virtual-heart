@@ -44,9 +44,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-/assets/models/
-
 # FVM Version Cache
 .fvm/
 
-# Generated files (docs/ & .github/ di-track — lihat docs/WORKFLOW.md §8)
+# Gradle/Kotlin tooling caches
+android/.kotlin/
+android/.gradle/
