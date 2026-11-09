@@ -3,7 +3,8 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  flutter_gemma
+  flutter_edge_ai
+  flutter_timezone
   objectbox_flutter_libs
   record_linux
 )

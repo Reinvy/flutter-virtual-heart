@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:1350341759699591298",
-      "lastPropertyId": "13:6709580531882755079",
+      "lastPropertyId": "19:331854042973278382",
       "name": "AppSettings",
       "properties": [
         {
@@ -73,6 +73,36 @@
           "id": "13:6709580531882755079",
           "name": "languageIndex",
           "type": 6
+        },
+        {
+          "id": "14:1914441731906328460",
+          "name": "ttsBackend",
+          "type": 9
+        },
+        {
+          "id": "15:2528957704460547562",
+          "name": "sttBackend",
+          "type": 9
+        },
+        {
+          "id": "16:7596393834550587807",
+          "name": "ttsModel",
+          "type": 9
+        },
+        {
+          "id": "17:6328436298744649244",
+          "name": "sttModel",
+          "type": 9
+        },
+        {
+          "id": "18:5550241925901707487",
+          "name": "modelSource",
+          "type": 9
+        },
+        {
+          "id": "19:331854042973278382",
+          "name": "modelUrl",
+          "type": 9
         }
       ],
       "relations": []
@@ -221,11 +251,6 @@
           "type": 9
         },
         {
-          "id": "5:7624276163652642807",
-          "name": "voiceId",
-          "type": 9
-        },
-        {
           "id": "6:5222404844728441914",
           "name": "createdAt",
           "type": 10
@@ -257,7 +282,9 @@
   "modelVersionParserMinimum": 5,
   "retiredEntityUids": [],
   "retiredIndexUids": [],
-  "retiredPropertyUids": [],
+  "retiredPropertyUids": [
+    7624276163652642807
+  ],
   "retiredRelationUids": [],
   "version": 1
 }

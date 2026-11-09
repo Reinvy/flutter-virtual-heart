@@ -1,5 +1,5 @@
 // Fitur Notifications (FR-15..FR-17) — controller sinkronisasi jadwal.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/errors/app_logger.dart';
@@ -37,6 +37,7 @@ class NotificationNotifier extends AsyncNotifier<void> {
 
     if (schedule && settings.notificationCheckinEnabled) {
       final persona = _personaName();
+      // Default service: 1 jam ke depan (FR-19).
       await svc.scheduleCheckinNotification(personaName: persona);
     } else {
       await svc.cancelCheckinNotification();

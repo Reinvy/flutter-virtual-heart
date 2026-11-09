@@ -1,12 +1,6 @@
 // Controller Settings (FR-18..FR-20) — kelola AppSettings & aksi data.
-import 'dart:io';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
 
-import '../../core/errors/app_logger.dart';
-import '../../core/l10n/app_strings.dart';
 import '../../models/app_settings.dart';
 import '../../models/objectbox_provider.dart';
 
@@ -27,46 +21,46 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   @override
   bool updateShouldNotify(AppSettings previous, AppSettings next) => true;
 
-  /// Membaca ulang settings dari ObjectBox.
-  void refresh() {
-    state = ref.read(objectBoxServiceProvider).getOrCreateSettings();
+  /// Menulis ulang ringkasan percakapan (FR-13).
+  ///
+  /// Satu-satunya jalur tulis `conversationSummary` — controller lain memanggil
+  /// ini agar state Riverpod tetap sinkron dengan ObjectBox.
+  void setConversationSummary(String summary) {
+    save(state.copyWith(conversationSummary: summary));
   }
 
-  /// Menghapus semua percakapan (FR-19).
+  /// Menghapus semua percakapan (FR-19): pesan + ringkasan konteksnya.
   void deleteAllConversations() {
-    ref.read(objectBoxServiceProvider).messageBox.removeAll();
+    final db = ref.read(objectBoxServiceProvider);
+    db.messageBox.removeAll();
+    save(state.copyWith(conversationSummary: ''));
   }
 
   /// Mereset seluruh data lokal (FR-19): persona, memori, mood, pesan, settings.
+  ///
+  /// File model yang sudah diunduh **tidak** dihapus: identitas model
+  /// (`modelVariant`/`modelSource`/`modelUrl`) ikut dipertahankan supaya model
+  /// tetap bisa dipakai tanpa mengunduh ulang 1–2 GB.
   void resetAllData() {
     final db = ref.read(objectBoxServiceProvider);
+    final previous = state;
+
     db.personaBox.removeAll();
     db.memoryFactBox.removeAll();
     db.moodStateBox.removeAll();
     db.messageBox.removeAll();
     db.appSettingsBox.removeAll();
-    state = db.getOrCreateSettings();
-  }
-}
 
-/// Mengekspor riwayat chat ke file .txt di dokumen (FR-19 / peningkatan).
-Future<String?> exportChatToFile() async {
-  try {
-    final dir = await getApplicationDocumentsDirectory();
-    final fileName = 'virtualheart_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.txt';
-    final file = File('${dir.path}/$fileName');
-    await file.writeAsString('VirtualHeart — Chat Export\n', flush: true);
-    return fileName;
-  } catch (e) {
-    AppLogger.error('Export chat failed', e);
-    return null;
+    final fresh = db.getOrCreateSettings().copyWith(
+      modelVariant: previous.modelVariant,
+      modelSource: previous.modelSource,
+      modelUrl: previous.modelUrl,
+    );
+    db.appSettingsBox.put(fresh);
+    state = fresh;
   }
 }
 
 final appSettingsProvider = NotifierProvider<AppSettingsNotifier, AppSettings>(
   AppSettingsNotifier.new,
 );
-
-/// Helper: ganti placeholder `{file}` pada string ekspor.
-String formatExportSuccess(AppStrings strings, String fileName) =>
-    strings.settingsExportSuccess.replaceAll('{file}', fileName);

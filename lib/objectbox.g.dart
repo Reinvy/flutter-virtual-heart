@@ -26,7 +26,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(1, 1350341759699591298),
     name: 'AppSettings',
-    lastPropertyId: const obx_int.IdUid(13, 6709580531882755079),
+    lastPropertyId: const obx_int.IdUid(19, 331854042973278382),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -105,6 +105,42 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(13, 6709580531882755079),
         name: 'languageIndex',
         type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(14, 1914441731906328460),
+        name: 'ttsBackend',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(15, 2528957704460547562),
+        name: 'sttBackend',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(16, 7596393834550587807),
+        name: 'ttsModel',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(17, 6328436298744649244),
+        name: 'sttModel',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(18, 5550241925901707487),
+        name: 'modelSource',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(19, 331854042973278382),
+        name: 'modelUrl',
+        type: 9,
         flags: 0,
       ),
     ],
@@ -280,12 +316,6 @@ final _entities = <obx_int.ModelEntity>[
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(5, 7624276163652642807),
-        name: 'voiceId',
-        type: 9,
-        flags: 0,
-      ),
-      obx_int.ModelProperty(
         id: const obx_int.IdUid(6, 5222404844728441914),
         name: 'createdAt',
         type: 10,
@@ -364,7 +394,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
     lastSequenceId: const obx_int.IdUid(0, 0),
     retiredEntityUids: const [],
     retiredIndexUids: const [],
-    retiredPropertyUids: const [],
+    retiredPropertyUids: const [7624276163652642807],
     retiredRelationUids: const [],
     modelVersion: 5,
     modelVersionParserMinimum: 5,
@@ -388,7 +418,13 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final conversationSummaryOffset = fbb.writeString(
           object.conversationSummary,
         );
-        fbb.startTable(14);
+        final ttsBackendOffset = fbb.writeString(object.ttsBackend);
+        final sttBackendOffset = fbb.writeString(object.sttBackend);
+        final ttsModelOffset = fbb.writeString(object.ttsModel);
+        final sttModelOffset = fbb.writeString(object.sttModel);
+        final modelSourceOffset = fbb.writeString(object.modelSource);
+        final modelUrlOffset = fbb.writeString(object.modelUrl);
+        fbb.startTable(20);
         fbb.addInt64(0, object.id);
         fbb.addBool(1, object.ttsEnabled);
         fbb.addBool(2, object.ttsAutoPlay);
@@ -402,6 +438,12 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(10, conversationSummaryOffset);
         fbb.addInt64(11, object.themeIndex);
         fbb.addInt64(12, object.languageIndex);
+        fbb.addOffset(13, ttsBackendOffset);
+        fbb.addOffset(14, sttBackendOffset);
+        fbb.addOffset(15, ttsModelOffset);
+        fbb.addOffset(16, sttModelOffset);
+        fbb.addOffset(17, modelSourceOffset);
+        fbb.addOffset(18, modelUrlOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -426,6 +468,18 @@ obx_int.ModelDefinition getObjectBoxModel() {
           8,
           false,
         );
+        final ttsBackendParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 30, '');
+        final sttBackendParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 32, '');
+        final ttsModelParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 34, '');
+        final sttModelParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 36, '');
         final notificationMorningEnabledParam = const fb.BoolReader().vTableGet(
           buffer,
           rootOffset,
@@ -444,6 +498,12 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final modelVariantParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGet(buffer, rootOffset, 16, '');
+        final modelSourceParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 38, '');
+        final modelUrlParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 40, '');
         final isAgeVerifiedParam = const fb.BoolReader().vTableGet(
           buffer,
           rootOffset,
@@ -470,10 +530,16 @@ obx_int.ModelDefinition getObjectBoxModel() {
                 id: idParam,
                 ttsEnabled: ttsEnabledParam,
                 ttsAutoPlay: ttsAutoPlayParam,
+                ttsBackend: ttsBackendParam,
+                sttBackend: sttBackendParam,
+                ttsModel: ttsModelParam,
+                sttModel: sttModelParam,
                 notificationMorningEnabled: notificationMorningEnabledParam,
                 notificationMorningTime: notificationMorningTimeParam,
                 notificationCheckinEnabled: notificationCheckinEnabledParam,
                 modelVariant: modelVariantParam,
+                modelSource: modelSourceParam,
+                modelUrl: modelUrlParam,
                 isAgeVerified: isAgeVerifiedParam,
                 isOnboardingDone: isOnboardingDoneParam,
                 isPersonaSetup: isPersonaSetupParam,
@@ -696,7 +762,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final nameOffset = fbb.writeString(object.name);
         final nicknameForUserOffset = fbb.writeString(object.nicknameForUser);
         final avatarIdOffset = fbb.writeString(object.avatarId);
-        final voiceIdOffset = fbb.writeString(object.voiceId);
         final hobbiesOffset = fbb.writeList(
           object.hobbies.map(fbb.writeString).toList(growable: false),
         );
@@ -705,7 +770,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(1, nameOffset);
         fbb.addOffset(2, nicknameForUserOffset);
         fbb.addOffset(3, avatarIdOffset);
-        fbb.addOffset(4, voiceIdOffset);
         fbb.addInt64(5, object.createdAt.millisecondsSinceEpoch);
         fbb.addInt64(6, object.genderIndex);
         fbb.addInt64(7, object.personalityPresetIndex);
@@ -735,9 +799,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final avatarIdParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGet(buffer, rootOffset, 10, '');
-        final voiceIdParam = const fb.StringReader(
-          asciiOptimization: true,
-        ).vTableGet(buffer, rootOffset, 12, '');
         final createdAtParam = DateTime.fromMillisecondsSinceEpoch(
           const fb.Int64Reader().vTableGet(buffer, rootOffset, 14, 0),
         );
@@ -748,7 +809,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
                 hobbies: hobbiesParam,
                 nicknameForUser: nicknameForUserParam,
                 avatarId: avatarIdParam,
-                voiceId: voiceIdParam,
                 createdAt: createdAtParam,
               )
               ..genderIndex = const fb.Int64Reader().vTableGet(
@@ -835,6 +895,36 @@ class AppSettings_ {
   /// See [AppSettings.languageIndex].
   static final languageIndex = obx.QueryIntegerProperty<AppSettings>(
     _entities[0].properties[12],
+  );
+
+  /// See [AppSettings.ttsBackend].
+  static final ttsBackend = obx.QueryStringProperty<AppSettings>(
+    _entities[0].properties[13],
+  );
+
+  /// See [AppSettings.sttBackend].
+  static final sttBackend = obx.QueryStringProperty<AppSettings>(
+    _entities[0].properties[14],
+  );
+
+  /// See [AppSettings.ttsModel].
+  static final ttsModel = obx.QueryStringProperty<AppSettings>(
+    _entities[0].properties[15],
+  );
+
+  /// See [AppSettings.sttModel].
+  static final sttModel = obx.QueryStringProperty<AppSettings>(
+    _entities[0].properties[16],
+  );
+
+  /// See [AppSettings.modelSource].
+  static final modelSource = obx.QueryStringProperty<AppSettings>(
+    _entities[0].properties[17],
+  );
+
+  /// See [AppSettings.modelUrl].
+  static final modelUrl = obx.QueryStringProperty<AppSettings>(
+    _entities[0].properties[18],
   );
 }
 
@@ -959,28 +1049,23 @@ class PersonaConfig_ {
     _entities[4].properties[3],
   );
 
-  /// See [PersonaConfig.voiceId].
-  static final voiceId = obx.QueryStringProperty<PersonaConfig>(
-    _entities[4].properties[4],
-  );
-
   /// See [PersonaConfig.createdAt].
   static final createdAt = obx.QueryDateProperty<PersonaConfig>(
-    _entities[4].properties[5],
+    _entities[4].properties[4],
   );
 
   /// See [PersonaConfig.genderIndex].
   static final genderIndex = obx.QueryIntegerProperty<PersonaConfig>(
-    _entities[4].properties[6],
+    _entities[4].properties[5],
   );
 
   /// See [PersonaConfig.personalityPresetIndex].
   static final personalityPresetIndex = obx.QueryIntegerProperty<PersonaConfig>(
-    _entities[4].properties[7],
+    _entities[4].properties[6],
   );
 
   /// See [PersonaConfig.hobbies].
   static final hobbies = obx.QueryStringVectorProperty<PersonaConfig>(
-    _entities[4].properties[8],
+    _entities[4].properties[7],
   );
 }

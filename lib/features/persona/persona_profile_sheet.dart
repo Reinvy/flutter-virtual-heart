@@ -1,7 +1,6 @@
 // Fitur Persona (FR-10) — bottom sheet profil persona (dari chat).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/design/components/primary_button.dart';
 import '../../core/design/components/sakura_divider.dart';
@@ -9,14 +8,18 @@ import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
-import '../../core/router/app_router.dart';
 import '../../models/mood_state.dart';
 import '../../models/persona_config.dart';
 import '../chat/mood_provider.dart';
+import 'avatar_catalog.dart';
 
 /// Menampilkan bottom sheet profil persona.
-void showPersonaProfileSheet(BuildContext context, PersonaConfig? persona) {
-  showModalBottomSheet<void>(
+///
+/// Kembali `true` bila pengguna menekan tombol Edit — pemanggil yang membuka
+/// form edit (`PersonaEditSheet`), sehingga alur edit tidak lagi bergantung
+/// pada route `/persona-setup`.
+Future<bool?> showPersonaProfileSheet(BuildContext context, PersonaConfig? persona) {
+  return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -57,6 +60,8 @@ class PersonaProfileSheet extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(AppSizes.md, AppSizes.sm, AppSizes.md, AppSizes.xl),
             children: [
               const SizedBox(height: AppSizes.md),
+              _buildAvatar(),
+              const SizedBox(height: AppSizes.md),
               _buildNameSection(context, ref),
               const SakuraDivider(),
               _buildMoodSection(mood, context, ref),
@@ -72,6 +77,16 @@ class PersonaProfileSheet extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildAvatar() {
+    final isGirlfriend = persona?.gender != PersonaGender.boyfriend;
+    return Center(
+      child: avatarCircle(
+        avatarOptFor(persona?.avatarId, isGirlfriend: isGirlfriend),
+        72,
+      ),
     );
   }
 
@@ -263,10 +278,7 @@ class PersonaProfileSheet extends ConsumerWidget {
     return PrimaryButton(
       label: strings.settingsEditPersona,
       icon: Icons.edit_outlined,
-      onPressed: () {
-        Navigator.of(context).pop();
-        context.push(AppRoutes.personaSetup);
-      },
+      onPressed: () => Navigator.of(context).pop(true),
     );
   }
 }

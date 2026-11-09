@@ -1,5 +1,5 @@
 // Fitur Persona (FR-03) — layar setup/edit persona.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -490,13 +490,13 @@ class _AvatarTile extends StatelessWidget {
           shape: BoxShape.circle,
           gradient: RadialGradient(
             colors: [
-              option.accent.withAlpha(isSelected ? 200 : 100),
-              option.base.withAlpha(isSelected ? 220 : 120),
+              option.accent.withValues(alpha: isSelected ? 0.7843 : 0.3922),
+              option.base.withValues(alpha: isSelected ? 0.8627 : 0.4706),
             ],
           ),
           border: Border.all(color: isSelected ? option.base : Colors.transparent, width: 2.5),
           boxShadow: isSelected
-              ? [BoxShadow(color: option.base.withAlpha(100), blurRadius: 12, spreadRadius: 2)]
+              ? [BoxShadow(color: option.base.withValues(alpha: 0.3922), blurRadius: 12, spreadRadius: 2)]
               : null,
         ),
         child: Stack(
@@ -504,7 +504,7 @@ class _AvatarTile extends StatelessWidget {
           children: [
             Icon(
               isGirlfriend ? Icons.face_retouching_natural : Icons.person,
-              color: Colors.white.withAlpha(220),
+              color: Colors.white.withValues(alpha: 0.8627),
               size: 32,
             ),
             if (isSelected)

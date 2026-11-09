@@ -1,10 +1,9 @@
-import 'package:flutter_gemma/flutter_gemma.dart' as gemma;
+import 'package:flutter_edge_ai/flutter_edge_ai.dart' as edge_ai;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../features/model/model_ready_provider.dart';
 import '../../features/settings/settings_controller.dart';
-import '../../models/message.dart';
 import 'model_catalog.dart';
 
 /// Status model LLM on-device.
@@ -55,12 +54,13 @@ class ModelStatus {
 /// - **Network** (`installFromNetwork`) — download dari HuggingFace + progress.
 /// - **File** (`installFromFile`) — model lokal yang dipilih pengguna.
 /// - **Terpasang** (`build`) — jika model sudah terinstal, langsung dipakai.
+///
+/// `AppSettings.modelVariant` menyimpan **nama file** model (identitas yang
+/// dipakai `FlutterEdgeAi.isModelInstalled`), `modelSource` menyimpan asal
+/// pemasangan (`network`/`file`), dan `modelUrl` menyimpan URL asal.
 class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
-  /// Soft cap konteks per request.
-  static const int maxContextChars = 6000;
-
-  gemma.InferenceModel? _model;
-  gemma.CancelToken? _cancelToken;
+  edge_ai.InferenceModel? _model;
+  edge_ai.CancelToken? _cancelToken;
 
   // -------------------------------------------------------------------------
   // Lifecycle
@@ -73,35 +73,36 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
     // Model sudah pernah dipilih & terinstal → langsung aktifkan.
     if (settings.modelVariant.isNotEmpty) {
       try {
-        final installed = await gemma.FlutterGemma.isModelInstalled(
+        final installed = await edge_ai.FlutterEdgeAi.isModelInstalled(
           settings.modelVariant,
         );
         if (installed) {
-          _model = await gemma.FlutterGemma.getActiveModel(
-            preferredBackend: gemma.PreferredBackend.cpu,
+          _model = await edge_ai.FlutterEdgeAi.getActiveModel(
+            preferredBackend: edge_ai.PreferredBackend.cpu,
             maxTokens: 2048,
           );
           ref.read(modelReadyProvider.notifier).setReady();
-          return ModelStatus(
-            ready: true,
-            modelName: settings.modelVariant,
-          );
+          return ModelStatus(ready: true, modelName: settings.modelVariant);
         }
       } catch (_) {
-        // Model rusak → lanjut ke install ulang.
+        // Model rusak → biarkan pengguna memasang ulang dari layar model.
       }
     }
 
-    // Model default (Qwen 2.5 1.5B .litertlm) bila belum ada pilihan.
+    // Belum pernah ada pilihan model → pasang model default.
     if (settings.modelSource.isEmpty) {
+      _cancelToken = edge_ai.CancelToken();
       try {
         await _installWithProgress(kDefaultModelOption, hfToken: null);
         return state.value ?? const ModelStatus(ready: true);
       } catch (e) {
         return ModelStatus(error: _friendlyError(e));
+      } finally {
+        _cancelToken = null;
       }
     }
 
+    // Ada pilihan tersimpan tapi file-nya tidak ada: jangan auto-install ulang.
     return const ModelStatus();
   }
 
@@ -112,36 +113,35 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
   /// Mengunduh [option] dari HuggingFace dengan progress.
   Future<void> installFromNetwork(ModelOption option, {String? hfToken}) async {
     state = const AsyncLoading();
-    _cancelToken = gemma.CancelToken();
+    _cancelToken = edge_ai.CancelToken();
     try {
       await _installWithProgress(option, hfToken: hfToken);
     } catch (e) {
       state = AsyncError(_friendlyError(e), StackTrace.current);
+    } finally {
+      _cancelToken = null;
     }
   }
 
   /// Memasang model dari file lokal (upload pengguna).
   Future<void> installFromFile(String path, ModelOption option) async {
     state = const AsyncLoading();
-    try {
-      state = await AsyncValue.guard(() async {
-        await gemma.FlutterGemma.installModel(
-          modelType: option.gemmaModelType,
-          fileType: option.gemmaFileType,
-        ).fromFile(path).install();
+    _cancelToken = null;
+    state = await AsyncValue.guard(() async {
+      await edge_ai.FlutterEdgeAi.installModel(
+        modelType: option.edgeAiModelType,
+        fileType: option.edgeAiFileType,
+      ).fromFile(path).install();
 
-        _model = await gemma.FlutterGemma.getActiveModel(
-          preferredBackend: gemma.PreferredBackend.cpu,
-          maxTokens: 2048,
-        );
+      _model = await edge_ai.FlutterEdgeAi.getActiveModel(
+        preferredBackend: edge_ai.PreferredBackend.cpu,
+        maxTokens: 2048,
+      );
 
-        await _persistSelection(option);
-        ref.read(modelReadyProvider.notifier).setReady();
-        return ModelStatus(ready: true, modelName: option.fileName);
-      });
-    } catch (e) {
-      state = AsyncError(_friendlyError(e), StackTrace.current);
-    }
+      await _persistSelection(option, source: 'file', url: '');
+      ref.read(modelReadyProvider.notifier).setReady();
+      return ModelStatus(ready: true, modelName: option.fileName);
+    });
   }
 
   /// Membatalkan download yang sedang berjalan.
@@ -157,12 +157,14 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
   // -------------------------------------------------------------------------
 
   Future<void> _installWithProgress(ModelOption option, {String? hfToken}) async {
-    await gemma.FlutterGemma.installModel(
-      modelType: option.gemmaModelType,
-      fileType: option.gemmaFileType,
+    final token = _cancelToken ??= edge_ai.CancelToken();
+
+    await edge_ai.FlutterEdgeAi.installModel(
+      modelType: option.edgeAiModelType,
+      fileType: option.edgeAiFileType,
     )
         .fromNetwork(option.url, token: hfToken)
-        .withCancelToken(_cancelToken!)
+        .withCancelToken(token)
         .withProgress((progress) {
           state = AsyncData(
             (state.value ?? const ModelStatus()).copyWith(
@@ -174,34 +176,33 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
         })
         .install();
 
-    _model = await gemma.FlutterGemma.getActiveModel(
-      preferredBackend: gemma.PreferredBackend.cpu,
+    _model = await edge_ai.FlutterEdgeAi.getActiveModel(
+      preferredBackend: edge_ai.PreferredBackend.cpu,
       maxTokens: 2048,
     );
 
-    await _persistSelection(option);
+    await _persistSelection(option, source: 'network', url: option.url);
     ref.read(modelReadyProvider.notifier).setReady();
     state = AsyncData(ModelStatus(ready: true, modelName: option.fileName));
   }
 
-  Future<void> _persistSelection(ModelOption option) async {
+  /// Menyimpan identitas model aktif ke [AppSettings].
+  Future<void> _persistSelection(
+    ModelOption option, {
+    required String source,
+    required String url,
+  }) async {
     final settings = ref.read(appSettingsProvider);
     ref.read(appSettingsProvider.notifier).save(
       settings.copyWith(
         modelVariant: option.fileName,
-        modelSource: 'network',
-        modelUrl: option.url,
+        modelSource: source,
+        modelUrl: url,
       ),
     );
   }
 
-  /// Membaca token HuggingFace dari SharedPreferences (tidak pernah di-log).
-  Future<String?> readHfToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('hf_token');
-    return (token == null || token.isEmpty) ? null : token;
-  }
-
+  /// Menyimpan token HuggingFace (dipakai [main.dart] saat init engine).
   static Future<void> saveHfToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('hf_token', token.trim());
@@ -223,77 +224,31 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
   // -------------------------------------------------------------------------
 
   /// Streaming token untuk [fullPrompt].
-  Stream<String> generateResponseStream(
-    String fullPrompt, {
-    String? systemInstruction,
-    List<Message>? history,
-  }) async* {
+  Stream<String> generateResponseStream(String fullPrompt) async* {
     final model = _model;
     if (model == null) throw StateError('Model not initialized');
 
-    final chat = await model.createChat(temperature: 0.9, randomSeed: 1, topK: 50, topP: 0.95);
-
-    await chat.clearHistory();
-
-    if (systemInstruction != null && history != null) {
-      await chat.addQueryChunk(gemma.Message.text(text: systemInstruction, isUser: true));
-      for (final message in history) {
-        await chat.addQueryChunk(
-          gemma.Message.text(text: message.content, isUser: message.role == MessageRole.user),
-        );
-      }
-      await chat.addQueryChunk(gemma.Message.text(text: fullPrompt, isUser: true));
+    final chat = await model.openChat(temperature: 0.9, randomSeed: 1, topK: 50, topP: 0.95);
+    try {
+      await chat.addQueryChunk(edge_ai.Message.text(text: fullPrompt, isUser: true));
 
       await for (final chunk in chat.generateChatResponseAsync()) {
-        if (chunk is gemma.TextResponse) {
+        if (chunk is edge_ai.TextResponse) {
           yield chunk.token;
         }
       }
-    } else {
-      await chat.addQueryChunk(gemma.Message.text(text: fullPrompt, isUser: true));
-
-      await for (final chunk in chat.generateChatResponseAsync()) {
-        if (chunk is gemma.TextResponse) {
-          yield chunk.token;
-        }
-      }
+    } finally {
+      await chat.close();
     }
   }
 
   /// Mengumpulkan semua token streaming menjadi satu string.
-  Future<String> generateResponse(
-    String fullPrompt, {
-    String? systemInstruction,
-    List<Message>? history,
-  }) async {
+  Future<String> generateResponse(String fullPrompt) async {
     final buffer = StringBuffer();
-    await for (final token in generateResponseStream(
-      fullPrompt,
-      systemInstruction: systemInstruction,
-      history: history,
-    )) {
+    await for (final token in generateResponseStream(fullPrompt)) {
       buffer.write(token);
     }
     return buffer.toString();
-  }
-
-  // -------------------------------------------------------------------------
-  // Reset / recovery
-  // -------------------------------------------------------------------------
-
-  /// Membuang model & memaksa re-install.
-  Future<void> reset() async {
-    _model = null;
-    ref.read(modelReadyProvider.notifier).reset();
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      final settings = ref.read(appSettingsProvider);
-      if (settings.modelVariant.isNotEmpty) {
-        await gemma.FlutterGemma.uninstallModel(settings.modelVariant);
-        await gemma.FlutterGemma.clearActiveInferenceIdentity();
-      }
-      return const ModelStatus();
-    });
   }
 }
 

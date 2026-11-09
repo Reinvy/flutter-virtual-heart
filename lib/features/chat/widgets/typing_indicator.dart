@@ -1,5 +1,5 @@
 // Fitur Chat (FR-08) — indikator mengetik (3 titik).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../core/design/tokens/app_colors.dart';

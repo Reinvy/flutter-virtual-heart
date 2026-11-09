@@ -1,7 +1,7 @@
 // Router aplikasi (docs/DESIGN.md §7) — GoRouter + route guards
 //
 // Dipindah dari `providers/router_provider.dart` ke `core/router/`.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -15,6 +15,7 @@ import '../../features/onboarding/splash_screen.dart';
 import '../../features/persona/persona_setup_screen.dart';
 import '../../features/settings/settings_controller.dart';
 import '../../features/settings/settings_screen.dart';
+import '../../models/app_settings.dart';
 import '../design/tokens/app_durations.dart';
 
 /// Named route paths.
@@ -61,6 +62,46 @@ CustomTransitionPage<void> _buildPage(GoRouterState state, Widget child) {
   );
 }
 
+/// Aturan guard route — fungsi murni supaya bisa dites tanpa GoRouter.
+///
+/// Urutan gate: age verification → onboarding → persona setup → model siap.
+/// `/splash` selalu lolos (layar ini yang memutuskan langkah berikutnya).
+/// `/model-download` **tidak** punya bypass: gate umur/onboarding/persona tetap
+/// berlaku untuk rute tersebut.
+String? resolveRedirect({
+  required String path,
+  required AppSettings settings,
+  required bool isModelReady,
+}) {
+  if (path == AppRoutes.splash) return null;
+
+  // Step 1 — age gate (FR-01)
+  if (!settings.isAgeVerified) {
+    return path == AppRoutes.ageGate ? null : AppRoutes.ageGate;
+  }
+
+  // Step 2 — onboarding
+  if (!settings.isOnboardingDone) {
+    return path == AppRoutes.onboarding ? null : AppRoutes.onboarding;
+  }
+
+  // Step 3 — persona setup
+  if (!settings.isPersonaSetup) {
+    return path == AppRoutes.personaSetup ? null : AppRoutes.personaSetup;
+  }
+
+  // Step 4 — model harus siap
+  if (!isModelReady) {
+    return path == AppRoutes.modelDownload ? null : AppRoutes.modelDownload;
+  }
+
+  // Semua kondisi terpenuhi — redirect menjauh dari layar setup.
+  const setupRoutes = {AppRoutes.ageGate, AppRoutes.onboarding, AppRoutes.personaSetup};
+  if (setupRoutes.contains(path)) return AppRoutes.chat;
+
+  return null;
+}
+
 /// Menyediakan instance [GoRouter] aplikasi.
 final routerProvider = Provider<GoRouter>((ref) {
   final refreshNotifier = _RouterRefreshNotifier(ref);
@@ -69,43 +110,11 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: AppRoutes.splash,
     refreshListenable: refreshNotifier,
-    redirect: (context, state) {
-      final path = state.uri.path;
-
-      // Splash + model-download mengelola navigasinya sendiri.
-      if (path == AppRoutes.splash || path == AppRoutes.modelDownload) {
-        return null;
-      }
-
-      final settings = ref.read(appSettingsProvider);
-      final isModelReady = ref.read(modelReadyProvider);
-
-      // Step 1 — age gate (FR-01)
-      if (!settings.isAgeVerified) {
-        return path == AppRoutes.ageGate ? null : AppRoutes.ageGate;
-      }
-
-      // Step 2 — onboarding
-      if (!settings.isOnboardingDone) {
-        return path == AppRoutes.onboarding ? null : AppRoutes.onboarding;
-      }
-
-      // Step 3 — persona setup
-      if (!settings.isPersonaSetup) {
-        return path == AppRoutes.personaSetup ? null : AppRoutes.personaSetup;
-      }
-
-      // Step 4 — model harus siap
-      if (!isModelReady) {
-        return path == AppRoutes.modelDownload ? null : AppRoutes.modelDownload;
-      }
-
-      // Semua kondisi terpenuhi — redirect menjauh dari layar setup.
-      const setupRoutes = {AppRoutes.ageGate, AppRoutes.onboarding, AppRoutes.personaSetup};
-      if (setupRoutes.contains(path)) return AppRoutes.chat;
-
-      return null;
-    },
+    redirect: (context, state) => resolveRedirect(
+      path: state.uri.path,
+      settings: ref.read(appSettingsProvider),
+      isModelReady: ref.read(modelReadyProvider),
+    ),
     routes: [
       GoRoute(path: AppRoutes.splash, pageBuilder: (context, state) => _buildPage(state, const SplashScreen())),
       GoRoute(path: AppRoutes.ageGate, pageBuilder: (context, state) => _buildPage(state, const AgeGateScreen())),

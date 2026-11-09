@@ -1,5 +1,5 @@
 // Katalog avatar — satu sumber kebenaran (konsolidasi 4 palet duplikat).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../core/design/tokens/app_colors.dart';
 

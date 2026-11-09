@@ -21,7 +21,8 @@ abstract final class AppLogger {
   }
 
   static void error(String message, [Object? error, StackTrace? stack]) {
+    if (!kDebugMode) return;
     debugPrint('[VH][error] $message${error == null ? '' : ' → $error'}');
-    if (stack != null && kDebugMode) debugPrint('$stack');
+    if (stack != null) debugPrint('$stack');
   }
 }

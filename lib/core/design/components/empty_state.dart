@@ -1,5 +1,5 @@
 // Komponen shared — empty state seragam (docs/DESIGN.md §3.7).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../tokens/app_sizes.dart';
 import '../tokens/text_styles.dart';

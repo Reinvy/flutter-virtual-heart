@@ -3,7 +3,7 @@
 // **Default: Light mode (Sakura Light)** — latar blush sakura, permukaan
 // bersih, aksen rose pink + ungu elektrik. Dark mode independen (bukan
 // inversi) sebagai opsi pengguna.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 

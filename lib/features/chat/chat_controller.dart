@@ -1,7 +1,9 @@
 // Fitur Chat (FR-05..FR-09, FR-11, FR-13) — controller percakapan.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:objectbox/objectbox.dart';
 
 import '../../core/errors/app_logger.dart';
+import '../../models/memory_fact.dart';
 import '../../models/message.dart';
 import '../../models/objectbox_provider.dart';
 import '../../models/persona_config.dart';
@@ -10,6 +12,8 @@ import '../../services/ai/memory_extractor.dart';
 import '../../services/ai/model_service.dart';
 import '../../services/ai/prompt_builder.dart';
 import '../../services/mood_service.dart';
+import '../memory/memory_controller.dart';
+import '../settings/settings_controller.dart';
 import 'chat_models.dart';
 import 'mood_provider.dart';
 
@@ -23,7 +27,9 @@ class ChatNotifier extends Notifier<ChatState> {
 
   /// Mengirim pesan user → pipeline AI (safety → prompt → streaming → persist)
   /// lalu memicu post-process (memori, ringkasan, mood).
-  Future<void> sendMessage(String text) async {
+  ///
+  /// [isVoice] menandai pesan yang berasal dari transkrip STT (FR-06).
+  Future<void> sendMessage(String text, {bool isVoice = false}) async {
     final trimmed = text.trim();
     // FR-05: batas input 2000 karakter (jaring pengaman di sisi controller).
     final content = trimmed.length > 2000 ? trimmed.substring(0, 2000) : trimmed;
@@ -37,6 +43,7 @@ class ChatNotifier extends Notifier<ChatState> {
       role: MessageRole.user,
       content: content,
       timestamp: DateTime.now(),
+      isVoice: isVoice,
     );
     db.messageBox.put(userMsg);
     state = state.copyWith(
@@ -76,6 +83,7 @@ class ChatNotifier extends Notifier<ChatState> {
         mood,
         memoryFacts,
         settings.conversationSummary,
+        language: settings.language,
       );
 
       final history = state.messages.length > 1
@@ -83,6 +91,9 @@ class ChatNotifier extends Notifier<ChatState> {
           : <Message>[];
 
       final fullPrompt = PromptBuilder.buildFullPrompt(systemPrompt, history, content);
+
+      // 2b. Tandai fakta memori yang dipakai sebagai konteks (FR-11).
+      _stampReferencedFacts(db.memoryFactBox, memoryFacts);
 
       // 3. Stream token AI.
       await for (final token
@@ -102,6 +113,7 @@ class ChatNotifier extends Notifier<ChatState> {
         role: MessageRole.assistant,
         content: finalContent,
         timestamp: DateTime.now(),
+        mood: mood.current.name,
       );
       db.messageBox.put(aiMsg);
       state = state.copyWith(
@@ -123,7 +135,8 @@ class ChatNotifier extends Notifier<ChatState> {
   Future<void> _postProcess(String userMessage, String aiResponse) async {
     final db = ref.read(objectBoxServiceProvider);
 
-    // Ekstraksi fakta memori (FR-11).
+    // Ekstraksi fakta memori (FR-11): gabungkan dengan fakta lama bila key-nya
+    // sama, bukan menumpuk duplikat.
     try {
       final conversation = 'User: $userMessage\nAI: $aiResponse';
       final extractor = ref.read(memoryExtractorProvider);
@@ -132,10 +145,23 @@ class ChatNotifier extends Notifier<ChatState> {
         (p) => ref.read(modelServiceProvider.notifier).generateResponse(p),
       );
       if (facts.isNotEmpty) {
-        // Dedup: jangan simpan fakta dengan key yang sudah ada.
-        final existingKeys = db.memoryFactBox.getAll().map((f) => f.key.toLowerCase()).toSet();
-        final fresh = facts.where((f) => !existingKeys.contains(f.key.toLowerCase())).toList();
-        if (fresh.isNotEmpty) db.memoryFactBox.putMany(fresh);
+        final existing = {
+          for (final fact in db.memoryFactBox.getAll()) fact.key.toLowerCase(): fact,
+        };
+        for (final fact in facts) {
+          final match = existing[fact.key.toLowerCase()];
+          if (match != null) {
+            match
+              ..value = fact.value
+              ..category = fact.category
+              ..sourceSnippet = userMessage;
+            db.memoryFactBox.put(match);
+          } else {
+            fact.sourceSnippet = userMessage;
+            db.memoryFactBox.put(fact);
+          }
+        }
+        ref.invalidate(memoryFactsProvider);
       }
     } catch (e) {
       AppLogger.debug('Memory extraction skipped', e);
@@ -150,9 +176,7 @@ class ChatNotifier extends Notifier<ChatState> {
         final prompt = PromptBuilder.buildSummarizationPrompt(allMessages);
         final summary = await ref.read(modelServiceProvider.notifier).generateResponse(prompt);
         if (summary.isNotEmpty) {
-          final settings = db.getOrCreateSettings();
-          settings.conversationSummary = summary.trim();
-          db.appSettingsBox.put(settings);
+          ref.read(appSettingsProvider.notifier).setConversationSummary(summary.trim());
         }
       }
     } catch (e) {
@@ -162,6 +186,16 @@ class ChatNotifier extends Notifier<ChatState> {
     // Update mood dari sentimen respons AI (FR-09).
     ref.read(moodServiceProvider).updateMoodFromConversation(aiResponse);
     ref.read(moodProvider.notifier).refresh();
+  }
+
+  /// Menandai `lastReferencedAt` untuk fakta yang ikut masuk ke prompt.
+  void _stampReferencedFacts(Box<MemoryFact> box, List<MemoryFact> facts) {
+    if (facts.isEmpty) return;
+    final now = DateTime.now();
+    for (final fact in facts) {
+      fact.lastReferencedAt = now;
+    }
+    box.putMany(facts);
   }
 }
 

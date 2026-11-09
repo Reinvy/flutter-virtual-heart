@@ -2,7 +2,7 @@
 //
 // Ikon: sakura (SVG), psikologi, sparkle. Dots pagination berbentuk pill
 // sakura; skip memakai GhostButton.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -128,7 +128,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   width: i == _currentPage ? 24 : 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: i == _currentPage ? AppColors.primaryDeep : scheme.onSurfaceVariant.withAlpha(80),
+                    color: i == _currentPage ? AppColors.primaryDeep : scheme.onSurfaceVariant.withValues(alpha: 0.3137),
                     borderRadius: BorderRadius.circular(AppSizes.radiusFull),
                   ),
                 ),
@@ -191,9 +191,9 @@ class _PageContent extends StatelessWidget {
                 height: 120,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: color.withAlpha(25),
+                  color: color.withValues(alpha: 0.098),
                   boxShadow: [
-                    BoxShadow(color: color.withAlpha(60), blurRadius: 40, spreadRadius: 8),
+                    BoxShadow(color: color.withValues(alpha: 0.2353), blurRadius: 40, spreadRadius: 8),
                   ],
                 ),
                 child: child,

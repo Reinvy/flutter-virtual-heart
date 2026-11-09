@@ -1,5 +1,5 @@
-// Katalog model speech on-device (STT/TTS via flutter_gemma_speech).
-import 'package:flutter_gemma/flutter_gemma.dart' as gemma;
+// Katalog model speech on-device (STT/TTS via flutter_edge_ai_speech).
+import 'package:flutter_edge_ai/flutter_edge_ai.dart' as edge_ai;
 
 /// Opsi model speech (TTS atau STT) yang bisa diunduh pengguna.
 class SpeechModelOption {
@@ -19,20 +19,20 @@ class SpeechModelOption {
     this.baseUrl,
   });
 
-  /// `TtsModelType` flutter_gemma yang sesuai (hanya untuk isTts).
-  gemma.TtsModelType? get gemmaTtsType => switch (id) {
-    'inflect' => gemma.TtsModelType.inflect,
-    'matcha' => gemma.TtsModelType.matcha,
-    'qwen3' => gemma.TtsModelType.qwen3,
+  /// `TtsModelType` flutter_edge_ai yang sesuai (hanya untuk isTts).
+  edge_ai.TtsModelType? get edgeAiTtsType => switch (id) {
+    'inflect' => edge_ai.TtsModelType.inflect,
+    'matcha' => edge_ai.TtsModelType.matcha,
+    'qwen3' => edge_ai.TtsModelType.qwen3,
     _ => null,
   };
 
-  /// `SttModelType` flutter_gemma yang sesuai (hanya untuk !isTts).
-  gemma.SttModelType? get gemmaSttType =>
-      id == 'moonshine' ? gemma.SttModelType.moonshine : null;
+  /// `SttModelType` flutter_edge_ai yang sesuai (hanya untuk !isTts).
+  edge_ai.SttModelType? get edgeAiSttType =>
+      id == 'moonshine' ? edge_ai.SttModelType.moonshine : null;
 }
 
-/// Katalog model TTS (on-device, flutter_gemma_speech).
+/// Katalog model TTS (on-device, flutter_edge_ai_speech).
 const kTtsModelOptions = <SpeechModelOption>[
   SpeechModelOption(
     id: 'inflect',
@@ -62,7 +62,7 @@ const kTtsModelOptions = <SpeechModelOption>[
   ),
 ];
 
-/// Katalog model STT (on-device, flutter_gemma_speech).
+/// Katalog model STT (on-device, flutter_edge_ai_speech).
 const kSttModelOptions = <SpeechModelOption>[
   SpeechModelOption(
     id: 'moonshine',

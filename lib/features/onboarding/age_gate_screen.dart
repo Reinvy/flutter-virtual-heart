@@ -1,5 +1,5 @@
 // Fitur Onboarding (FR-01) — age gate 13+.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -103,6 +103,7 @@ class AgeGateScreen extends ConsumerWidget {
       title: strings.ageGateCannotTitle,
       body: strings.ageGateCannotBody,
       confirmLabel: strings.ageGateClose,
+      cancelLabel: strings.commonCancel,
       destructive: false,
     ).then((confirmed) {
       if (confirmed && context.mounted) SystemNavigator.pop();

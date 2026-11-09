@@ -1,5 +1,5 @@
 // Komponen shared — pemisah dekoratif bertema kelopak sakura.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Garis pemisah dengan aksen kelopak di tengah (sakura).
 class SakuraDivider extends StatelessWidget {

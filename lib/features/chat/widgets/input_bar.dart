@@ -1,7 +1,7 @@
 // Fitur Chat (FR-06) — input bar (text + mic + send) (docs/DESIGN.md §3.2).
 //
 // Field pill, mic & send 48×48 (target sentuh minimum), warna via tema.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/tokens/app_sizes.dart';
@@ -154,7 +154,7 @@ class _IconButton extends StatelessWidget {
           onTap: onTap,
           child: Icon(
             icon,
-            color: active ? (iconColor ?? defaultIconColor) : defaultIconColor.withAlpha(102),
+            color: active ? (iconColor ?? defaultIconColor) : defaultIconColor.withValues(alpha: 0.4),
             size: AppSizes.iconMd,
           ),
         ),

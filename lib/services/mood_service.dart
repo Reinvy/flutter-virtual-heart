@@ -1,16 +1,10 @@
 import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:objectbox/objectbox.dart';
 
 import '../models/mood_state.dart';
 import '../models/objectbox_provider.dart';
-
-/// Abstraksi penyimpanan mood — memungkinkan test memakai fake tanpa
-/// membuka store ObjectBox asli.
-abstract class MoodStore {
-  Box<MoodState> get moodStateBox;
-}
+import 'mood_store.dart';
 
 /// Menangani transisi state mood berdasarkan isi percakapan & waktu idle.
 ///

@@ -12,6 +12,8 @@ abstract class AppStrings {
   const AppStrings();
   // ── Umum ────────────────────────────────────────────────────────────────
   String get appName;
+  String get appTagline;
+  String get commonCancel;
 
   // ── Age Gate (FR-01) ────────────────────────────────────────────────────
   String get ageGateTitle;
@@ -85,12 +87,15 @@ abstract class AppStrings {
   String get modelCancel;
   String get modelProgress;
   String get modelFileInvalid;
+  String get modelHfTokenBadge;
 
   // ── Chat (FR-05..FR-10) ─────────────────────────────────────────────────
   String get chatEmptyGreeting;
   String get chatEmptyBody;
   String get chatInputHint;
   String get chatSttUnavailable;
+  String get chatTtsUnavailable;
+  String get chatFallbackName;
   String get moodHappy;
   String get moodLonging;
   String get moodPlayful;
@@ -160,6 +165,12 @@ abstract class AppStrings {
   String get settingsExportEmptySnack;
   String get settingsExportSuccess;
   String get settingsExportFailed;
+  String get settingsResetAll;
+  String get settingsResetAllDesc;
+  String get settingsResetAllTitle;
+  String get settingsResetAllBody;
+  String get settingsResetAllConfirm;
+  String get settingsResetAllDone;
   String get settingsSheetPersonaGender;
   String get settingsSheetPersonaName;
   String get settingsSheetHowTheyCallYou;
@@ -171,8 +182,6 @@ abstract class AppStrings {
   String get settingsNotifPermissionGranted;
   String get settingsNotifPermissionDenied;
   String get settingsNotifPermissionOpenSettings;
-  String get speechModelTitle;
-  String get speechModelBody;
   String get settingsVoiceBackend;
   String get settingsVoiceBackendGemma;
   String get settingsVoiceBackendSystem;
@@ -196,6 +205,10 @@ class IndonesianStrings extends AppStrings {
 
   @override
   String get appName => 'VirtualHeart';
+  @override
+  String get appTagline => 'a sakura romance';
+  @override
+  String get commonCancel => 'Batal';
 
   @override
   String get ageGateTitle => 'Verifikasi Usia';
@@ -336,7 +349,9 @@ class IndonesianStrings extends AppStrings {
   @override
   String get modelProgress => 'Mengunduh:';
   @override
-  String get modelFileInvalid => 'Format file tidak didukung. Gunakan .litertlm, .task, atau .bin.';
+  String get modelFileInvalid => 'Format file tidak didukung. Gunakan .litertlm atau .task.';
+  @override
+  String get modelHfTokenBadge => 'HF Token';
   @override
   String get modelTip1 => '💕 Pasangan virtualmu sedang mengenalmu...';
   @override
@@ -356,6 +371,11 @@ class IndonesianStrings extends AppStrings {
   String get chatInputHint => 'Ceritakan harimu...';
   @override
   String get chatSttUnavailable => 'Pengenalan suara tidak tersedia di perangkat ini';
+  @override
+  String get chatTtsUnavailable =>
+      'Model suara belum tersedia. Cek layar model di pengaturan.';
+  @override
+  String get chatFallbackName => 'Sayang';
   @override
   String get moodHappy => 'bahagia';
   @override
@@ -500,6 +520,21 @@ class IndonesianStrings extends AppStrings {
   @override
   String get settingsExportFailed => 'Gagal mengekspor chat';
   @override
+  String get settingsResetAll => 'Reset semua data';
+  @override
+  String get settingsResetAllDesc =>
+      'Hapus persona, memori, mood, percakapan, dan pengaturan dari perangkat ini.';
+  @override
+  String get settingsResetAllTitle => 'Reset Semua Data?';
+  @override
+  String get settingsResetAllBody =>
+      'Persona, memori, mood, seluruh percakapan, dan pengaturan akan dihapus. '
+      'File model yang sudah diunduh tetap tersimpan. Tindakan ini tidak bisa dibatalkan.';
+  @override
+  String get settingsResetAllConfirm => 'Reset Semua';
+  @override
+  String get settingsResetAllDone => 'Semua data lokal sudah dihapus';
+  @override
   String get settingsSheetPersonaGender => 'Gender Persona';
   @override
   String get settingsSheetPersonaName => 'Nama Persona';
@@ -522,10 +557,6 @@ class IndonesianStrings extends AppStrings {
   @override
   String get settingsNotifPermissionOpenSettings => 'Buka Pengaturan';
   @override
-  String get speechModelTitle => 'Model Suara (STT/TTS)';
-  @override
-  String get speechModelBody =>
-      'Unduh model suara on-device untuk dikte & suara persona.';
   @override
   String get settingsVoiceBackend => 'Backend Suara';
   @override
@@ -563,6 +594,10 @@ class EnglishStrings extends AppStrings {
 
   @override
   String get appName => 'VirtualHeart';
+  @override
+  String get appTagline => 'a sakura romance';
+  @override
+  String get commonCancel => 'Cancel';
 
   @override
   String get ageGateTitle => 'Age Verification';
@@ -703,8 +738,9 @@ class EnglishStrings extends AppStrings {
   @override
   String get modelProgress => 'Downloading:';
   @override
-  String get modelFileInvalid =>
-      'Unsupported file format. Use .litertlm, .task, or .bin.';
+  String get modelFileInvalid => 'Unsupported file format. Use .litertlm or .task.';
+  @override
+  String get modelHfTokenBadge => 'HF Token';
   @override
   String get modelTip1 => '💕 Your virtual partner is getting to know you...';
   @override
@@ -724,6 +760,11 @@ class EnglishStrings extends AppStrings {
   String get chatInputHint => 'Tell me about your day...';
   @override
   String get chatSttUnavailable => 'Speech recognition is not available on this device';
+  @override
+  String get chatTtsUnavailable =>
+      "Voice model isn't available yet. Check the model screen in settings.";
+  @override
+  String get chatFallbackName => 'Sweetheart';
   @override
   String get moodHappy => 'happy';
   @override
@@ -867,6 +908,21 @@ class EnglishStrings extends AppStrings {
   @override
   String get settingsExportFailed => 'Failed to export chat';
   @override
+  String get settingsResetAll => 'Reset all data';
+  @override
+  String get settingsResetAllDesc =>
+      'Delete persona, memory, mood, conversations, and settings from this device.';
+  @override
+  String get settingsResetAllTitle => 'Reset All Data?';
+  @override
+  String get settingsResetAllBody =>
+      'Persona, memory, mood, all conversations, and settings will be deleted. '
+      'Downloaded model files are kept. This cannot be undone.';
+  @override
+  String get settingsResetAllConfirm => 'Reset All';
+  @override
+  String get settingsResetAllDone => 'All local data has been deleted';
+  @override
   String get settingsSheetPersonaGender => 'Persona Gender';
   @override
   String get settingsSheetPersonaName => 'Persona Name';
@@ -889,10 +945,6 @@ class EnglishStrings extends AppStrings {
   @override
   String get settingsNotifPermissionOpenSettings => 'Open Settings';
   @override
-  String get speechModelTitle => 'Speech Models (STT/TTS)';
-  @override
-  String get speechModelBody =>
-      'Download on-device speech models for dictation & persona voice.';
   @override
   String get settingsVoiceBackend => 'Voice Backend';
   @override

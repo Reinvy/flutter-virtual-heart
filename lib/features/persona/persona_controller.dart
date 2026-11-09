@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/objectbox_provider.dart';
 import '../../models/persona_config.dart';
-import 'avatar_catalog.dart';
 
 /// Mengelola [PersonaConfig] tunggal (aplikasi single-persona).
 ///
@@ -36,21 +35,13 @@ class PersonaNotifier extends Notifier<PersonaConfig?> {
     ref.read(objectBoxServiceProvider).personaBox.removeAll();
     state = null;
   }
+
+  // Edit menyimpan instance baru dengan `id` yang sama: tanpa ini Riverpod
+  // membandingkan field `record` (tidak ada) sehingga listener bisa terlewat.
+  @override
+  bool updateShouldNotify(PersonaConfig? previous, PersonaConfig? next) => true;
 }
 
 final personaProvider = NotifierProvider<PersonaNotifier, PersonaConfig?>(
   PersonaNotifier.new,
 );
-
-/// Nama persona (fallback 'VirtualHeart').
-final personaNameProvider = Provider<String>((ref) {
-  final persona = ref.watch(personaProvider);
-  return (persona?.name.isNotEmpty ?? false) ? persona!.name : 'VirtualHeart';
-});
-
-/// Opsi avatar aktif berdasarkan gender persona.
-final personaAvatarProvider = Provider<AvatarOpt>((ref) {
-  final persona = ref.watch(personaProvider);
-  final isGirlfriend = persona?.gender == PersonaGender.girlfriend;
-  return avatarOptFor(persona?.avatarId, isGirlfriend: isGirlfriend);
-});

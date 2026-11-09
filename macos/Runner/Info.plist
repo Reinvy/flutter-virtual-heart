@@ -28,5 +28,9 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>VirtualHeart listens to you on this device.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>VirtualHeart transcribes speech on this device.</string>
 </dict>
 </plist>

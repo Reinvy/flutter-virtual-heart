@@ -1,7 +1,7 @@
 // Fitur Chat (FR-05..FR-10) — layar utama chat.
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +13,7 @@ import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
+import '../../models/app_settings.dart';
 import '../../models/message.dart';
 import '../../models/mood_state.dart';
 import '../../models/persona_config.dart';
@@ -20,6 +21,7 @@ import '../../services/stt_service.dart';
 import '../../services/tts_service.dart';
 import '../persona/avatar_catalog.dart';
 import '../persona/persona_controller.dart';
+import '../persona/persona_edit_sheet.dart';
 import '../persona/persona_profile_sheet.dart';
 import '../settings/settings_controller.dart';
 import 'chat_controller.dart';
@@ -44,6 +46,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   int _speakingMessageId = -1;
   bool _isListening = false;
+  // Transkrip STT masuk ke input; flag ini menandai pesan berikutnya sebagai
+  // pesan suara (FR-06) sampai benar-benar dikirim.
+  bool _voiceInputPending = false;
   bool _sparkleShown = false;
   bool _showSparkle = false;
 
@@ -118,7 +123,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 onMicTap: _handleMicTap,
                 onSend: (text) {
                   HapticFeedback.lightImpact();
-                  ref.read(chatProvider.notifier).sendMessage(text);
+                  final isVoice = _voiceInputPending;
+                  _voiceInputPending = false;
+                  ref.read(chatProvider.notifier).sendMessage(text, isVoice: isVoice);
                 },
               ),
             ],
@@ -139,7 +146,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       elevation: 0,
       automaticallyImplyLeading: false,
       leading: GestureDetector(
-        onTap: () => showPersonaProfileSheet(context, persona),
+        onTap: () => _openPersonaProfile(persona),
         child: Padding(
           padding: const EdgeInsets.all(AppSizes.spaceXs),
           child: Stack(
@@ -158,7 +165,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ),
       ),
       title: GestureDetector(
-        onTap: () => showPersonaProfileSheet(context, persona),
+        onTap: () => _openPersonaProfile(persona),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -173,16 +180,40 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
       actions: [
         IconButton(
-          icon: Icon(Icons.bookmark_outline_rounded, color: textColor.withAlpha(153)),
+          icon: Icon(
+            Icons.bookmark_outline_rounded,
+            color: textColor.withValues(alpha: 0.6),
+          ),
           tooltip: strings.memoryTitle,
-          onPressed: () => context.push(AppRoutes.memory),
+          onPressed: () => _leaveChat(AppRoutes.memory),
         ),
         IconButton(
-          icon: Icon(Icons.settings_outlined, color: textColor.withAlpha(153)),
-          onPressed: () => context.push(AppRoutes.settings),
+          icon: Icon(Icons.settings_outlined, color: textColor.withValues(alpha: 0.6)),
+          onPressed: () => _leaveChat(AppRoutes.settings),
         ),
       ],
     );
+  }
+
+  /// Membuka profil persona; jika pengguna memilih Edit, buka form edit.
+  Future<void> _openPersonaProfile(PersonaConfig? persona) async {
+    final edit = await showPersonaProfileSheet(context, persona);
+    if (edit == true && mounted) {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => const PersonaEditSheet(),
+      );
+    }
+  }
+
+  /// Meninggalkan chat: hentikan audio yang sedang berjalan lebih dulu.
+  Future<void> _leaveChat(String route) async {
+    await _ttsService.stop();
+    await _sttService.cancel();
+    if (mounted) setState(() => _isListening = false);
+    if (mounted) await context.push(route);
   }
 
   static String _moodEmoji(MoodType mood) => switch (mood) {
@@ -211,9 +242,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (!ok) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Model suara belum tersedia. Cek layar model di pengaturan.'),
-            duration: Duration(seconds: 3),
+          SnackBar(
+            content: Text(ref.read(appStringsProvider).chatTtsUnavailable),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -226,6 +257,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       backend: settings.ttsBackend,
       model: settings.ttsModel,
       gender: persona?.gender,
+      languageCode: _speechLanguageCode(settings.language),
       onDone: () {
         if (mounted) setState(() => _speakingMessageId = -1);
       },
@@ -236,12 +268,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final strings = ref.read(appStringsProvider);
     final settings = ref.read(appSettingsProvider);
     if (_isListening) {
-      final transcript = await _sttService.stopListening(backend: settings.sttBackend);
+      final transcript = await _sttService.stopListening(
+        backend: settings.sttBackend,
+        languageCode: _speechLanguageCode(settings.language),
+      );
       if (mounted) setState(() => _isListening = false);
       if (transcript.trim().isNotEmpty) {
         HapticFeedback.lightImpact();
         // Masukkan transkrip ke input (bisa diedit) — FR-06.
         _inputTextController.text = transcript.trim();
+        _voiceInputPending = true;
       }
       return;
     }
@@ -261,8 +297,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     setState(() => _isListening = true);
     HapticFeedback.lightImpact();
-    await _sttService.startListening(backend: settings.sttBackend);
+    await _sttService.startListening(
+      backend: settings.sttBackend,
+      languageCode: _speechLanguageCode(settings.language),
+    );
   }
+
+  /// Kode bahasa untuk TTS/STT mengikuti bahasa AI yang dipilih pengguna.
+  static String _speechLanguageCode(AppLanguage language) =>
+      language == AppLanguage.english ? 'en-US' : 'id-ID';
 
   Widget _buildMessageList(
     AppStrings strings,
@@ -330,7 +373,9 @@ class _EmptyChat extends StatelessWidget {
           child: EmptyState(
             icon: Icons.favorite_rounded,
             iconColor: AppColors.accent,
-            title: fillPlaceholders(strings.chatEmptyGreeting, {'name': personaName ?? 'Sweetheart'}),
+            title: fillPlaceholders(strings.chatEmptyGreeting, {
+              'name': personaName ?? strings.chatFallbackName,
+            }),
             body: strings.chatEmptyBody,
             action: personaAvatar(
               name: personaName,

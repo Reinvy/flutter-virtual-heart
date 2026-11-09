@@ -3,7 +3,7 @@
 // Model di-download dari HuggingFace (litert-community) atau di-upload dari
 // penyimpanan lokal. `fileType` menentukan engine: 'litertlm' → LiteRT-LM
 // (mendukung speech), 'task' → MediaPipe (mobile, tanpa speech).
-import 'package:flutter_gemma/flutter_gemma.dart' as gemma;
+import 'package:flutter_edge_ai/flutter_edge_ai.dart' as edge_ai;
 
 /// Opsi model yang bisa dipilih pengguna.
 class ModelOption {
@@ -29,20 +29,18 @@ class ModelOption {
     this.gated = false,
   });
 
-  /// `ModelType` flutter_gemma yang sesuai.
-  gemma.ModelType get gemmaModelType => switch (modelType) {
-    'qwen' => gemma.ModelType.qwen,
-    'smollm' => gemma.ModelType.general,
-    'deepseek' => gemma.ModelType.deepSeek,
-    'gemmaIt' => gemma.ModelType.gemmaIt,
-    _ => gemma.ModelType.qwen,
+  /// `ModelType` flutter_edge_ai yang sesuai.
+  edge_ai.ModelType get edgeAiModelType => switch (modelType) {
+    'qwen' => edge_ai.ModelType.qwen,
+    'smollm' => edge_ai.ModelType.general,
+    'deepseek' => edge_ai.ModelType.deepSeek,
+    'gemmaIt' => edge_ai.ModelType.gemmaIt,
+    _ => edge_ai.ModelType.qwen,
   };
 
-  /// `ModelFileType` flutter_gemma yang sesuai.
-  gemma.ModelFileType get gemmaFileType =>
-      fileType == 'litertlm' ? gemma.ModelFileType.litertlm : gemma.ModelFileType.task;
-
-  bool get isLiteRtl => fileType == 'litertlm';
+  /// `ModelFileType` flutter_edge_ai yang sesuai.
+  edge_ai.ModelFileType get edgeAiFileType =>
+      fileType == 'litertlm' ? edge_ai.ModelFileType.litertlm : edge_ai.ModelFileType.task;
 }
 
 /// Katalog default. Model pertama = default (Qwen 2.5 1.5B, .litertlm).
@@ -113,10 +111,15 @@ const kModelOptions = <ModelOption>[
 /// Model default bila pengguna langsung lanjut tanpa memilih.
 ModelOption get kDefaultModelOption => kModelOptions.first;
 
-/// Cari opsi berdasarkan id; fallback ke default.
-ModelOption modelOptionById(String? id) {
+/// Cari opsi katalog berdasarkan nama file; fallback ke model default.
+///
+/// Dipakai saat pengguna meng-upload file sendiri: identitas model yang
+/// dipakai `FlutterEdgeAi.isModelInstalled` adalah **nama file**, bukan id.
+ModelOption modelOptionByFileName(String? fileName) {
+  final target = fileName?.trim().toLowerCase();
+  if (target == null || target.isEmpty) return kDefaultModelOption;
   for (final opt in kModelOptions) {
-    if (opt.id == id) return opt;
+    if (opt.fileName.toLowerCase() == target) return opt;
   }
   return kDefaultModelOption;
 }

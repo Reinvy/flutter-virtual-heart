@@ -13,7 +13,6 @@ class PersonaConfig {
   String name = '';
   String nicknameForUser = '';
   String avatarId = 'default';
-  String voiceId = 'default';
 
   @Property(type: PropertyType.date)
   DateTime createdAt = DateTime.now();
@@ -38,7 +37,6 @@ class PersonaConfig {
     List<String>? hobbies,
     this.nicknameForUser = '',
     this.avatarId = 'default',
-    this.voiceId = 'default',
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now() {
     genderIndex = gender.index;

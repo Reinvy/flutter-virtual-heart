@@ -2,7 +2,7 @@
 //
 // Dipakai semua aksi destruktif (hapus percakapan, reset persona, reset
 // memory, hapus fact) agar satu bahasa visual & satu perilaku.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../tokens/app_colors.dart';
 import '../tokens/text_styles.dart';
@@ -13,7 +13,7 @@ Future<bool> showConfirmDialog(
   required String title,
   required String body,
   required String confirmLabel,
-  String cancelLabel = 'Batal',
+  required String cancelLabel,
   bool destructive = true,
 }) async {
   final result = await showDialog<bool>(

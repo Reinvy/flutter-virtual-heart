@@ -1,5 +1,6 @@
 // Unit test — PromptBuilder (FR-05, FR-13)
 import 'package:flutter_test/flutter_test.dart';
+import 'package:virtual_heart/models/app_settings.dart';
 import 'package:virtual_heart/models/memory_fact.dart';
 import 'package:virtual_heart/models/message.dart';
 import 'package:virtual_heart/models/mood_state.dart';
@@ -41,6 +42,33 @@ void main() {
       expect(prompt, contains('warna favorit: biru'));
       expect(prompt, contains('[CONTEXT SUMMARY]'));
       expect(prompt, contains('Ringkasan: suka kopi.'));
+    });
+
+    test('instruksi bahasa mengikuti AppLanguage (FR-20)', () {
+      final persona = PersonaConfig(name: 'Luna', nicknameForUser: 'Babe');
+      final mood = MoodState();
+
+      final id = PromptBuilder.buildSystemPrompt(persona, mood, const [], '');
+      final en = PromptBuilder.buildSystemPrompt(
+        persona,
+        mood,
+        const [],
+        '',
+        language: AppLanguage.english,
+      );
+      final mixed = PromptBuilder.buildSystemPrompt(
+        persona,
+        mood,
+        const [],
+        '',
+        language: AppLanguage.mixed,
+      );
+
+      // Default (tanpa argumen) = Bahasa Indonesia.
+      expect(id, contains('Respond in Indonesian (Bahasa Indonesia).'));
+      expect(en, contains('Respond in English.'));
+      expect(en, isNot(contains('Respond in Indonesian')));
+      expect(mixed, contains('Respond in Indonesian or English'));
     });
   });
 

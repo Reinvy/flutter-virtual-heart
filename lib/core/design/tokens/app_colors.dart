@@ -9,7 +9,7 @@
 //   - Varian mode eksplisit: `*Dark` untuk mode spesifik.
 //   - Teks kecil di light memakai `primaryDeep` (kontras >= 4.5:1);
 //     `primary` dipakai untuk fill tombol & ikon besar (>= 3:1).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 abstract final class AppColors {
   AppColors._();
@@ -51,19 +51,4 @@ abstract final class AppColors {
   static const Color successDark = Color(0xFF7BC67E);
   static const Color warningDark = Color(0xFFE5B567);
   static const Color errorDark = Color(0xFFEE6B77);
-
-  // ── Alias kompatibilitas (kode lama, dipertahankan agar migrasi lancar) ─
-  /// @Deprecated — gunakan [AppColors.background] / varian Dark.
-  static const Color backgroundLight = background;
-  static const Color surfaceLight = surface;
-  static const Color surfaceAlt = surfaceElevatedDark; // bottom sheet dark
-  static const Color surfaceAltLight = surfaceElevated; // bottom sheet light
-  static const Color primaryLight = primaryDeep; // highlight/ikon aktif (kontras)
-  static const Color userBubble = Color(0xFF8B3A6A); // (dark) — diganti solid primary
-  static const Color aiBubble = Color(0xFF1E1528); // (dark)
-  static const Color userBubbleLight = Color(0xFFF4CEDD);
-  static const Color aiBubbleLight = Color(0xFFF0EAF5);
-  static const Color textPrimaryLight = textPrimary;
-  static const Color textSecondaryLight = textSecondary;
-  static const Color heartRed = accent;
 }

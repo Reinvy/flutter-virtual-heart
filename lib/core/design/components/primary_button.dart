@@ -2,7 +2,7 @@
 //
 // Fill primary, radius pill (konsisten dengan tema), tinggi 52, label button.
 // Warna via ColorScheme agar konsisten di light & dark.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../tokens/app_sizes.dart';
 import '../tokens/text_styles.dart';

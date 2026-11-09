@@ -1,3 +1,4 @@
+import '../../models/app_settings.dart';
 import '../../models/memory_fact.dart';
 import '../../models/message.dart';
 import '../../models/mood_state.dart';
@@ -21,6 +22,13 @@ class PromptBuilder {
         'Mysterious, full of intrigue, speaks sparingly but always meaningfully.',
   };
 
+  /// Instruksi bahasa keluaran model, mengikuti `AppSettings.language` (FR-20).
+  static const Map<AppLanguage, String> _languageInstruction = {
+    AppLanguage.indonesian: 'Respond in Indonesian (Bahasa Indonesia).',
+    AppLanguage.english: 'Respond in English.',
+    AppLanguage.mixed: "Respond in Indonesian or English, matching the user's language.",
+  };
+
   static const Map<MoodType, String> _moodDesc = {
     MoodType.happy: 'happy',
     MoodType.longing: 'longing',
@@ -40,8 +48,9 @@ class PromptBuilder {
     PersonaConfig persona,
     MoodState mood,
     List<MemoryFact> memoryFacts,
-    String conversationSummary,
-  ) {
+    String conversationSummary, {
+    AppLanguage language = AppLanguage.indonesian,
+  }) {
     final genderDesc = persona.gender == PersonaGender.girlfriend ? 'female' : 'male';
     final personalityDesc =
         _personalityDesc[persona.personalityPreset] ?? _personalityDesc[PersonalityPreset.gentle]!;
@@ -66,9 +75,12 @@ class PromptBuilder {
       'Never acknowledge that you are an AI unless the user explicitly '
       'forces you to.',
     );
-    buf.write(
+    buf.writeln(
       'Respond in 1–3 short, warm, and intimate paragraphs. '
       'Do not give medical, legal, or financial advice.',
+    );
+    buf.write(
+      _languageInstruction[language] ?? _languageInstruction[AppLanguage.indonesian]!,
     );
 
     if (memoryFacts.isNotEmpty) {

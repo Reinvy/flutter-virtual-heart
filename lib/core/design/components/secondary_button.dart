@@ -1,5 +1,5 @@
 // Komponen shared — SecondaryButton & GhostButton (docs/DESIGN.md §3.1)
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../tokens/app_sizes.dart';
 import '../tokens/text_styles.dart';

@@ -1,7 +1,7 @@
 // Fitur Memory (FR-12) — layar memori AI (daftar + pencarian + hapus).
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/design/components/confirm_dialog.dart';
@@ -76,6 +76,7 @@ class _MemoryScreenState extends ConsumerState<MemoryScreen> {
       title: strings.memoryResetAllTitle,
       body: strings.memoryResetAllBody,
       confirmLabel: strings.memoryReset,
+      cancelLabel: strings.commonCancel,
     );
     if (confirmed) {
       ref.read(memoryFactsProvider.notifier).resetAll();
@@ -270,6 +271,7 @@ class _FactTile extends ConsumerWidget {
           title: strings.memoryDelete,
           body: '"${fact.key}: ${fact.value}"',
           confirmLabel: strings.memoryDelete,
+          cancelLabel: strings.commonCancel,
         );
       },
       onDismissed: (_) => onDelete(fact.id),
@@ -286,7 +288,7 @@ class _FactTile extends ConsumerWidget {
           title: Text(
             fact.key,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withAlpha(153),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               fontWeight: FontWeight.w600,
             ),
           ),

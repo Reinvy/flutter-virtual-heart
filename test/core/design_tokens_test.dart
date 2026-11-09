@@ -1,5 +1,5 @@
 // Unit test — Design tokens (docs/DESIGN.md §2)
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:virtual_heart/core/design/tokens/app_colors.dart';
 import 'package:virtual_heart/core/design/tokens/app_durations.dart';
@@ -26,13 +26,6 @@ void main() {
       expect(AppColors.backgroundDark, const Color(0xFF120D14));
       expect(AppColors.primaryDark, const Color(0xFFF28CB0));
       expect(AppColors.textPrimaryDark, const Color(0xFFF7EFF5));
-    });
-
-    test('alias kompatibilitas menunjuk token baru', () {
-      expect(AppColors.backgroundLight, AppColors.background);
-      expect(AppColors.surfaceLight, AppColors.surface);
-      expect(AppColors.heartRed, AppColors.accent);
-      expect(AppColors.textPrimaryLight, AppColors.textPrimary);
     });
   });
 

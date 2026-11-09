@@ -1,15 +1,17 @@
-// Entry point — init AI engine & database, lalu jalankan app.
-import 'package:flutter/material.dart';
-import 'package:flutter_gemma/flutter_gemma.dart';
-import 'package:flutter_gemma_litertlm/flutter_gemma_litertlm.dart';
-import 'package:flutter_gemma_mediapipe/flutter_gemma_mediapipe.dart';
-import 'package:flutter_gemma_speech/flutter_gemma_speech.dart';
+// Entry point — init AI engine, notifikasi & database, lalu jalankan app.
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter_edge_ai/flutter_edge_ai.dart';
+import 'package:flutter_edge_ai_litertlm/flutter_edge_ai_litertlm.dart';
+import 'package:flutter_edge_ai_mediapipe/flutter_edge_ai_mediapipe.dart';
+import 'package:flutter_edge_ai_speech/flutter_edge_ai_speech.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/errors/app_logger.dart';
 import 'models/objectbox_provider.dart';
 import 'services/database/objectbox_service.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,13 +23,21 @@ void main() async {
 
   // Register inference engines (MediaPipe .task + LiteRT-LM .litertlm) dan
   // backend speech on-device (STT + TTS via LiteRT C API).
-  await FlutterGemma.initialize(
+  await FlutterEdgeAi.initialize(
     inferenceEngines: const [MediaPipeEngine(), LiteRtLmEngine()],
     sttBackends: const [LiteRtSttBackend()],
     ttsBackends: const [LiteRtTtsBackend()],
     huggingFaceToken: effectiveToken,
     maxDownloadRetries: 10,
   );
+
+  // Notifikasi: init plugin + zona waktu lokal. Kegagalan di sini tidak boleh
+  // menggagalkan start aplikasi (chat tetap bisa dipakai tanpa notifikasi).
+  try {
+    await NotificationService().initialize();
+  } catch (e) {
+    AppLogger.error('Notification init failed', e);
+  }
 
   final objectBoxService = await ObjectBoxService.create();
 

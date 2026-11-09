@@ -6,81 +6,55 @@ version: 1.0.0+1
 
 environment:
   sdk: ^3.13.0
+  flutter: ">=3.47.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.9
+  material_ui: ^1.10.0
 
-  # AI / LLM inference (on-device) — core API
-  flutter_gemma: ^1.6.5
-  # MediaPipe (.task) inference engine (Android/iOS/Web)
-  flutter_gemma_mediapipe: ^1.0.5
-  # LiteRT-LM (.litertlm) engine — diperlukan untuk model baru & speech on-device
-  flutter_gemma_litertlm: ^1.4.0
-  # On-device speech (STT + TTS) via LiteRT C API
-  flutter_gemma_speech: ^0.4.3
+  # On-device AI (pengganti paket AI lama yang sudah discontinued)
+  flutter_edge_ai: ^2.6.0
+  flutter_edge_ai_litertlm: ^1.20.0
+  flutter_edge_ai_mediapipe: ^1.3.0
+  flutter_edge_ai_speech: ^0.6.0
 
-  # State management
-  flutter_riverpod: ^3.4.2
-
-  # Local database (ObjectBox)
+  flutter_riverpod: ^3.5.0
   objectbox: ^5.3.2
   objectbox_flutter_libs: ^5.3.2
   path_provider: ^2.1.6
+  go_router: ^18.1.3
 
-  # Navigation
-  go_router: ^18.0.0
-
-  # UI / Fonts / Animations
-  google_fonts: ^8.2.1
+  google_fonts: ^9.0.0
   flutter_animate: ^4.5.2
-  flutter_svg: ^2.0.17
-  lottie: ^3.5.1
-  gpt_markdown: ^1.2.1
+  flutter_svg: ^2.3.2
+  gpt_markdown: ^1.4.1
 
-  # Voice (on-device via flutter_gemma_speech)
-  record: 5.1.2
+  record: ^7.1.2
   flutter_pcm_sound: ^3.3.3
-  file_picker: ^8.3.7
-  # Backend suara sistem (opsional, tanpa unduhan model)
+  file_picker: ^13.3.2
   flutter_tts: ^4.2.5
-  speech_to_text: ^7.4.0
+  speech_to_text: ^7.5.0
 
-  # Notifications
-  flutter_local_notifications: ^22.3.0
-  timezone: ^0.11.1
+  flutter_local_notifications: ^23.0.0
+  flutter_timezone: ^5.1.1
+  timezone: ^0.11.2
 
-  # Utilities
-  uuid: ^4.6.0
   intl: ^0.20.3
-  permission_handler: ^13.0.1
-  shared_preferences: ^2.5.5
+  permission_handler: ^13.0.2
+  shared_preferences: ^2.5.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  build_runner: ^2.15.1
-  objectbox_generator: any
-
-# record_linux 0.7.2 tidak kompatibel dengan record_platform_interface 1.1+
-# (startStream belum diimplementasikan). STT kami memakai rekam ke file, jadi
-# pin RPI ke 1.0.2 (tanpa startStream) aman.
-dependency_overrides:
-  record_platform_interface: 1.0.2
+  # Dipin exact: objectbox_generator 5.3.2 butuh analyzer <11 dan build <5.0.0.
+  build_runner: 2.15.1
+  objectbox_generator: 5.3.2
+  yaml: ^3.1.3 # tool/check_docs.dart
 
 flutter:
   uses-material-design: true
 
   assets:
-    - assets/models/
     - assets/icons/
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
-  #
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/to/font-from-package

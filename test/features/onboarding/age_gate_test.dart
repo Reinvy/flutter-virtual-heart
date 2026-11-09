@@ -1,5 +1,5 @@
 // Widget test — AgeGateScreen (FR-01): verifikasi 13+ & konfirmasi.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:virtual_heart/core/l10n/app_strings.dart';

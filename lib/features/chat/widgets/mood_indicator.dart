@@ -1,5 +1,5 @@
 // Fitur Chat (FR-09) — indikator mood di app bar (docs/DESIGN.md §3.4).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/tokens/text_styles.dart';

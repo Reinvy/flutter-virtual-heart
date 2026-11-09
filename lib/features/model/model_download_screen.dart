@@ -2,7 +2,7 @@
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -114,6 +114,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
             child: _ModelTile(
               option: opt,
               selected: _selected?.id == opt.id,
+              hfTokenBadge: strings.modelHfTokenBadge,
               onTap: () => setState(() => _selected = opt),
             ),
           ),
@@ -244,19 +245,18 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
 
   Future<void> _pickFile() async {
     final strings = ref.read(appStringsProvider);
-    final result = await FilePicker.platform.pickFiles(
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
-      allowedExtensions: const ['litertlm', 'task', 'bin'],
-      withData: false,
+      allowedExtensions: const ['litertlm', 'task'],
     );
 
-    final path = result?.files.single.path;
+    final path = file?.path;
     if (path == null) return;
 
-    final lower = path.toLowerCase();
-    final isValid =
-        lower.endsWith('.litertlm') || lower.endsWith('.task') || lower.endsWith('.bin');
-    if (!isValid) {
+    final basename = File(path).uri.pathSegments.last;
+    final lower = basename.toLowerCase();
+    final isLiteRtl = lower.endsWith('.litertlm');
+    if (!isLiteRtl && !lower.endsWith('.task')) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(strings.modelFileInvalid)),
@@ -265,8 +265,20 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
       return;
     }
 
-    final option = modelOptionById(File(path).uri.pathSegments.last);
-    await ref.read(modelServiceProvider.notifier).installFromFile(path, option);
+    // Nama file pengguna bisa apa saja: identitas model = nama file aktual,
+    // sedangkan tipe/engine mengikuti entri katalog yang cocok (atau default).
+    final catalog = modelOptionByFileName(basename);
+    final fileOption = ModelOption(
+      id: catalog.id,
+      name: catalog.name,
+      description: catalog.description,
+      fileName: basename,
+      url: '',
+      fileType: isLiteRtl ? 'litertlm' : 'task',
+      modelType: catalog.modelType,
+      sizeLabel: catalog.sizeLabel,
+    );
+    await ref.read(modelServiceProvider.notifier).installFromFile(path, fileOption);
   }
 }
 
@@ -274,11 +286,13 @@ class _ModelTile extends StatelessWidget {
   const _ModelTile({
     required this.option,
     required this.selected,
+    required this.hfTokenBadge,
     required this.onTap,
   });
 
   final ModelOption option;
   final bool selected;
+  final String hfTokenBadge;
   final VoidCallback onTap;
 
   @override
@@ -323,7 +337,7 @@ class _ModelTile extends StatelessWidget {
                             borderRadius: BorderRadius.circular(AppSizes.radiusFull),
                           ),
                           child: Text(
-                            'HF Token',
+                            hfTokenBadge,
                             style: AppTextStyles.timestamp(
                               color: scheme.onSecondaryContainer,
                             ),

@@ -1,11 +1,16 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
+
+import '../core/errors/app_logger.dart';
+import 'notification_time.dart';
 
 // ── Notification channel IDs ──────────────────────────────────────────────
 
@@ -18,6 +23,9 @@ const _kSpecialDayChannelId = 'vh_special';
 const _kMorningNotifId = 1;
 const _kCheckinNotifId = 2;
 const _kSpecialDayBaseId = 100; // incremented per scheduled special day
+
+/// Payload untuk semua notifikasi: membuka layar chat.
+const kNotificationPayloadChat = 'chat';
 
 // ── Romantic message templates (PRD Appendix A) ──────────────────────────
 
@@ -39,8 +47,9 @@ const _checkinMessages = [
 
 /// Manages all locally-scheduled notifications for VirtualHeart.
 ///
-/// Must call [initialize] once at app start (e.g., inside `main.dart` or
-/// `AppInitializationWrapper`) before using any other method.
+/// Must call [initialize] once at app start (e.g., inside `main.dart`) before
+/// using any other method. Setelah init, tap notifikasi bisa dibaca lewat
+/// [taps] (saat app hidup) atau [takePendingTap] (cold start).
 class NotificationService {
   NotificationService._internal();
   static final NotificationService _instance = NotificationService._internal();
@@ -48,19 +57,27 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
   final _rng = Random();
+  final _tapController = StreamController<String?>.broadcast();
 
   bool _initialized = false;
+  String? _pendingTap;
 
   // ── Initialization ────────────────────────────────────────────────────
 
-  /// Initializes the plugin, timezone database, and requests OS permission.
+  /// Initializes the plugin, timezone database, and notification tap handler.
   ///
   /// Safe to call multiple times; subsequent calls are no-ops.
   Future<void> initialize() async {
     if (_initialized) return;
 
-    // Load timezone database.
     tz_data.initializeTimeZones();
+    try {
+      final info = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(info.identifier));
+    } catch (e) {
+      // Fallback aman: `tz.local` tetap UTC bila deteksi zona gagal.
+      AppLogger.debug('Timezone fallback to UTC', e);
+    }
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings(
@@ -70,16 +87,41 @@ class NotificationService {
     );
     const initSettings = InitializationSettings(android: androidInit, iOS: iosInit);
 
-    await _plugin.initialize(settings: initSettings);
+    await _plugin.initialize(
+      settings: initSettings,
+      onDidReceiveNotificationResponse: (response) {
+        _tapController.add(response.payload);
+      },
+    );
     _initialized = true;
+
+    // Cold start: app dibuka dari notifikasi — simpan payload untuk UI.
+    final launch = await _plugin.getNotificationAppLaunchDetails();
+    if (launch?.didNotificationLaunchApp ?? false) {
+      _pendingTap = launch!.notificationResponse?.payload;
+    }
+  }
+
+  // ── Tap stream ────────────────────────────────────────────────────────
+
+  /// Payload notifikasi yang di-tap saat app sudah berjalan.
+  Stream<String?> get taps => _tapController.stream;
+
+  /// Mengambil (dan menghapus) payload notifikasi yang membuka app ini.
+  String? takePendingTap() {
+    final payload = _pendingTap;
+    _pendingTap = null;
+    return payload;
   }
 
   // ── Permission ───────────────────────────────────────────────────────
 
   /// Requests notification permission from the OS.
   ///
-  /// Returns `true` if permission was granted, `false` otherwise.
+  /// Returns `true` if notification permission was granted, `false` otherwise.
   Future<bool> requestPermission() async {
+    await _ensureInitialized();
+
     if (Platform.isIOS) {
       final result = await _plugin
           .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
@@ -88,9 +130,12 @@ class NotificationService {
     }
 
     if (Platform.isAndroid) {
-      final result = await _plugin
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-          ?.requestNotificationsPermission();
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      // Izin exact alarm terpisah di Android 12+; jangan gagalkan seluruh
+      // permintaan bila pengguna menolaknya (jadwal jatuh ke mode inexact).
+      await android?.requestExactAlarmsPermission();
+      final result = await android?.requestNotificationsPermission();
       return result ?? false;
     }
 
@@ -107,12 +152,13 @@ class NotificationService {
     await _ensureInitialized();
 
     final body = _morningMessages[_rng.nextInt(_morningMessages.length)];
-    final scheduledDate = _nextInstanceOf(time);
+    final scheduledDate = nextInstanceOf(time, tz.TZDateTime.now(tz.local));
 
     await _plugin.zonedSchedule(
       id: _kMorningNotifId,
       title: personaName,
       body: body,
+      payload: kNotificationPayloadChat,
       scheduledDate: scheduledDate,
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
@@ -129,13 +175,14 @@ class NotificationService {
           presentSound: true,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: await _androidMode(),
       matchDateTimeComponents: DateTimeComponents.time, // repeat daily
     );
   }
 
   /// Cancels the morning message notification.
   Future<void> cancelMorningMessage() async {
+    await _ensureInitialized();
     await _plugin.cancel(id: _kMorningNotifId);
   }
 
@@ -145,11 +192,13 @@ class NotificationService {
   ///
   /// The caller (e.g., `AppLifecycleObserver`) is responsible for calling this
   /// when the app goes to background and cancelling it when the user returns.
-  /// Default interval: 0 hours (per PRD FR-19).
+  /// [hoursFromNow] <= 0 tidak menjadwalkan apa pun (notifikasi tanpa jeda
+  /// tidak berguna dan langsung muncul saat app dibuka lagi).
   Future<void> scheduleCheckinNotification({
-    int hoursFromNow = 0,
+    int hoursFromNow = 1,
     String personaName = 'VirtualHeart',
   }) async {
+    if (hoursFromNow <= 0) return;
     await _ensureInitialized();
 
     final body = _checkinMessages[_rng.nextInt(_checkinMessages.length)];
@@ -159,6 +208,7 @@ class NotificationService {
       id: _kCheckinNotifId,
       title: personaName,
       body: body,
+      payload: kNotificationPayloadChat,
       scheduledDate: scheduledDate,
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
@@ -175,12 +225,13 @@ class NotificationService {
           presentSound: true,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: await _androidMode(),
     );
   }
 
   /// Cancels any pending check-in notification (call when user opens the app).
   Future<void> cancelCheckinNotification() async {
+    await _ensureInitialized();
     await _plugin.cancel(id: _kCheckinNotifId);
   }
 
@@ -191,6 +242,9 @@ class NotificationService {
   /// [message] should be pre-formed (e.g., "Happy birthday, Sweetheart! 🎂").
   /// Each call uses a unique ID derived from [_kSpecialDayBaseId] + [slotIndex]
   /// so multiple special days can coexist.
+  ///
+  /// Catatan: tidak ada UI yang memanggil API ini (lihat
+  /// `docs/KNOWN_ISSUES.md`, FR-20 backlog).
   Future<void> scheduleSpecialDay(
     DateTime date,
     String message, {
@@ -202,12 +256,13 @@ class NotificationService {
     final scheduledDate = tz.TZDateTime.from(date, tz.local);
 
     // Only schedule if the date is in the future.
-    if (scheduledDate.isBefore(tz.TZDateTime.now(tz.local))) return;
+    if (!scheduledDate.isAfter(tz.TZDateTime.now(tz.local))) return;
 
     await _plugin.zonedSchedule(
       id: _kSpecialDayBaseId + slotIndex,
       title: personaName,
       body: message,
+      payload: kNotificationPayloadChat,
       scheduledDate: scheduledDate,
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
@@ -224,12 +279,13 @@ class NotificationService {
           presentSound: true,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: await _androidMode(),
     );
   }
 
   /// Cancels a special day notification at [slotIndex].
   Future<void> cancelSpecialDay({int slotIndex = 0}) async {
+    await _ensureInitialized();
     await _plugin.cancel(id: _kSpecialDayBaseId + slotIndex);
   }
 
@@ -237,22 +293,19 @@ class NotificationService {
 
   /// Cancels ALL pending notifications.
   Future<void> cancelAll() async {
+    await _ensureInitialized();
     await _plugin.cancelAll();
   }
 
-  /// Returns all pending notification requests (useful for debugging/settings).
-  Future<List<PendingNotificationRequest>> getPendingNotifications() async {
-    return _plugin.pendingNotificationRequests();
-  }
-
-  /// Returns the next [TZDateTime] matching [time] (today or tomorrow).
-  tz.TZDateTime _nextInstanceOf(TimeOfDay time) {
-    final now = tz.TZDateTime.now(tz.local);
-    var scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, time.hour, time.minute);
-    if (scheduled.isBefore(now)) {
-      scheduled = scheduled.add(const Duration(days: 1));
-    }
-    return scheduled;
+  /// Mode jadwal Android: exact bila diizinkan OS, selain itu inexact.
+  Future<AndroidScheduleMode> _androidMode() async {
+    if (!Platform.isAndroid) return AndroidScheduleMode.exactAllowWhileIdle;
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final canExact = await android?.canScheduleExactNotifications() ?? false;
+    return canExact
+        ? AndroidScheduleMode.exactAllowWhileIdle
+        : AndroidScheduleMode.inexactAllowWhileIdle;
   }
 
   Future<void> _ensureInitialized() async {

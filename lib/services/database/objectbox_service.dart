@@ -7,7 +7,7 @@ import '../../models/message.dart';
 import '../../models/mood_state.dart';
 import '../../models/persona_config.dart';
 import '../../objectbox.g.dart';
-import '../mood_service.dart';
+import '../mood_store.dart';
 
 class ObjectBoxService implements MoodStore {
   static ObjectBoxService? _instance;

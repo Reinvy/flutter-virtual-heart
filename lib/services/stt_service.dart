@@ -1,21 +1,23 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 
-import 'package:flutter_gemma/flutter_gemma.dart';
+import 'package:flutter_edge_ai/flutter_edge_ai.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
+import '../core/errors/app_logger.dart';
+import '../core/utils/wav_pcm.dart';
 import 'ai/speech_model_catalog.dart';
 
 /// Facade Speech-to-Text dengan dua backend:
 ///
-/// - **gemma** (`flutter_gemma_speech`): rekam PCM 16 kHz mono 16-bit via
-///   [record] (tulis ke file sementara, karena `startStream` belum ada di
-///   record_linux), lalu transkrip dengan moonshine-tiny.
+/// - **gemma** (`flutter_edge_ai_speech`): rekam PCM 16 kHz mono 16-bit via
+///   [record] ke file WAV sementara, lalu transkrip dengan moonshine-tiny
+///   melalui LiteRT C API. Rekaman ke file dipakai karena aliran byte
+///   (`startStream`) tidak tersedia di semua platform desktop.
 /// - **system** (`speech_to_text`): dikte sistem, tanpa unduhan model, dukung
 ///   banyak bahasa (termasuk Bahasa Indonesia).
 class SttService {
@@ -26,13 +28,12 @@ class SttService {
   final AudioRecorder _recorder = AudioRecorder();
   final SpeechToText _speech = SpeechToText();
 
-  bool _gemmaReady = false;
+  bool _localReady = false;
   bool _isListening = false;
   String? _recordPath;
   String _lastWords = '';
 
   bool get isListening => _isListening;
-  bool get isAvailable => _gemmaReady || _speech.isAvailable;
 
   // ── Public API ───────────────────────────────────────────────────────────
 
@@ -40,6 +41,8 @@ class SttService {
   ///
   /// - `backend == 'system'`: init speech_to_text + izin mikrofon.
   /// - `backend == 'gemma'`: download model moonshine bila belum + izin mikrofon.
+  ///
+  /// [onProgress] menerima persen 0..100 saat model diunduh.
   Future<bool> initialize({
     String backend = 'gemma',
     void Function(int percent)? onProgress,
@@ -55,29 +58,32 @@ class SttService {
       );
     }
 
-    if (_gemmaReady) return true;
+    if (_localReady && FlutterEdgeAi.hasActiveStt()) return true;
 
     final mic = await Permission.microphone.request();
     if (!mic.isGranted) return false;
 
     try {
-      final installed = await FlutterGemma.isModelInstalled('active_stt');
-      if (!installed) {
-        await FlutterGemma.installStt()
+      if (!FlutterEdgeAi.hasActiveStt()) {
+        await FlutterEdgeAi.installStt()
             .modelFromNetwork(kSttModelUrl)
             .tokenizerFromNetwork(kSttTokenizerUrl)
-            .ofType(sttModelById('moonshine').gemmaSttType!)
+            .ofType(sttModelById('moonshine').edgeAiSttType!)
+            .withProgress((p) => onProgress?.call(p))
             .install();
       }
-      _gemmaReady = true;
+      _localReady = true;
       return true;
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug('STT model unavailable', e);
       return false;
     }
   }
 
   /// Mulai mendengarkan sesuai [backend].
-  Future<void> startListening({String backend = 'gemma'}) async {
+  ///
+  /// [languageCode] (mis. `id-ID`/`en-US`) hanya dipakai backend sistem.
+  Future<void> startListening({String backend = 'gemma', String? languageCode}) async {
     if (_isListening) return;
     if (!await initialize(backend: backend)) return;
 
@@ -93,7 +99,7 @@ class SttService {
           listenMode: ListenMode.confirmation,
           cancelOnError: true,
           partialResults: true,
-          localeId: 'id_ID',
+          localeId: _systemLocale(languageCode),
         ),
       );
       return;
@@ -110,13 +116,14 @@ class SttService {
         ),
         path: _recordPath!,
       );
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug('STT recording failed', e);
       _isListening = false;
     }
   }
 
   /// Menghentikan dan mengembalikan transkripsi sesuai [backend].
-  Future<String> stopListening({String backend = 'gemma'}) async {
+  Future<String> stopListening({String backend = 'gemma', String? languageCode}) async {
     if (!_isListening) return '';
     _isListening = false;
 
@@ -136,12 +143,13 @@ class SttService {
       final bytes = await file.readAsBytes();
       await file.delete().catchError((_) => file);
 
-      final pcm = bytes.length > 44 ? bytes.sublist(44) : bytes;
+      final pcm = pcmFromWav(bytes);
       if (pcm.isEmpty) return '';
 
-      final recognizer = await FlutterGemma.getActiveStt();
-      return (await recognizer.transcribe(Uint8List.fromList(pcm))).trim();
-    } catch (_) {
+      final recognizer = await FlutterEdgeAi.getActiveStt();
+      return (await recognizer.transcribe(pcm)).trim();
+    } catch (e) {
+      AppLogger.debug('STT transcription failed', e);
       return '';
     }
   }
@@ -152,5 +160,11 @@ class SttService {
     await _speech.cancel();
     await _recorder.cancel();
     _recordPath = null;
+  }
+
+  /// `speech_to_text` memakai format locale `ll_CC` (underscore).
+  static String _systemLocale(String? languageCode) {
+    if (languageCode == null || languageCode.isEmpty) return 'id_ID';
+    return languageCode.replaceAll('-', '_');
   }
 }

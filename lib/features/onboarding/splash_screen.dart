@@ -3,7 +3,7 @@
 // "Sakura Fall": gradien blush lembut, logo hati berdenyut dalam lingkaran
 // rose, dan kelopak sakura melayang (CustomPainter, tanpa aset).
 // Menghormati MediaQuery.disableAnimations.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +12,7 @@ import '../../core/design/components/sakura_background.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
 import '../model/model_ready_provider.dart';
 import '../settings/settings_controller.dart';
@@ -113,7 +114,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
                   const SizedBox(height: AppSizes.spaceXs),
                   Text(
-                    'a sakura romance',
+                    ref.watch(appStringsProvider).appTagline,
                     style: AppTextStyles.moodIndicator(
                       color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
                     ),

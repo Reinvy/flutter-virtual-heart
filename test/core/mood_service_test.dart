@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:objectbox/objectbox.dart';
 import 'package:virtual_heart/models/mood_state.dart';
 import 'package:virtual_heart/services/mood_service.dart';
+import 'package:virtual_heart/services/mood_store.dart';
 
 /// Fake Box minimal untuk unit test (hanya getAll/put).
 class _FakeMoodBox implements Box<MoodState> {

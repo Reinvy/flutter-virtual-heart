@@ -1,5 +1,5 @@
 // Settings — Persona section (ringkasan + edit + reset).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +12,8 @@ import '../../../core/l10n/app_strings.dart';
 import '../../../models/app_settings.dart';
 import '../../../models/objectbox_provider.dart';
 import '../../../models/persona_config.dart';
+import '../../chat/mood_provider.dart';
+import '../../memory/memory_controller.dart';
 import '../../persona/avatar_catalog.dart';
 import '../../persona/persona_controller.dart';
 import '../../persona/persona_edit_sheet.dart';
@@ -37,6 +39,7 @@ class PersonaSection extends ConsumerWidget {
       title: strings.settingsResetPersonaTitle,
       body: strings.settingsResetPersonaBody,
       confirmLabel: strings.settingsDelete,
+      cancelLabel: strings.commonCancel,
     );
 
     if (!confirmed || !context.mounted) return;
@@ -45,8 +48,14 @@ class PersonaSection extends ConsumerWidget {
     ref.read(personaProvider.notifier).reset();
     ref.read(objectBoxServiceProvider).memoryFactBox.removeAll();
     ref.read(objectBoxServiceProvider).moodStateBox.removeAll();
+    ref.invalidate(memoryFactsProvider);
+    ref.invalidate(moodProvider);
 
-    final updated = settings.copyWith(isPersonaSetup: false);
+    // Ringkasan percakapan lama tidak relevan lagi untuk persona baru.
+    final updated = settings.copyWith(
+      isPersonaSetup: false,
+      conversationSummary: '',
+    );
     ref.read(appSettingsProvider.notifier).save(updated);
     // Router guard akan redirect ke /persona-setup otomatis.
   }
@@ -116,8 +125,8 @@ class PersonaSection extends ConsumerWidget {
             ),
             ListTile(
               dense: true,
-              leading: const Icon(Icons.refresh_rounded, color: AppColors.heartRed),
-              title: Text(strings.settingsResetPersona, style: const TextStyle(color: AppColors.heartRed)),
+              leading: const Icon(Icons.refresh_rounded, color: AppColors.accent),
+              title: Text(strings.settingsResetPersona, style: const TextStyle(color: AppColors.accent)),
               onTap: () => _confirmReset(context, ref),
             ),
           ],

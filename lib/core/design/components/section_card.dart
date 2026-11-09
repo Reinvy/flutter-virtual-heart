@@ -1,7 +1,7 @@
 // Komponen shared — SectionCard & sectionHeader (docs/DESIGN.md §3.6)
 //
 // Menggunakan ColorScheme tema (tanpa branch isDark manual).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../tokens/app_sizes.dart';
 
