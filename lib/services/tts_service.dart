@@ -18,6 +18,10 @@ import 'ai/speech_model_catalog.dart';
 ///
 /// Instance ini singleton sepanjang umur proses; [FlutterPcmSound] dilepas di
 /// [stop] dan tidak perlu `dispose` terpisah.
+///
+/// Setiap utterance diberi nomor urut. `stop()` menaikkan nomor tersebut
+/// sehingga sintesis yang masih berjalan tahu dirinya sudah basi dan tidak
+/// menimpa playback baru.
 class TtsService {
   TtsService._internal();
   static final TtsService _instance = TtsService._internal();
@@ -29,6 +33,7 @@ class TtsService {
   String? _readyModel;
   VoidCallback? _onComplete;
   Timer? _finishTimer;
+  int _utterance = 0;
 
   // ── Public API ───────────────────────────────────────────────────────────
 
@@ -39,7 +44,7 @@ class TtsService {
   ///
   /// Kembali `false` bila gagal.
   Future<bool> ensureReady({
-    String backend = 'gemma',
+    String backend = 'system',
     String model = 'inflect',
     void Function(int percent)? onProgress,
   }) async {
@@ -64,43 +69,45 @@ class TtsService {
     }
   }
 
+  /// `true` bila model on-device [model] sedang aktif di engine.
+  bool isModelActive(String model) => _readyModel == model && FlutterEdgeAi.hasActiveTts();
+
   /// Menyintesis [text] dan memutarnya sesuai [backend] & [gender].
   ///
-  /// [languageCode] (mis. `id-ID`/`en-US`) dipakai backend sistem.
-  Future<void> speak(
+  /// [languageCode] (mis. `id-ID`/`en-US`) dipakai backend sistem dan diteruskan
+  /// ke engine on-device.
+  Future<bool> speak(
     String text, {
-    String backend = 'gemma',
+    String backend = 'system',
     String model = 'inflect',
     PersonaGender? gender,
     String? languageCode,
     VoidCallback? onDone,
   }) async {
-    if (text.trim().isEmpty) return;
+    if (text.trim().isEmpty) return false;
+
+    await _stopInternal();
+    final id = ++_utterance;
 
     if (backend == 'system') {
-      await _speakSystem(
+      return _speakSystem(
         text,
+        id: id,
         gender: gender,
         languageCode: languageCode,
         onDone: onDone,
       );
-      return;
     }
 
-    if (!await ensureReady(backend: backend, model: model)) {
-      _onComplete = null;
-      return;
-    }
-    await _speakOnDevice(text, onDone: onDone);
+    if (!await ensureReady(backend: backend, model: model)) return false;
+    if (id != _utterance) return false;
+    return _speakOnDevice(text, id: id, languageCode: languageCode, onDone: onDone);
   }
 
-  /// Menghentikan playback.
+  /// Menghentikan playback dan membatalkan sintesis yang masih berjalan.
   Future<void> stop() async {
-    _finishTimer?.cancel();
-    _finishTimer = null;
-    _onComplete = null;
-    await _flutterTts.stop();
-    await FlutterPcmSound.release();
+    _utterance++;
+    await _stopInternal();
   }
 
   // ── Backend: system (flutter_tts) ───────────────────────────────────────
@@ -121,49 +128,66 @@ class TtsService {
     return true;
   }
 
-  Future<void> _speakSystem(
+  Future<bool> _speakSystem(
     String text, {
+    required int id,
     PersonaGender? gender,
     String? languageCode,
     VoidCallback? onDone,
   }) async {
-    await _initSystemTts();
-    await _flutterTts.stop();
+    try {
+      await _initSystemTts();
+      await _flutterTts.stop();
+      if (id != _utterance) return false;
 
-    _onComplete = onDone;
+      _onComplete = onDone;
 
-    await _flutterTts.setLanguage(languageCode ?? 'id-ID');
-    if (gender == PersonaGender.girlfriend) {
-      await _flutterTts.setPitch(1.6);
-      await _flutterTts.setSpeechRate(0.4);
-    } else {
-      await _flutterTts.setPitch(0.88);
-      await _flutterTts.setSpeechRate(0.47);
+      await _flutterTts.setLanguage(languageCode ?? 'id-ID');
+      if (gender == PersonaGender.girlfriend) {
+        await _flutterTts.setPitch(1.6);
+        await _flutterTts.setSpeechRate(0.4);
+      } else {
+        await _flutterTts.setPitch(0.88);
+        await _flutterTts.setSpeechRate(0.47);
+      }
+
+      await _flutterTts.speak(text);
+      return true;
+    } catch (e) {
+      AppLogger.debug('System TTS failed', e);
+      _finish(id);
+      return false;
     }
-
-    await _flutterTts.speak(text);
   }
 
   // ── Backend: on-device (flutter_edge_ai_speech) ─────────────────────────
 
-  Future<void> _speakOnDevice(String text, {VoidCallback? onDone}) async {
+  Future<bool> _speakOnDevice(
+    String text, {
+    required int id,
+    String? languageCode,
+    VoidCallback? onDone,
+  }) async {
+    if (id != _utterance) return false;
     _onComplete = onDone;
 
     try {
-      final synth = await FlutterEdgeAi.getActiveTts();
-      final pcm = await synth.synthesize(text);
+      final synth = await FlutterEdgeAi.getActiveTts(language: languageCode);
+      if (id != _utterance) return false;
 
+      final pcm = await synth.synthesize(text);
+      if (id != _utterance) return false;
       if (pcm.isEmpty) {
-        _finish();
-        return;
+        _finish(id);
+        return false;
       }
 
-      await FlutterPcmSound.setup(
-        sampleRate: synth.sampleRate,
-        channelCount: 1,
-      );
+      await FlutterPcmSound.setup(sampleRate: synth.sampleRate, channelCount: 1);
+      if (id != _utterance) return false;
 
       await FlutterPcmSound.feed(PcmArrayInt16(bytes: pcm.buffer.asByteData()));
+      if (id != _utterance) return false;
+
       FlutterPcmSound.start();
 
       // Belum ada callback "playback selesai" dari plugin PCM: durasi audio
@@ -172,15 +196,37 @@ class TtsService {
       _finishTimer?.cancel();
       _finishTimer = Timer(
         Duration(milliseconds: (seconds * 1000).round()),
-        _finish,
+        () => _finish(id),
       );
+      return true;
     } catch (e) {
       AppLogger.debug('TTS playback failed', e);
-      _finish();
+      _finish(id);
+      return false;
     }
   }
 
-  void _finish() {
+  // ── Private ─────────────────────────────────────────────────────────────
+
+  Future<void> _stopInternal() async {
+    _finishTimer?.cancel();
+    _finishTimer = null;
+    _onComplete = null;
+    try {
+      await _flutterTts.stop();
+    } catch (e) {
+      AppLogger.debug('System TTS stop failed', e);
+    }
+    try {
+      await FlutterPcmSound.release();
+    } catch (e) {
+      AppLogger.debug('PCM release failed', e);
+    }
+  }
+
+  /// Memanggil callback selesai sekali, hanya untuk utterance yang masih aktif.
+  void _finish(int id) {
+    if (id != _utterance) return;
     _finishTimer?.cancel();
     _finishTimer = null;
     final cb = _onComplete;

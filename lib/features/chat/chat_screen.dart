@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/design/components/empty_state.dart';
 import '../../core/design/tokens/app_colors.dart';
@@ -47,20 +48,34 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   int _speakingMessageId = -1;
   bool _isListening = false;
-  // Transkrip STT masuk ke input; flag ini menandai pesan berikutnya sebagai
-  // pesan suara (FR-06) sampai benar-benar dikirim.
-  bool _voiceInputPending = false;
+  // Teks input tepat setelah dikte; dipakai untuk menandai pesan berikutnya
+  // sebagai pesan suara (FR-06) — batal bila pengguna mengedit teksnya.
+  String? _voiceDraft;
   bool _sparkleShown = false;
   bool _showSparkle = false;
   bool _didInitialScroll = false;
 
   @override
+  void initState() {
+    super.initState();
+    _inputTextController.addListener(_onInputChanged);
+  }
+
+  @override
   void dispose() {
+    _inputTextController.removeListener(_onInputChanged);
     _scrollController.dispose();
     _inputTextController.dispose();
     _ttsService.stop();
     _sttService.cancel();
     super.dispose();
+  }
+
+  /// Dikte dianggap pesan suara hanya selama teksnya tidak diubah pengguna.
+  void _onInputChanged() {
+    final draft = _voiceDraft;
+    if (draft == null) return;
+    if (_inputTextController.text != draft) _voiceDraft = null;
   }
 
   /// Menggulir ke pesan terbaru hanya bila pengguna memang sedang di bawah
@@ -98,6 +113,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final persona = ref.watch(personaProvider);
     final chatState = ref.watch(chatProvider);
     final currentMood = ref.watch(moodProvider).current;
+    final settings = ref.watch(appSettingsProvider);
 
     ref.listen(chatProvider, (prev, next) {
       if (prev?.messages.length != next.messages.length) {
@@ -139,7 +155,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             children: [
               Expanded(
                 child: _buildMessageList(strings, chatState.messages, chatState.isTyping,
-                    chatState.streamingBuffer, persona),
+                    chatState.streamingBuffer, persona, settings.ttsEnabled),
               ),
               if (chatState.error != null)
                 _ChatErrorBanner(
@@ -158,8 +174,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 onStop: () => ref.read(chatProvider.notifier).cancelGeneration(),
                 onSend: (text) {
                   HapticFeedback.lightImpact();
-                  final isVoice = _voiceInputPending;
-                  _voiceInputPending = false;
+                  final isVoice = _voiceDraft != null;
+                  _voiceDraft = null;
                   ref.read(chatProvider.notifier).sendMessage(text, isVoice: isVoice);
                 },
               ),
@@ -285,29 +301,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     if (_speakingMessageId == message.id) {
       await _ttsService.stop();
-      if (mounted) setState(() => _speakingMessageId = -1);
+      if (!mounted) return;
+      setState(() => _speakingMessageId = -1);
       return;
     }
 
     // Pastikan backend suara siap; jika gagal tampilkan pesan hangat.
-    final ok = await _ttsService.ensureReady(
+    final ready = await _ttsService.ensureReady(
       backend: settings.ttsBackend,
       model: settings.ttsModel,
     );
-    if (!ok) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(ref.read(appStringsProvider).chatTtsUnavailable),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
+    if (!mounted) return;
+    if (!ready) {
+      _showSnack(ref.read(appStringsProvider).chatTtsUnavailable);
       return;
     }
 
     setState(() => _speakingMessageId = message.id);
-    await _ttsService.speak(
+    final ok = await _ttsService.speak(
       message.content,
       backend: settings.ttsBackend,
       model: settings.ttsModel,
@@ -317,44 +328,92 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         if (mounted) setState(() => _speakingMessageId = -1);
       },
     );
+    if (!mounted) return;
+    if (!ok) {
+      setState(() => _speakingMessageId = -1);
+      _showSnack(ref.read(appStringsProvider).chatTtsUnavailable);
+    }
   }
 
   Future<void> _handleMicTap() async {
     final strings = ref.read(appStringsProvider);
     final settings = ref.read(appSettingsProvider);
+
     if (_isListening) {
-      final transcript = await _sttService.stopListening(
-        backend: settings.sttBackend,
-        languageCode: _speechLanguageCode(settings.language),
-      );
-      if (mounted) setState(() => _isListening = false);
+      String transcript;
+      try {
+        transcript = await _sttService.stopListening(
+          backend: settings.sttBackend,
+          languageCode: _speechLanguageCode(settings.language),
+        );
+      } catch (_) {
+        transcript = '';
+      }
+      if (!mounted) return;
+      setState(() => _isListening = false);
       if (transcript.trim().isNotEmpty) {
         HapticFeedback.lightImpact();
-        // Masukkan transkrip ke input (bisa diedit) — FR-06.
-        _inputTextController.text = transcript.trim();
-        _voiceInputPending = true;
+        // Masukkan transkrip ke posisi kursor (bisa diedit) — FR-06.
+        _insertTranscript(transcript.trim());
       }
       return;
     }
 
-    final ok = await _sttService.initialize(backend: settings.sttBackend);
-    if (!ok) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(strings.chatSttUnavailable),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-      return;
-    }
+    // Hentikan TTS lebih dulu: mikrofon tidak boleh merekam suara AI.
+    await _ttsService.stop();
+    if (!mounted) return;
+    setState(() => _speakingMessageId = -1);
 
-    setState(() => _isListening = true);
-    HapticFeedback.lightImpact();
-    await _sttService.startListening(
+    final result = await _sttService.startListening(
       backend: settings.sttBackend,
       languageCode: _speechLanguageCode(settings.language),
+    );
+    if (!mounted) return;
+
+    switch (result) {
+      case SttStartResult.started:
+        HapticFeedback.lightImpact();
+        setState(() => _isListening = true);
+      case SttStartResult.permissionDenied:
+        _showSnack(
+          strings.chatMicPermission,
+          action: SnackBarAction(
+            label: strings.chatMicOpenSettings,
+            onPressed: openAppSettings,
+          ),
+        );
+      case SttStartResult.unavailable:
+        _showSnack(strings.chatSttUnavailable);
+      case SttStartResult.busy:
+        break;
+    }
+  }
+
+  /// Menyisipkan transkrip pada posisi seleksi tanpa menimpa teks yang ada.
+  void _insertTranscript(String transcript) {
+    final value = _inputTextController.value;
+    final text = value.text;
+    final start = value.selection.isValid ? value.selection.start : text.length;
+    final end = value.selection.isValid ? value.selection.end : text.length;
+    final needsSpace = start > 0 && !text.substring(0, start).endsWith(' ');
+    final insert = needsSpace ? ' $transcript' : transcript;
+    final newText = text.replaceRange(start, end, insert);
+
+    _voiceDraft = newText;
+    _inputTextController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: start + insert.length),
+    );
+  }
+
+  void _showSnack(String message, {SnackBarAction? action}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        action: action,
+        duration: const Duration(seconds: 3),
+      ),
     );
   }
 
@@ -368,6 +427,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     bool isTyping,
     String streamingBuffer,
     PersonaConfig? persona,
+    bool ttsEnabled,
   ) {
     final itemCount = messages.length + (isTyping ? 1 : 0);
 
@@ -405,7 +465,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             speakerLabel: _speakingMessageId == messages[i].id
                 ? strings.chatStopSpeaking
                 : strings.chatSpeak,
-            onSpeak: messages[i].role == MessageRole.assistant
+            onSpeak: ttsEnabled && messages[i].role == MessageRole.assistant
                 ? () => _speakMessage(messages[i], persona)
                 : null,
             isSpeaking: _speakingMessageId == messages[i].id,

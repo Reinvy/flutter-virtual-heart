@@ -12,6 +12,9 @@ import '../core/errors/app_logger.dart';
 import '../core/utils/wav_pcm.dart';
 import 'ai/speech_model_catalog.dart';
 
+/// Hasil memulai sesi dikte.
+enum SttStartResult { started, permissionDenied, unavailable, busy }
+
 /// Facade Speech-to-Text dengan dua backend:
 ///
 /// - **gemma** (`flutter_edge_ai_speech`): rekam PCM 16 kHz mono 16-bit via
@@ -30,38 +33,167 @@ class SttService {
 
   bool _localReady = false;
   bool _isListening = false;
+  bool _starting = false;
   String? _recordPath;
   String _lastWords = '';
 
   bool get isListening => _isListening;
 
+  /// `true` bila model on-device [model] sedang aktif di engine.
+  bool isModelActive(String model) =>
+      model == 'moonshine' && _localReady && FlutterEdgeAi.hasActiveStt();
+
   // ── Public API ───────────────────────────────────────────────────────────
 
-  /// Memastikan backend siap.
-  ///
-  /// - `backend == 'system'`: init speech_to_text + izin mikrofon.
-  /// - `backend == 'gemma'`: download model moonshine bila belum + izin mikrofon.
+  /// Memastikan backend siap (izin mikrofon + model/engine).
   ///
   /// [onProgress] menerima persen 0..100 saat model diunduh.
   Future<bool> initialize({
-    String backend = 'gemma',
+    String backend = 'system',
+    void Function(int percent)? onProgress,
+  }) async {
+    final granted = await _requestMicrophone();
+    if (!granted) return false;
+    return _prepare(backend: backend, onProgress: onProgress);
+  }
+
+  /// Mulai mendengarkan sesuai [backend].
+  ///
+  /// [languageCode] (mis. `id-ID`/`en-US`) hanya dipakai backend sistem.
+  Future<SttStartResult> startListening({
+    String backend = 'system',
+    String? languageCode,
+  }) async {
+    if (_isListening || _starting) return SttStartResult.busy;
+    _starting = true;
+    try {
+      final granted = await _requestMicrophone();
+      if (!granted) return SttStartResult.permissionDenied;
+
+      final ready = await _prepare(backend: backend);
+      if (!ready) return SttStartResult.unavailable;
+
+      if (backend == 'system') {
+        _lastWords = '';
+        await _speech.listen(
+          onResult: (SpeechRecognitionResult result) {
+            _lastWords = result.recognizedWords;
+          },
+          listenOptions: SpeechListenOptions(
+            listenMode: ListenMode.confirmation,
+            cancelOnError: true,
+            partialResults: true,
+            localeId: _systemLocale(languageCode),
+          ),
+        );
+        _isListening = true;
+        return SttStartResult.started;
+      }
+
+      final dir = await getTemporaryDirectory();
+      final path = '${dir.path}/vh_stt_${DateTime.now().millisecondsSinceEpoch}.wav';
+      await _recorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.wav,
+          sampleRate: 16000,
+          numChannels: 1,
+        ),
+        path: path,
+      );
+      _recordPath = path;
+      _isListening = true;
+      return SttStartResult.started;
+    } catch (e) {
+      AppLogger.debug('STT start failed', e);
+      _isListening = false;
+      await _deleteRecording();
+      return SttStartResult.unavailable;
+    } finally {
+      _starting = false;
+    }
+  }
+
+  /// Menghentikan dan mengembalikan transkripsi sesuai [backend].
+  Future<String> stopListening({String backend = 'system', String? languageCode}) async {
+    if (!_isListening) return '';
+    _isListening = false;
+
+    try {
+      if (backend == 'system') {
+        await _speech.stop();
+        return _lastWords.trim();
+      }
+
+      await _recorder.stop();
+
+      final path = _recordPath;
+      _recordPath = null;
+      if (path == null) return '';
+
+      final file = File(path);
+      final bytes = await file.readAsBytes();
+
+      final pcm = pcmFromWav(bytes);
+      if (pcm.isEmpty) return '';
+
+      final recognizer = await FlutterEdgeAi.getActiveStt();
+      return (await recognizer.transcribe(pcm)).trim();
+    } catch (e) {
+      AppLogger.debug('STT transcription failed', e);
+      return '';
+    } finally {
+      await _deleteRecording();
+    }
+  }
+
+  /// Membatalkan sesi tanpa hasil.
+  Future<void> cancel() async {
+    _isListening = false;
+    try {
+      await _speech.cancel();
+    } catch (e) {
+      AppLogger.debug('STT cancel failed', e);
+    }
+    try {
+      await _recorder.cancel();
+    } catch (e) {
+      AppLogger.debug('Recorder cancel failed', e);
+    } finally {
+      await _deleteRecording();
+    }
+  }
+
+  // ── Private ─────────────────────────────────────────────────────────────
+
+  Future<bool> _requestMicrophone() async {
+    try {
+      final status = await Permission.microphone.request();
+      return status.isGranted || status.isLimited;
+    } catch (e) {
+      AppLogger.debug('Microphone permission failed', e);
+      return false;
+    }
+  }
+
+  Future<bool> _prepare({
+    required String backend,
     void Function(int percent)? onProgress,
   }) async {
     if (backend == 'system') {
-      final mic = await Permission.microphone.request();
-      if (!mic.isGranted) return false;
-      return _speech.initialize(
-        onError: (_) => _isListening = false,
-        onStatus: (status) {
-          if (status == SpeechToText.notListeningStatus) _isListening = false;
-        },
-      );
+      try {
+        return await _speech.initialize(
+          onError: (_) => _isListening = false,
+          onStatus: (status) {
+            if (status == SpeechToText.notListeningStatus) _isListening = false;
+          },
+        );
+      } catch (e) {
+        AppLogger.debug('System STT init failed', e);
+        return false;
+      }
     }
 
     if (_localReady && FlutterEdgeAi.hasActiveStt()) return true;
-
-    final mic = await Permission.microphone.request();
-    if (!mic.isGranted) return false;
 
     try {
       if (!FlutterEdgeAi.hasActiveStt()) {
@@ -80,86 +212,17 @@ class SttService {
     }
   }
 
-  /// Mulai mendengarkan sesuai [backend].
-  ///
-  /// [languageCode] (mis. `id-ID`/`en-US`) hanya dipakai backend sistem.
-  Future<void> startListening({String backend = 'gemma', String? languageCode}) async {
-    if (_isListening) return;
-    if (!await initialize(backend: backend)) return;
-
-    _isListening = true;
-
-    if (backend == 'system') {
-      _lastWords = '';
-      await _speech.listen(
-        onResult: (SpeechRecognitionResult result) {
-          _lastWords = result.recognizedWords;
-        },
-        listenOptions: SpeechListenOptions(
-          listenMode: ListenMode.confirmation,
-          cancelOnError: true,
-          partialResults: true,
-          localeId: _systemLocale(languageCode),
-        ),
-      );
-      return;
-    }
-
-    try {
-      final dir = await getTemporaryDirectory();
-      _recordPath = '${dir.path}/vh_stt_${DateTime.now().millisecondsSinceEpoch}.wav';
-      await _recorder.start(
-        const RecordConfig(
-          encoder: AudioEncoder.wav,
-          sampleRate: 16000,
-          numChannels: 1,
-        ),
-        path: _recordPath!,
-      );
-    } catch (e) {
-      AppLogger.debug('STT recording failed', e);
-      _isListening = false;
-    }
-  }
-
-  /// Menghentikan dan mengembalikan transkripsi sesuai [backend].
-  Future<String> stopListening({String backend = 'gemma', String? languageCode}) async {
-    if (!_isListening) return '';
-    _isListening = false;
-
-    if (backend == 'system') {
-      await _speech.stop();
-      return _lastWords.trim();
-    }
-
-    await _recorder.stop();
-
+  /// Menghapus file rekaman sementara (best-effort, tanpa melempar).
+  Future<void> _deleteRecording() async {
     final path = _recordPath;
     _recordPath = null;
-    if (path == null) return '';
-
+    if (path == null) return;
     try {
       final file = File(path);
-      final bytes = await file.readAsBytes();
-      await file.delete().catchError((_) => file);
-
-      final pcm = pcmFromWav(bytes);
-      if (pcm.isEmpty) return '';
-
-      final recognizer = await FlutterEdgeAi.getActiveStt();
-      return (await recognizer.transcribe(pcm)).trim();
+      if (await file.exists()) await file.delete();
     } catch (e) {
-      AppLogger.debug('STT transcription failed', e);
-      return '';
+      AppLogger.debug('Temp recording cleanup failed', e);
     }
-  }
-
-  /// Membatalkan sesi tanpa hasil.
-  Future<void> cancel() async {
-    _isListening = false;
-    await _speech.cancel();
-    await _recorder.cancel();
-    _recordPath = null;
   }
 
   /// `speech_to_text` memakai format locale `ll_CC` (underscore).

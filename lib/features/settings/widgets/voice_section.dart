@@ -152,6 +152,7 @@ class _SpeechModelList extends ConsumerWidget {
           (opt) => _SpeechModelTile(
             option: opt,
             selected: settings.ttsModel == opt.id,
+            isActive: settings.ttsModel == opt.id && TtsService().isModelActive(opt.id),
             onSelect: () {
               HapticFeedback.selectionClick();
               ref.read(appSettingsProvider.notifier).save(
@@ -182,6 +183,7 @@ class _SpeechModelList extends ConsumerWidget {
           (opt) => _SpeechModelTile(
             option: opt,
             selected: settings.sttModel == opt.id,
+            isActive: settings.sttModel == opt.id && SttService().isModelActive(opt.id),
             onSelect: () {
               HapticFeedback.selectionClick();
               ref.read(appSettingsProvider.notifier).save(
@@ -204,12 +206,16 @@ class _SpeechModelTile extends ConsumerStatefulWidget {
   const _SpeechModelTile({
     required this.option,
     required this.selected,
+    required this.isActive,
     required this.onSelect,
     required this.onDownload,
   });
 
   final SpeechModelOption option;
   final bool selected;
+
+  /// Model sudah terpasang **dan** aktif di engine.
+  final bool isActive;
   final VoidCallback onSelect;
   final Future<bool> Function(void Function(int percent) onProgress) onDownload;
 
@@ -220,7 +226,7 @@ class _SpeechModelTile extends ConsumerStatefulWidget {
 class _SpeechModelTileState extends ConsumerState<_SpeechModelTile> {
   bool _downloading = false;
   int _progress = 0;
-  bool _installed = false;
+  bool _installedThisSession = false;
 
   Future<void> _download() async {
     setState(() {
@@ -230,11 +236,21 @@ class _SpeechModelTileState extends ConsumerState<_SpeechModelTile> {
     final ok = await widget.onDownload((p) {
       if (mounted) setState(() => _progress = p);
     });
-    if (mounted) {
-      setState(() {
-        _downloading = false;
-        _installed = ok;
-      });
+    if (!mounted) return;
+    setState(() {
+      _downloading = false;
+      _installedThisSession = ok;
+    });
+    if (!ok) {
+      final strings = ref.read(appStringsProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.option.isTts ? strings.chatTtsUnavailable : strings.chatSttUnavailable,
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 
@@ -242,6 +258,7 @@ class _SpeechModelTileState extends ConsumerState<_SpeechModelTile> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final strings = ref.watch(appStringsProvider);
+    final installed = widget.isActive || _installedThisSession;
     return ListTile(
       dense: true,
       leading: Icon(
@@ -257,9 +274,9 @@ class _SpeechModelTileState extends ConsumerState<_SpeechModelTile> {
               child: CircularProgressIndicator(value: _progress / 100, strokeWidth: 2),
             )
           : TextButton(
-              onPressed: _download,
+              onPressed: installed ? null : _download,
               child: Text(
-                _installed ? strings.speechModelInstalled : strings.speechModelDownload,
+                installed ? strings.speechModelInstalled : strings.speechModelDownload,
               ),
             ),
       onTap: widget.onSelect,
@@ -278,18 +295,44 @@ class _MicPermissionTile extends ConsumerStatefulWidget {
   ConsumerState<_MicPermissionTile> createState() => _MicPermissionTileState();
 }
 
-class _MicPermissionTileState extends ConsumerState<_MicPermissionTile> {
+class _MicPermissionTileState extends ConsumerState<_MicPermissionTile>
+    with WidgetsBindingObserver {
   PermissionStatus? _status;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _load();
+  }
+
   Future<void> _load() async {
-    final status = await Permission.microphone.status;
-    if (mounted) setState(() => _status = status);
+    try {
+      final status = await Permission.microphone.status;
+      if (mounted) setState(() => _status = status);
+    } catch (_) {
+      if (mounted) setState(() => _status = null);
+    }
+  }
+
+  Future<void> _request() async {
+    try {
+      await Permission.microphone.request();
+    } catch (_) {
+      // Izin tidak tersedia di platform ini; biarkan status apa adanya.
+    }
+    await _load();
   }
 
   Future<void> _openSettings() async {
@@ -300,25 +343,38 @@ class _MicPermissionTileState extends ConsumerState<_MicPermissionTile> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final status = _status;
-    final granted = status == PermissionStatus.granted || status == PermissionStatus.limited;
-    final denied = status == PermissionStatus.denied || status == PermissionStatus.permanentlyDenied;
 
-    if (status == null || !denied) {
+    if (status == PermissionStatus.granted || status == PermissionStatus.limited) {
       return ListTile(
         dense: true,
-        leading: Icon(Icons.mic_none_rounded, color: scheme.onSurfaceVariant),
+        leading: Icon(Icons.mic_rounded, color: scheme.primary),
+        title: Text(widget.strings.settingsMicPermissionGranted),
+        trailing: Icon(Icons.check_circle_outline_rounded, color: scheme.primary),
+      );
+    }
+
+    if (status == PermissionStatus.denied ||
+        status == PermissionStatus.permanentlyDenied ||
+        status == PermissionStatus.restricted) {
+      return ListTile(
+        dense: true,
+        leading: Icon(Icons.mic_off_rounded, color: scheme.error),
         title: Text(widget.strings.settingsMicPermissionDenied),
         subtitle: Text(widget.strings.settingsMicPermissionOpenSettings),
         trailing: Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
-        onTap: granted ? null : _openSettings,
+        onTap: _openSettings,
       );
     }
 
     return ListTile(
       dense: true,
-      leading: Icon(Icons.mic_none_rounded, color: scheme.primary),
-      title: Text(widget.strings.settingsMicPermissionGranted),
-      trailing: Icon(Icons.check_circle_outline_rounded, color: scheme.primary),
+      leading: Icon(Icons.mic_none_rounded, color: scheme.onSurfaceVariant),
+      title: Text(widget.strings.settingsMicPermissionNotRequested),
+      trailing: TextButton(
+        onPressed: _request,
+        child: Text(widget.strings.settingsMicPermissionRequest),
+      ),
+      onTap: _request,
     );
   }
 }
