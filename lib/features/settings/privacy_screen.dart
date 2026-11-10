@@ -6,6 +6,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/design/components/app_scaffold.dart';
+import '../../core/design/tokens/app_effects.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
@@ -19,7 +21,7 @@ class PrivacyScreen extends ConsumerWidget {
     final strings = ref.watch(appStringsProvider);
     final scheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
+    return AppScaffold(
       appBar: AppBar(
         leading: BackButton(
           onPressed: () => context.canPop()
@@ -27,14 +29,27 @@ class PrivacyScreen extends ConsumerWidget {
               : context.go(AppRoutes.ageGate),
         ),
         title: Text(strings.privacyTitle),
-        elevation: 0,
       ),
-      body: SafeArea(
+      body: AppContent(
+        maxWidth: 680,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSizes.spaceLg),
-          child: SelectableText(
-            strings.privacyPolicy,
-            style: AppTextStyles.bodyMedium(color: scheme.onSurface),
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Container(
+            padding: const EdgeInsets.all(AppSizes.spaceLg),
+            decoration: BoxDecoration(
+              color: scheme.surface,
+              borderRadius: BorderRadius.circular(AppSizes.radiusCard),
+              border: Border.all(
+                color: scheme.outlineVariant.withValues(alpha: 0.6),
+              ),
+              boxShadow: AppShadows.card(context),
+            ),
+            child: SelectableText(
+              strings.privacyPolicy,
+              style: AppTextStyles.bodyLarge(
+                color: scheme.onSurface,
+              ).copyWith(height: 1.7),
+            ),
           ),
         ),
       ),

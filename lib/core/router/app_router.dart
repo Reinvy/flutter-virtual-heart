@@ -17,6 +17,9 @@ import '../../features/settings/privacy_screen.dart';
 import 'package:virtual_heart/services/settings/settings_service.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../models/app_settings.dart';
+import '../design/components/app_scaffold.dart';
+import '../design/components/empty_state.dart';
+import '../design/components/secondary_button.dart';
 import '../design/tokens/app_durations.dart';
 import '../l10n/app_strings.dart';
 
@@ -51,13 +54,18 @@ CustomTransitionPage<void> _buildPage(GoRouterState state, Widget child) {
     transitionDuration: AppDurations.durationNormal,
     reverseTransitionDuration: const Duration(milliseconds: 220),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      if (MediaQuery.disableAnimationsOf(context)) return child;
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: AppDurations.curveStandard,
+      );
       return FadeTransition(
-        opacity: CurvedAnimation(parent: animation, curve: AppDurations.curveStandard),
+        opacity: curved,
         child: SlideTransition(
           position: Tween<Offset>(
-            begin: const Offset(0.05, 0),
+            begin: Offset(0, 8 / MediaQuery.sizeOf(context).height),
             end: Offset.zero,
-          ).animate(CurvedAnimation(parent: animation, curve: AppDurations.curveStandard)),
+          ).animate(curved),
           child: child,
         ),
       );
@@ -143,23 +151,15 @@ class _RouterErrorScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(appStringsProvider);
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline_rounded, size: 40),
-              const SizedBox(height: 12),
-              Text(strings.modelErrorUnknown, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () => context.go(AppRoutes.splash),
-                child: Text(strings.chatRetry),
-              ),
-            ],
-          ),
+    return AppScaffold(
+      body: EmptyState(
+        bloom: true,
+        icon: Icons.error_outline_rounded,
+        title: strings.modelErrorUnknown,
+        body: '',
+        action: GhostButton(
+          label: strings.chatRetry,
+          onPressed: () => context.go(AppRoutes.splash),
         ),
       ),
     );
