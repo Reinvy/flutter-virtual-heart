@@ -1,9 +1,11 @@
 // Fitur Chat (FR-06) — input bar (text + mic + send) (docs/DESIGN.md §3.2).
 //
-// Field pill, mic & send 48×48 (target sentuh minimum), warna via tema.
+// Permukaan melayang dengan pill field; mic & send 48×48 (target sentuh
+// minimum), warna dan gradien dari token tema.
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/design/tokens/app_effects.dart';
 import '../../../core/design/tokens/app_sizes.dart';
 import '../../../core/design/tokens/text_styles.dart';
 import '../../../core/l10n/app_strings.dart';
@@ -62,7 +64,10 @@ class _InputBarState extends ConsumerState<InputBar> {
     } else {
       final strings = ref.read(appStringsProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(strings.chatSttUnavailable), duration: const Duration(seconds: 2)),
+        SnackBar(
+          content: Text(strings.chatSttUnavailable),
+          duration: const Duration(seconds: 2),
+        ),
       );
     }
   }
@@ -73,29 +78,39 @@ class _InputBarState extends ConsumerState<InputBar> {
     final scheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceMd, vertical: AppSizes.spaceXs),
+      margin: const EdgeInsets.fromLTRB(
+        AppSizes.spaceSm + 4,
+        0,
+        AppSizes.spaceSm + 4,
+        AppSizes.spaceXs,
+      ),
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: scheme.surface,
-        border: Border(top: BorderSide(color: scheme.outlineVariant, width: 1)),
+        borderRadius: BorderRadius.circular(AppSizes.radiusCard),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.7),
+        ),
+        boxShadow: AppShadows.floating(context),
       ),
       child: SafeArea(
         top: false,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            _IconButton(
-              icon: widget.isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
-              iconColor: widget.isListening ? scheme.primary : null,
+            _MicButton(
+              isListening: widget.isListening,
               onTap: widget.enabled ? _handleMicTap : null,
-              semanticLabel:
-                  widget.isListening ? strings.chatMicStop : strings.chatMicStart,
+              semanticLabel: widget.isListening
+                  ? strings.chatMicStop
+                  : strings.chatMicStart,
             ),
             const SizedBox(width: AppSizes.spaceXs),
             Expanded(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
-                  minHeight: AppSizes.inputBarHeight,
-                  maxHeight: 120,
+                  minHeight: AppSizes.chatInputHeight - 8,
+                  maxHeight: AppSizes.inputMaxHeight,
                 ),
                 child: TextField(
                   controller: _controller,
@@ -108,22 +123,35 @@ class _InputBarState extends ConsumerState<InputBar> {
                   style: AppTextStyles.bubbleText(color: scheme.onSurface),
                   decoration: InputDecoration(
                     hintText: strings.chatInputHint,
-                    hintStyle: AppTextStyles.inputHint(color: scheme.onSurfaceVariant),
-                    // Counter hanya muncul saat mendekati batas.
+                    hintStyle: AppTextStyles.inputHint(
+                      color: scheme.onSurfaceVariant,
+                    ),
                     counterText: null,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: AppSizes.spaceMd,
-                      vertical: 10,
+                      vertical: AppSizes.spaceSm,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusBubble),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppSizes.radiusBubble),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppSizes.radiusBubble),
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor: scheme.surfaceContainerHigh,
+                    fillColor: scheme.surfaceContainerLow,
                   ),
-                  buildCounter: (_, {required currentLength, required isFocused, maxLength}) =>
-                      currentLength >= 1800
+                  buildCounter:
+                      (_, {
+                        required currentLength,
+                        required isFocused,
+                        maxLength,
+                      }) => currentLength >= 1800
                       ? Text(
                           '$currentLength/2000',
                           style: AppTextStyles.timestamp(
@@ -142,7 +170,9 @@ class _InputBarState extends ConsumerState<InputBar> {
                 final canSend = value.text.trim().isNotEmpty && widget.enabled;
                 return _SendButton(
                   isStop: widget.isTyping,
-                  semanticLabel: widget.isTyping ? strings.chatStop : strings.chatSend,
+                  semanticLabel: widget.isTyping
+                      ? strings.chatStop
+                      : strings.chatSend,
                   onTap: widget.isTyping
                       ? widget.onStop
                       : (canSend ? _handleSend : null),
@@ -156,37 +186,134 @@ class _InputBarState extends ConsumerState<InputBar> {
   }
 }
 
-class _IconButton extends StatelessWidget {
-  const _IconButton({required this.icon, this.onTap, this.iconColor, this.semanticLabel});
+class _MicButton extends StatefulWidget {
+  const _MicButton({
+    required this.isListening,
+    required this.onTap,
+    required this.semanticLabel,
+  });
 
-  final IconData icon;
+  final bool isListening;
   final VoidCallback? onTap;
-  final Color? iconColor;
-  final String? semanticLabel;
+  final String semanticLabel;
+
+  @override
+  State<_MicButton> createState() => _MicButtonState();
+}
+
+class _MicButtonState extends State<_MicButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  );
+
+  bool _motionOk = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final ok = !MediaQuery.disableAnimationsOf(context);
+    if (ok == _motionOk) return;
+    _motionOk = ok;
+    if (ok && widget.isListening) {
+      _controller.repeat();
+    } else {
+      _controller.stop();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_MicButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_motionOk) return;
+    if (widget.isListening && !_controller.isAnimating) {
+      _controller.repeat();
+    } else if (!widget.isListening && _controller.isAnimating) {
+      _controller.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final active = onTap != null;
     final scheme = Theme.of(context).colorScheme;
-    final defaultIconColor = scheme.onSurfaceVariant;
+    final active = widget.onTap != null;
+    final listening = widget.isListening;
+    final iconColor = listening
+        ? scheme.onPrimary
+        : (active
+              ? scheme.onSurfaceVariant
+              : scheme.onSurfaceVariant.withValues(alpha: 0.4));
+
     final button = SizedBox(
       width: AppSizes.touchTarget,
       height: AppSizes.touchTarget,
       child: Material(
         color: Colors.transparent,
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
-          borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-          onTap: onTap,
-          child: Icon(
-            icon,
-            color: active ? (iconColor ?? defaultIconColor) : defaultIconColor.withValues(alpha: 0.4),
-            size: AppSizes.iconMd,
+          onTap: widget.onTap,
+          customBorder: const CircleBorder(),
+          child: Center(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              width: AppSizes.avatarNav,
+              height: AppSizes.avatarNav,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: listening ? null : scheme.surfaceContainerLow,
+                gradient: listening ? AppGradients.primaryAction(context) : null,
+              ),
+              child: Icon(
+                listening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                color: iconColor,
+                size: 20,
+              ),
+            ),
           ),
         ),
       ),
     );
-    if (semanticLabel == null) return button;
-    return Semantics(button: true, label: semanticLabel, child: button);
+
+    if (!listening || !_motionOk) {
+      return Semantics(button: true, label: widget.semanticLabel, child: button);
+    }
+
+    return Semantics(
+      button: true,
+      label: widget.semanticLabel,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final t = _controller.value;
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: AppSizes.avatarNav + 12 * t,
+                height: AppSizes.avatarNav + 12 * t,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: scheme.primary.withValues(alpha: 0.35 * (1 - t)),
+                    width: 1.5,
+                  ),
+                ),
+              ),
+              child!,
+            ],
+          );
+        },
+        child: button,
+      ),
+    );
   }
 }
 
@@ -199,25 +326,33 @@ class _SendButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final active = onTap != null;
+    final active = onTap != null || isStop;
     final scheme = Theme.of(context).colorScheme;
-    final button = GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: AppSizes.touchTarget,
-        height: AppSizes.touchTarget,
-        decoration: BoxDecoration(
-          color: active || isStop ? scheme.primary : scheme.onSurface.withValues(alpha: 0.12),
-          shape: BoxShape.circle,
-        ),
-        alignment: Alignment.center,
-        child: Icon(
-          isStop ? Icons.stop_rounded : Icons.send_rounded,
-          color: active || isStop
-              ? scheme.onPrimary
-              : scheme.onSurface.withValues(alpha: 0.38),
-          size: 20,
+    final button = SizedBox(
+      width: AppSizes.touchTarget,
+      height: AppSizes.touchTarget,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            width: AppSizes.avatarNav,
+            height: AppSizes.avatarNav,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: active ? null : scheme.onSurface.withValues(alpha: 0.06),
+              gradient: active ? AppGradients.primaryAction(context) : null,
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              isStop ? Icons.stop_rounded : Icons.send_rounded,
+              color: active
+                  ? scheme.onPrimary
+                  : scheme.onSurface.withValues(alpha: 0.38),
+              size: 20,
+            ),
+          ),
         ),
       ),
     );

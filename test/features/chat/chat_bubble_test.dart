@@ -59,9 +59,16 @@ void main() {
 
     expect(find.text('Halo sayang'), findsOneWidget);
 
-    final container = tester.widget<Container>(find.byType(Container).first);
+    final container = tester.widget<Container>(
+      find.byKey(const ValueKey('chat-bubble-user')),
+    );
     final decoration = container.decoration as BoxDecoration;
-    expect(decoration.color, AppColors.primary);
+    final gradient = decoration.gradient;
+    expect(gradient, isA<LinearGradient>());
+    expect(
+      (gradient! as LinearGradient).colors,
+      containsAll(const [AppColors.bubbleUserStart, AppColors.bubbleUserEnd]),
+    );
   });
 
   testWidgets('bubble AI: markdown dirender', (tester) async {

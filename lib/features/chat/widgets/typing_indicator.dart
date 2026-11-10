@@ -2,16 +2,19 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../../../core/design/tokens/app_effects.dart';
 import '../../../core/design/tokens/app_sizes.dart';
+import '../../../models/persona_config.dart';
+import '../../persona/avatar_catalog.dart';
 
 class TypingIndicator extends StatelessWidget {
-  const TypingIndicator({super.key});
+  const TypingIndicator({super.key, this.persona});
+
+  final PersonaConfig? persona;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final dotColor = scheme.primary;
-    final bubbleBg = scheme.surfaceContainerLow;
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSizes.spaceMd,
@@ -21,18 +24,10 @@ class TypingIndicator extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          Container(
-            width: AppSizes.avatarSm,
-            height: AppSizes.avatarSm,
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                colors: [
-                  scheme.primary.withValues(alpha: 0.55),
-                  scheme.primaryContainer,
-                ],
-              ),
-              shape: BoxShape.circle,
-            ),
+          personaAvatar(
+            name: persona?.name,
+            avatarId: persona?.avatarId,
+            size: AppSizes.avatarSm,
           ),
           const SizedBox(width: AppSizes.spaceXs),
           Container(
@@ -41,13 +36,17 @@ class TypingIndicator extends StatelessWidget {
               vertical: AppSizes.spaceSm,
             ),
             decoration: BoxDecoration(
-              color: bubbleBg,
+              color: scheme.surface,
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(4),
-                topRight: Radius.circular(AppSizes.radiusMd),
-                bottomLeft: Radius.circular(AppSizes.radiusMd),
-                bottomRight: Radius.circular(AppSizes.radiusMd),
+                topLeft: Radius.circular(AppSizes.radiusBubble),
+                topRight: Radius.circular(AppSizes.radiusBubble),
+                bottomLeft: Radius.circular(AppSizes.bubbleTail),
+                bottomRight: Radius.circular(AppSizes.radiusBubble),
               ),
+              border: Border.all(
+                color: scheme.outlineVariant.withValues(alpha: 0.7),
+              ),
+              boxShadow: AppShadows.card(context),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -56,7 +55,7 @@ class TypingIndicator extends StatelessWidget {
                   if (i > 0) const SizedBox(width: 5),
                   _Dot(
                     delay: Duration(milliseconds: i * 160),
-                    color: dotColor,
+                    color: scheme.primary,
                   ),
                 ],
               ],
@@ -77,8 +76,8 @@ class _Dot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dot = Container(
-      width: 7,
-      height: 7,
+      width: 6,
+      height: 6,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
     // Hormati pengaturan "kurangi animasi": titik tetap diam.

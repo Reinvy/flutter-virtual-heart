@@ -8,8 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../../core/design/components/empty_state.dart';
-import '../../core/design/mood_visuals.dart';
+import '../../core/design/components/app_icon_button.dart';
+import '../../core/design/components/app_scaffold.dart';
+import '../../core/design/components/app_sheet.dart';
+import '../../core/design/components/bloom_mark.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
@@ -150,7 +152,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     if (chatState.messages.isNotEmpty) _scrollToLatestOnOpen();
 
-    return Scaffold(
+    return AppScaffold(
+      safeArea: false,
       appBar: _buildAppBar(strings, persona, currentMood),
       body: Stack(
         children: [
@@ -177,22 +180,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       ref.read(chatProvider.notifier).retryLastResponse(),
                   onDismiss: () => ref.read(chatProvider.notifier).clearError(),
                 ),
-              InputBar(
-                enabled: !chatState.isTyping,
-                isTyping: chatState.isTyping,
-                isListening: _isListening,
-                controller: _inputTextController,
-                onMicTap: _handleMicTap,
-                onStop: () =>
-                    ref.read(chatProvider.notifier).cancelGeneration(),
-                onSend: (text) {
-                  HapticFeedback.lightImpact();
-                  final isVoice = _voiceDraft != null;
-                  _voiceDraft = null;
-                  ref
-                      .read(chatProvider.notifier)
-                      .sendMessage(text, isVoice: isVoice);
-                },
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: InputBar(
+                    enabled: !chatState.isTyping,
+                    isTyping: chatState.isTyping,
+                    isListening: _isListening,
+                    controller: _inputTextController,
+                    onMicTap: _handleMicTap,
+                    onStop: () =>
+                        ref.read(chatProvider.notifier).cancelGeneration(),
+                    onSend: (text) {
+                      HapticFeedback.lightImpact();
+                      final isVoice = _voiceDraft != null;
+                      _voiceDraft = null;
+                      ref
+                          .read(chatProvider.notifier)
+                          .sendMessage(text, isVoice: isVoice);
+                    },
+                  ),
+                ),
               ),
             ],
           ),
@@ -218,47 +226,37 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     PersonaConfig? persona,
     MoodType currentMood,
   ) {
-    final textColor = Theme.of(context).colorScheme.onSurface;
+    final scheme = Theme.of(context).colorScheme;
     return AppBar(
+      backgroundColor: Colors.transparent,
       elevation: 0,
+      titleSpacing: 0,
+      leadingWidth: 68,
+      toolbarHeight: 68,
       automaticallyImplyLeading: false,
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1),
+        child: Divider(
+          height: 1,
+          thickness: 1,
+          color: scheme.outlineVariant,
+        ),
+      ),
       leading: Semantics(
         button: true,
         label: strings.chatOpenProfile,
-        child: GestureDetector(
+        child: InkWell(
           onTap: () => _openPersonaProfile(persona),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSizes.spaceXs),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                personaAvatar(
-                  name: persona?.name,
-                  avatarId: persona?.avatarId,
-                  size: 36,
-                ),
-                Positioned(
-                  right: -2,
-                  bottom: -2,
-                  child:
-                      Text(
-                            moodEmoji(currentMood),
-                            style: const TextStyle(fontSize: 12, height: 1),
-                          )
-                          .animate(onPlay: (c) => c.repeat(reverse: true))
-                          .scaleXY(
-                            begin: 0.85,
-                            end: 1.05,
-                            duration: 1400.ms,
-                            curve: Curves.easeInOut,
-                          ),
-                ),
-              ],
+          child: Center(
+            child: personaAvatar(
+              name: persona?.name,
+              avatarId: persona?.avatarId,
+              size: AppSizes.avatarNav,
             ),
           ),
         ),
       ),
-      title: GestureDetector(
+      title: InkWell(
         onTap: () => _openPersonaProfile(persona),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,29 +266,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               persona?.name ?? strings.appName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.personaName(color: textColor),
+              style: AppTextStyles.personaName(color: scheme.onSurface),
             ),
+            const SizedBox(height: 4),
             const MoodIndicator(),
           ],
         ),
       ),
       actions: [
-        IconButton(
-          icon: Icon(
-            Icons.bookmark_outline_rounded,
-            color: textColor.withValues(alpha: 0.6),
-          ),
+        AppIconButton(
+          icon: Icons.bookmark_outline_rounded,
           tooltip: strings.memoryTitle,
           onPressed: () => _leaveChat(AppRoutes.memory),
         ),
-        IconButton(
-          icon: Icon(
-            Icons.settings_outlined,
-            color: textColor.withValues(alpha: 0.6),
-          ),
+        AppIconButton(
+          icon: Icons.settings_outlined,
           tooltip: strings.settingsTitle,
           onPressed: () => _leaveChat(AppRoutes.settings),
         ),
+        const SizedBox(width: AppSizes.spaceXxs),
       ],
     );
   }
@@ -299,12 +293,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> _openPersonaProfile(PersonaConfig? persona) async {
     final edit = await showPersonaProfileSheet(context, persona);
     if (edit == true && mounted) {
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => const PersonaEditSheet(),
-      );
+      await showAppSheet<void>(context, child: const PersonaEditSheet());
     }
   }
 
@@ -461,11 +450,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
 
     return SelectionArea(
-      child: ListView.builder(
-        controller: _scrollController,
-        padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceXs),
-        itemCount: itemCount,
-        itemBuilder: (ctx, i) {
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceSm),
+            itemCount: itemCount,
+            itemBuilder: (ctx, i) {
           if (i == messages.length) {
             if (streamingBuffer.isNotEmpty) {
               final streamingMsg = Message(
@@ -480,7 +472,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 isStreaming: true,
               );
             }
-            return const TypingIndicator();
+            return TypingIndicator(persona: persona);
           }
 
           return ChatBubble(
@@ -495,7 +487,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 : null,
             isSpeaking: _speakingMessageId == messages[i].id,
           );
-        },
+            },
+          ),
+        ),
       ),
     );
   }
@@ -534,8 +528,9 @@ class _ChatErrorBanner extends StatelessWidget {
         AppSizes.spaceXs,
       ),
       decoration: BoxDecoration(
-        color: scheme.errorContainer,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        color: scheme.errorContainer.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(AppSizes.radiusControl),
+        border: Border.all(color: scheme.error.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
@@ -555,13 +550,11 @@ class _ChatErrorBanner extends StatelessWidget {
                 style: AppTextStyles.button(color: scheme.error),
               ),
             ),
-          IconButton(
-            icon: Icon(
-              Icons.close_rounded,
-              size: 18,
-              color: scheme.onErrorContainer,
-            ),
+          AppIconButton(
+            icon: Icons.close_rounded,
             tooltip: dismissLabel,
+            color: scheme.onErrorContainer,
+            size: 20,
             onPressed: onDismiss,
           ),
         ],
@@ -579,28 +572,81 @@ class _EmptyChat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final greeting = fillPlaceholders(strings.chatEmptyGreeting, {
+      'name': personaName ?? strings.chatFallbackName,
+    });
+
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSizes.spaceMd,
+          horizontal: AppSizes.pageGutter,
           vertical: AppSizes.spaceLg,
         ),
         child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minHeight: constraints.maxHeight - AppSizes.spaceLg * 2,
-          ),
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Center(
-            child: EmptyState(
-              icon: Icons.favorite_rounded,
-              iconColor: AppColors.accentFor(context),
-              title: fillPlaceholders(strings.chatEmptyGreeting, {
-                'name': personaName ?? strings.chatFallbackName,
-              }),
-              body: strings.chatEmptyBody,
-              action: personaAvatar(
-                name: personaName,
-                avatarId: persona?.avatarId,
-                size: 72,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 132,
+                    height: 132,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        const BloomMark(size: 132, animate: true),
+                        personaAvatar(
+                          name: personaName,
+                          avatarId: persona?.avatarId,
+                          size: 64,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSizes.spaceLg),
+                  Text(
+                    greeting,
+                    style: AppTextStyles.displaySmall(color: scheme.onSurface),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    strings.chatEmptyBody,
+                    style: AppTextStyles.bodyLarge(
+                      color: AppColors.textSecondaryFor(context),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSizes.spaceLg),
+                  ExcludeSemantics(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 1,
+                          color: scheme.outlineVariant,
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Icon(
+                            Icons.favorite_rounded,
+                            size: 12,
+                            color: scheme.primary.withValues(alpha: 0.6),
+                          ),
+                        ),
+                        Container(
+                          width: 40,
+                          height: 1,
+                          color: scheme.outlineVariant,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -628,6 +674,7 @@ class _SparkleOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (MediaQuery.disableAnimationsOf(context)) return const SizedBox.shrink();
     final size = MediaQuery.of(context).size;
     return Stack(
       children: [
@@ -647,41 +694,37 @@ class _SparkleParticle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cfg = _SparkleOverlay._configs[index];
-    final motionOk = !MediaQuery.disableAnimationsOf(context);
+    final scheme = Theme.of(context).colorScheme;
     final color = index % 3 == 0
-        ? AppColors.gold
+        ? AppColors.goldFor(context)
         : index % 3 == 1
-        ? AppColors.primary
-        : AppColors.accent;
-
-    final icon = Icon(
-      index.isEven ? Icons.star_rounded : Icons.auto_awesome_rounded,
-      size: cfg[2],
-      color: color,
-    );
+        ? scheme.primary
+        : AppColors.accentFor(context);
 
     return Positioned(
       left: screenSize.width * cfg[0],
       bottom: screenSize.height * cfg[1],
       child: IgnorePointer(
-        child: motionOk
-            ? icon
-                  .animate(delay: Duration(milliseconds: cfg[3].toInt()))
-                  .scale(
-                    begin: const Offset(0.1, 0.1),
-                    end: const Offset(1, 1),
-                    duration: 350.ms,
-                    curve: Curves.elasticOut,
-                  )
-                  .then()
-                  .moveY(
-                    begin: 0,
-                    end: -60,
-                    duration: 750.ms,
-                    curve: Curves.easeOut,
-                  )
-                  .fadeOut(duration: 600.ms)
-            : icon,
+        child: Icon(
+              index.isEven ? Icons.star_rounded : Icons.auto_awesome_rounded,
+              size: cfg[2],
+              color: color,
+            )
+            .animate(delay: Duration(milliseconds: cfg[3].toInt()))
+            .scale(
+              begin: const Offset(0.1, 0.1),
+              end: const Offset(1, 1),
+              duration: 350.ms,
+              curve: Curves.elasticOut,
+            )
+            .then()
+            .moveY(
+              begin: 0,
+              end: -60,
+              duration: 750.ms,
+              curve: Curves.easeOut,
+            )
+            .fadeOut(duration: 600.ms),
       ),
     );
   }

@@ -3,34 +3,46 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/mood_visuals.dart';
+import '../../../core/design/tokens/app_sizes.dart';
 import '../../../core/design/tokens/text_styles.dart';
 import '../../../core/l10n/app_strings.dart';
-import '../../../models/mood_state.dart';
 import '../mood_provider.dart';
 
-/// Subtitle AppBar chat: emoji + label mood persona.
+/// Subtitle AppBar chat: pill berisi emoji + label mood persona.
 class MoodIndicator extends ConsumerWidget {
   const MoodIndicator({super.key});
-
-  String _label(AppStrings strings, MoodType mood) => switch (mood) {
-    MoodType.happy => strings.moodHappy,
-    MoodType.longing => strings.moodLonging,
-    MoodType.playful => strings.moodPlayful,
-    MoodType.sad => strings.moodSad,
-    MoodType.excited => strings.moodExcited,
-  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(appStringsProvider);
     final mood = ref.watch(moodProvider);
-    final emoji = moodEmoji(mood.current);
-    final label = _label(strings, mood.current);
+    final scheme = Theme.of(context).colorScheme;
 
-    return Text(
-      '$emoji $label',
-      style: AppTextStyles.moodIndicator(
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spaceXs,
+        vertical: 3,
+      ),
+      decoration: BoxDecoration(
+        color: scheme.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(moodEmoji(mood.current), style: const TextStyle(fontSize: 12)),
+          const SizedBox(width: AppSizes.spaceXxs),
+          Flexible(
+            child: Text(
+              moodLabel(strings, mood.current),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.moodIndicator(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
