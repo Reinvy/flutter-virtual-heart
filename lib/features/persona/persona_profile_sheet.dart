@@ -71,7 +71,7 @@ class PersonaProfileSheet extends ConsumerWidget {
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
-              _buildAvatar(),
+              _buildAvatar(context),
               const SizedBox(height: AppSizes.md),
               _buildNameSection(context, ref),
               const SakuraDivider(),
@@ -91,13 +91,9 @@ class PersonaProfileSheet extends ConsumerWidget {
     );
   }
 
-  Widget _buildAvatar() {
-    final isGirlfriend = persona?.gender != PersonaGender.boyfriend;
+  Widget _buildAvatar(BuildContext context) {
     return Center(
-      child: avatarCircle(
-        avatarOptFor(persona?.avatarId, isGirlfriend: isGirlfriend),
-        72,
-      ),
+      child: avatarCircle(context, avatarOptForId(persona?.avatarId), 72),
     );
   }
 

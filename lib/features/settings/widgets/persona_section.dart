@@ -88,7 +88,7 @@ class PersonaSection extends ConsumerWidget {
               padding: const EdgeInsets.all(AppSizes.spaceMd),
               child: Row(
                 children: [
-                  avatarCircle(opt, AppSizes.avatarMd),
+                  avatarCircle(context, opt, AppSizes.avatarMd),
                   const SizedBox(width: AppSizes.spaceMd),
                   Expanded(
                     child: Column(

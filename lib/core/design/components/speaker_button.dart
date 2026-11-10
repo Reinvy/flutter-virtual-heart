@@ -22,16 +22,31 @@ class SpeakerButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final label = semanticLabel;
-    final button = GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: SizedBox(
-        width: AppSizes.touchTarget,
-        height: AppSizes.touchTarget,
-        child: Icon(
-          isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined,
-          size: 20,
-          color: isSpeaking ? scheme.primary : scheme.onSurfaceVariant.withValues(alpha: 0.7),
+    final button = Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: AppSizes.touchTarget,
+          height: AppSizes.touchTarget,
+          child: Center(
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSpeaking ? scheme.primaryContainer : scheme.surfaceContainerLow,
+              ),
+              child: Icon(
+                isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up_outlined,
+                size: 18,
+                color: isSpeaking ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
+              ),
+            ),
+          ),
         ),
       ),
     );

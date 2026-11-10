@@ -22,17 +22,19 @@ class AppIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final button = IconButton(
+    return IconButton(
       onPressed: onPressed,
-      icon: Icon(icon, size: size, color: color ?? scheme.onSurfaceVariant),
-      constraints: const BoxConstraints(
-        minWidth: AppSizes.touchTarget,
-        minHeight: AppSizes.touchTarget,
-      ),
-      padding: EdgeInsets.zero,
+      icon: Icon(icon, size: size),
       tooltip: tooltip,
       iconSize: size,
+      padding: EdgeInsets.zero,
+      style: IconButton.styleFrom(
+        backgroundColor: scheme.surfaceContainerLow,
+        foregroundColor: color ?? scheme.onSurfaceVariant,
+        disabledForegroundColor: scheme.onSurface.withValues(alpha: 0.38),
+        minimumSize: const Size.square(AppSizes.touchTarget),
+        shape: const CircleBorder(),
+      ),
     );
-    return tooltip == null ? button : Tooltip(message: tooltip!, child: button);
   }
 }

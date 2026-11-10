@@ -307,7 +307,7 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
                                       _avatarId = opt.id;
                                     });
                                   },
-                                  child: avatarCircle(opt, 56, selected: _avatarId == opt.id),
+                                  child: avatarCircle(context, opt, 56, selected: _avatarId == opt.id),
                                 ),
                               );
                             },

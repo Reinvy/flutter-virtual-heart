@@ -1,13 +1,15 @@
 // Komponen shared — PrimaryButton (docs/DESIGN.md §3.1)
 //
-// Fill primary, radius pill (konsisten dengan tema), tinggi 52, label button.
-// Warna via ColorScheme agar konsisten di light & dark.
+// Gradien aksi + glow, radius pill, tinggi 52, label button. State disabled
+// memakai fill netral dan foreground redup; state loading mempertahankan
+// gradien dengan spinner.
 import 'package:material_ui/material_ui.dart';
 
+import '../tokens/app_effects.dart';
 import '../tokens/app_sizes.dart';
 import '../tokens/text_styles.dart';
 
-/// Tombol aksi utama: fill primary, pill, tinggi 52.
+/// Tombol aksi utama: gradien rose, pill, tinggi minimal 52.
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     super.key,
@@ -27,40 +29,81 @@ class PrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final child = loading
+    final active = loading || onPressed != null;
+    final foreground = active
+        ? scheme.onPrimary
+        : scheme.onSurface.withValues(alpha: 0.38);
+    final radius = BorderRadius.circular(AppSizes.radiusFull);
+
+    Widget labelText = Text(
+      label,
+      style: AppTextStyles.button(color: foreground),
+      textAlign: TextAlign.center,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    );
+    if (expand) labelText = Flexible(child: labelText);
+
+    final content = loading
         ? SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2, color: scheme.onPrimary),
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: scheme.onPrimary,
+            ),
           )
         : Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: AppSizes.iconMd, color: scheme.onPrimary),
+                Icon(icon, size: 20, color: foreground),
                 const SizedBox(width: AppSizes.spaceXs),
               ],
-              Text(label, style: AppTextStyles.button(color: scheme.onPrimary)),
+              labelText,
             ],
           );
 
-    final button = FilledButton(
-      onPressed: loading ? null : onPressed,
-      style: FilledButton.styleFrom(
-        backgroundColor: scheme.primary,
-        disabledBackgroundColor: loading
-            ? scheme.primary
-            : scheme.onSurface.withValues(alpha: 0.12),
-        disabledForegroundColor: loading
-            ? scheme.onPrimary
-            : scheme.onSurface.withValues(alpha: 0.38),
-        foregroundColor: scheme.onPrimary,
-        minimumSize: const Size.fromHeight(52),
-        padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceLg, vertical: AppSizes.spaceMd),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusFull)),
+    final button = Semantics(
+      button: true,
+      enabled: onPressed != null && !loading,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          boxShadow: active
+              ? AppShadows.glow(context, scheme.primary)
+              : const [],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: radius,
+          clipBehavior: Clip.antiAlias,
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: radius,
+              gradient: active ? AppGradients.primaryAction(context) : null,
+              color: active ? null : scheme.onSurface.withValues(alpha: 0.08),
+            ),
+            child: InkWell(
+              borderRadius: radius,
+              onTap: loading ? null : onPressed,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: AppSizes.controlHeight,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: AppSizes.spaceSm,
+                  ),
+                  child: Center(widthFactor: 1, child: content),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
-      child: child,
     );
 
     return expand ? SizedBox(width: double.infinity, child: button) : button;

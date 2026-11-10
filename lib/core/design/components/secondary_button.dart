@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import '../tokens/app_sizes.dart';
 import '../tokens/text_styles.dart';
 
-/// Tombol sekunder: outline tonal, tinggi 52.
+/// Tombol sekunder: tonal outline, tinggi 52.
 class SecondaryButton extends StatelessWidget {
   const SecondaryButton({
     super.key,
@@ -22,31 +22,52 @@ class SecondaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final enabled = onPressed != null;
     final contentColor = enabled
         ? scheme.secondary
         : scheme.onSurface.withValues(alpha: 0.38);
-    final borderColor = enabled
-        ? scheme.secondary
-        : scheme.onSurface.withValues(alpha: 0.12);
-    final button = OutlinedButton(
+    final radius = BorderRadius.circular(AppSizes.radiusFull);
+
+    Widget labelText = Text(
+      label,
+      style: AppTextStyles.button(color: contentColor),
+      textAlign: TextAlign.center,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    );
+    if (expand) labelText = Flexible(child: labelText);
+
+    final button = FilledButton(
       onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
+      style: FilledButton.styleFrom(
+        backgroundColor: enabled
+            ? scheme.secondary.withValues(alpha: isDark ? 0.12 : 0.06)
+            : Colors.transparent,
         foregroundColor: contentColor,
-        side: BorderSide(color: borderColor),
-        minimumSize: const Size.fromHeight(52),
-        padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceLg, vertical: AppSizes.spaceMd),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusFull)),
+        disabledBackgroundColor: Colors.transparent,
+        disabledForegroundColor: contentColor,
+        side: BorderSide(
+          color: enabled
+              ? scheme.secondary.withValues(alpha: 0.35)
+              : scheme.outlineVariant,
+          width: 1,
+        ),
+        elevation: 0,
+        minimumSize: const Size.fromHeight(AppSizes.controlHeight),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: AppSizes.spaceSm),
+        shape: RoundedRectangleBorder(borderRadius: radius),
+        textStyle: AppTextStyles.button(color: contentColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: AppSizes.iconMd, color: contentColor),
+            Icon(icon, size: 20, color: contentColor),
             const SizedBox(width: AppSizes.spaceXs),
           ],
-          Text(label, style: AppTextStyles.button(color: contentColor)),
+          labelText,
         ],
       ),
     );

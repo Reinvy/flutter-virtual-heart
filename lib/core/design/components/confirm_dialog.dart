@@ -24,17 +24,26 @@ Future<bool> showConfirmDialog(
       final scheme = Theme.of(ctx).colorScheme;
       final confirmColor = destructive ? scheme.error : scheme.primary;
       return AlertDialog(
-        title: Text(title, style: AppTextStyles.headingSmall(color: scheme.onSurface)),
-        content: Text(body, style: AppTextStyles.bodyMedium(color: scheme.onSurfaceVariant)),
+        title: Text(title, style: AppTextStyles.headingMedium(color: scheme.onSurface)),
+        content: Text(
+          body,
+          style: AppTextStyles.bodyMedium(color: scheme.onSurfaceVariant),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(cancelLabel, style: AppTextStyles.button(color: scheme.onSurfaceVariant)),
+            child: Text(
+              cancelLabel,
+              style: AppTextStyles.button(color: scheme.onSurfaceVariant),
+            ),
           ),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: confirmColor),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(confirmLabel, style: AppTextStyles.button(color: confirmColor)),
+            child: Text(
+              confirmLabel,
+              style: AppTextStyles.button(color: confirmColor),
+            ),
           ),
         ],
       );
