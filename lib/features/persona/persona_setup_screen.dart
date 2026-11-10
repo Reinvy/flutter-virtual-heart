@@ -1,11 +1,11 @@
 // Fitur Persona (FR-03) — layar setup/edit persona.
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/design/components/app_scaffold.dart';
+import '../../core/design/components/bloom_mark.dart';
 import '../../core/design/components/primary_button.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
@@ -123,42 +123,62 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
   @override
   Widget build(BuildContext context) {
     final strings = ref.watch(appStringsProvider);
-    return Scaffold(
-      body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              _buildHeader(strings),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSizes.xl,
-                    0,
-                    AppSizes.xl,
-                    AppSizes.xxl,
-                  ),
+    final scheme = Theme.of(context).colorScheme;
+
+    return AppScaffold(
+      safeArea: false,
+      body: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            SafeArea(bottom: false, child: _buildHeader(strings)),
+            Expanded(
+              child: SingleChildScrollView(
+                child: AppContent(
+                  maxWidth: 640,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildGenderSection(strings),
-                      const SizedBox(height: AppSizes.xl),
+                      const SizedBox(height: 28),
                       _buildAvatarSection(strings),
-                      const SizedBox(height: AppSizes.xl),
+                      const SizedBox(height: 28),
                       _buildNameSection(strings),
-                      const SizedBox(height: AppSizes.xl),
-                      _buildPersonalitySection(strings),
-                      const SizedBox(height: AppSizes.xl),
-                      _buildHobbiesSection(strings),
-                      const SizedBox(height: AppSizes.xl),
+                      const SizedBox(height: 20),
                       _buildNicknameSection(strings),
+                      const SizedBox(height: 28),
+                      _buildPersonalitySection(strings),
+                      const SizedBox(height: 28),
+                      _buildHobbiesSection(strings),
+                      const SizedBox(height: 40),
                     ],
                   ),
                 ),
               ),
-              _buildSaveButton(strings),
-            ],
-          ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                border: Border(
+                  top: BorderSide(color: scheme.outlineVariant, width: 1),
+                ),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.spaceLg,
+                    vertical: AppSizes.spaceSm,
+                  ),
+                  child: PrimaryButton(
+                    label: strings.personaSave,
+                    loading: _isSaving,
+                    onPressed: _save,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -167,52 +187,43 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
   Widget _buildHeader(AppStrings strings) {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSizes.xl,
-            AppSizes.lg,
-            AppSizes.xl,
-            AppSizes.lg,
-          ),
-          child: Row(
-            children: [
-              SvgPicture.asset(
-                'assets/icons/sakura.svg',
-                width: AppSizes.iconLg,
-                height: AppSizes.iconLg,
-                colorFilter: ColorFilter.mode(
-                  AppColors.accentFor(context),
-                  BlendMode.srcIn,
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.spaceLg,
+        AppSizes.spaceMd,
+        AppSizes.spaceLg,
+        AppSizes.spaceMd,
+      ),
+      child: Row(
+        children: [
+          const BloomMark(size: 36, glow: false),
+          const SizedBox(width: AppSizes.spaceSm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _isEditing
+                      ? strings.settingsEditPersona
+                      : strings.personaCreateTitle,
+                  style: AppTextStyles.headingLarge(color: scheme.onSurface),
                 ),
-              ),
-              const SizedBox(width: AppSizes.sm),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _isEditing
-                        ? strings.settingsEditPersona
-                        : strings.personaCreateTitle,
-                    style: AppTextStyles.headingLarge(),
+                Text(
+                  strings.personaCreateSubtitle,
+                  style: AppTextStyles.bodySmall(
+                    color: scheme.onSurfaceVariant,
                   ),
-                  Text(
-                    strings.personaCreateSubtitle,
-                    style: AppTextStyles.moodIndicator(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
-        )
-        .animate()
-        .fadeIn(duration: 500.ms)
-        .slideY(begin: -0.1, end: 0, duration: 500.ms);
+        ],
+      ),
+    );
   }
 
   Widget _buildSectionLabel(String label) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSizes.sm),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Text(
         label,
         style: AppTextStyles.headingSmall(
@@ -230,16 +241,16 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
         Row(
           children: [
             Expanded(
-              child: _GenderCard(
+              child: GenderOptionCard(
                 label: strings.personaGenderGirlfriend,
                 icon: Icons.female,
                 selected: _gender == PersonaGender.girlfriend,
                 onTap: () => _switchGender(PersonaGender.girlfriend),
               ),
             ),
-            const SizedBox(width: AppSizes.md),
+            const SizedBox(width: AppSizes.spaceSm),
             Expanded(
-              child: _GenderCard(
+              child: GenderOptionCard(
                 label: strings.personaGenderBoyfriend,
                 icon: Icons.male,
                 selected: _gender == PersonaGender.boyfriend,
@@ -249,7 +260,7 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
           ],
         ),
       ],
-    ).animate().fadeIn(duration: 500.ms, delay: 100.ms);
+    );
   }
 
   Widget _buildAvatarSection(AppStrings strings) {
@@ -257,24 +268,32 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionLabel(strings.personaChooseAppearance),
-        Wrap(
-          spacing: AppSizes.md,
-          runSpacing: AppSizes.md,
-          children: [
-            for (final avatar in _currentAvatars)
-              _AvatarTile(
-                option: avatar,
-                isGirlfriend: _gender == PersonaGender.girlfriend,
-                isSelected: _selectedAvatarId == avatar.id,
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _selectedAvatarId = avatar.id);
-                },
-              ),
-          ],
+        SizedBox(
+          height: 96,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+            itemCount: _currentAvatars.length,
+            separatorBuilder: (_, _) => const SizedBox(width: AppSizes.spaceSm),
+            itemBuilder: (context, index) {
+              final avatar = _currentAvatars[index];
+              final selected = _selectedAvatarId == avatar.id;
+              return Semantics(
+                button: true,
+                selected: selected,
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _selectedAvatarId = avatar.id);
+                  },
+                  child: avatarCircle(context, avatar, 76, selected: selected),
+                ),
+              );
+            },
+          ),
         ),
       ],
-    ).animate().fadeIn(duration: 500.ms, delay: 200.ms);
+    );
   }
 
   Widget _buildNameSection(AppStrings strings) {
@@ -285,11 +304,10 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
         TextFormField(
           controller: _nameController,
           style: AppTextStyles.bodyMedium(),
-          cursorColor: AppColors.primary,
           textCapitalization: TextCapitalization.words,
-          decoration: _inputDecoration(
-            hint: strings.personaNameHint,
-            icon: Icons.badge_outlined,
+          decoration: InputDecoration(
+            hintText: strings.personaNameHint,
+            prefixIcon: const Icon(Icons.badge_outlined, size: AppSizes.iconMd),
           ),
           validator: (v) {
             if (v == null || v.trim().isEmpty) return strings.personaNameEmpty;
@@ -299,7 +317,31 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
           },
         ),
       ],
-    ).animate().fadeIn(duration: 500.ms, delay: 300.ms);
+    );
+  }
+
+  Widget _buildNicknameSection(AppStrings strings) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionLabel(strings.personaNickname),
+        TextFormField(
+          controller: _nicknameController,
+          style: AppTextStyles.bodyMedium(),
+          textCapitalization: TextCapitalization.words,
+          decoration: InputDecoration(
+            hintText: strings.personaNicknameHint,
+            prefixIcon: const Icon(Icons.person_outline, size: AppSizes.iconMd),
+          ),
+          validator: (v) {
+            if (v == null || v.trim().isEmpty) {
+              return strings.personaNicknameEmpty;
+            }
+            return null;
+          },
+        ),
+      ],
+    );
   }
 
   Widget _buildPersonalitySection(AppStrings strings) {
@@ -307,64 +349,61 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionLabel(strings.personaPersonality),
-        ...PersonalityPreset.values.map((preset) {
-          final data = _personalityData(strings, preset);
-          return Padding(
-            padding: const EdgeInsets.only(bottom: AppSizes.sm),
-            child: _PersonalityCard(
-              emoji: data.$1,
-              label: data.$2,
-              description: data.$3,
-              isSelected: _personality == preset,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                setState(() => _personality = preset);
-              },
-            ),
-          );
-        }),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final twoColumns = constraints.maxWidth >= 520;
+            if (!twoColumns) {
+              return Column(
+                children: [
+                  for (final preset in PersonalityPreset.values)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: PersonalityOptionCard(
+                        preset: preset,
+                        selected: _personality == preset,
+                        onTap: () => setState(() => _personality = preset),
+                      ),
+                    ),
+                ],
+              );
+            }
+            final width = (constraints.maxWidth - AppSizes.spaceSm) / 2;
+            return Wrap(
+              spacing: AppSizes.spaceSm,
+              runSpacing: AppSizes.spaceSm,
+              children: [
+                for (final preset in PersonalityPreset.values)
+                  SizedBox(
+                    width: width,
+                    child: PersonalityOptionCard(
+                      preset: preset,
+                      selected: _personality == preset,
+                      compact: true,
+                      onTap: () => setState(() => _personality = preset),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
       ],
-    ).animate().fadeIn(duration: 500.ms, delay: 400.ms);
-  }
-
-  (String, String, String) _personalityData(
-    AppStrings strings,
-    PersonalityPreset preset,
-  ) {
-    return switch (preset) {
-      PersonalityPreset.gentle => (
-        '🌸',
-        strings.personaPersonalityGentle,
-        strings.personaPersonalityGentleDesc,
-      ),
-      PersonalityPreset.cheerful => (
-        '✨',
-        strings.personaPersonalityCheerful,
-        strings.personaPersonalityCheerfulDesc,
-      ),
-      PersonalityPreset.mature => (
-        '🌙',
-        strings.personaPersonalityMature,
-        strings.personaPersonalityMatureDesc,
-      ),
-      PersonalityPreset.mysterious => (
-        '🔮',
-        strings.personaPersonalityMysterious,
-        strings.personaPersonalityMysteriousDesc,
-      ),
-    };
+    );
   }
 
   Widget _buildHobbiesSection(AppStrings strings) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionLabel(strings.personaHobbies),
-        Text(strings.personaHobbiesHint, style: AppTextStyles.timestamp()),
-        const SizedBox(height: AppSizes.sm),
+        Text(
+          strings.personaHobbiesHint,
+          style: AppTextStyles.caption(color: scheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 10),
         Wrap(
-          spacing: AppSizes.sm,
-          runSpacing: AppSizes.sm,
+          spacing: AppSizes.spaceXs,
+          runSpacing: AppSizes.spaceXs,
           children: [
             for (final hobby in kHobbiesList)
               HobbyChip(
@@ -383,289 +422,6 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
           ],
         ),
       ],
-    ).animate().fadeIn(duration: 500.ms, delay: 500.ms);
-  }
-
-  Widget _buildNicknameSection(AppStrings strings) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionLabel(strings.personaNickname),
-        TextFormField(
-          controller: _nicknameController,
-          style: AppTextStyles.bodyMedium(),
-          cursorColor: AppColors.primary,
-          textCapitalization: TextCapitalization.words,
-          decoration: _inputDecoration(
-            hint: strings.personaNicknameHint,
-            icon: Icons.person_outline,
-          ),
-          validator: (v) {
-            if (v == null || v.trim().isEmpty) {
-              return strings.personaNicknameEmpty;
-            }
-            return null;
-          },
-        ),
-      ],
-    ).animate().fadeIn(duration: 500.ms, delay: 600.ms);
-  }
-
-  Widget _buildSaveButton(AppStrings strings) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSizes.xl,
-        AppSizes.md,
-        AppSizes.xl,
-        AppSizes.lg,
-      ),
-      child: PrimaryButton(
-        label: strings.personaSave,
-        loading: _isSaving,
-        onPressed: _save,
-      ),
-    ).animate().fadeIn(duration: 500.ms, delay: 700.ms);
-  }
-
-  InputDecoration _inputDecoration({
-    required String hint,
-    required IconData icon,
-  }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: AppTextStyles.inputHint(),
-      prefixIcon: Icon(
-        icon,
-        color: AppColors.textSecondaryFor(context),
-        size: AppSizes.iconMd,
-      ),
-      filled: true,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-        borderSide: const BorderSide(color: AppColors.error, width: 1),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-        borderSide: const BorderSide(color: AppColors.error, width: 1.5),
-      ),
-    );
-  }
-}
-
-// ── Sub-widgets ───────────────────────────────────────────────────────────────
-
-class _GenderCard extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _GenderCard({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: label,
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: AppSizes.md),
-          decoration: BoxDecoration(
-            color: selected ? scheme.primaryContainer : scheme.surface,
-            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-            border: Border.all(
-              color: selected
-                  ? AppColors.primaryDeepFor(context)
-                  : Colors.transparent,
-              width: 1.5,
-            ),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                color: selected
-                    ? AppColors.primaryDeepFor(context)
-                    : scheme.onSurfaceVariant,
-                size: 32,
-              ),
-              const SizedBox(height: AppSizes.xs),
-              Text(
-                label,
-                style: AppTextStyles.settingsLabel(
-                  color: selected
-                      ? AppColors.primaryDeepFor(context)
-                      : scheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AvatarTile extends StatelessWidget {
-  final AvatarOpt option;
-  final bool isGirlfriend;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _AvatarTile({
-    required this.option,
-    required this.isGirlfriend,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 64,
-        height: 64,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [
-              option.accent.withValues(alpha: isSelected ? 0.7843 : 0.3922),
-              option.base.withValues(alpha: isSelected ? 0.8627 : 0.4706),
-            ],
-          ),
-          border: Border.all(
-            color: isSelected ? option.base : Colors.transparent,
-            width: 2.5,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: option.base.withValues(alpha: 0.3922),
-                    blurRadius: 12,
-                    spreadRadius: 2,
-                  ),
-                ]
-              : null,
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Icon(
-              isGirlfriend ? Icons.face_retouching_natural : Icons.person,
-              color: Colors.white.withValues(alpha: 0.8627),
-              size: 32,
-            ),
-            if (isSelected)
-              Positioned(
-                right: 1,
-                bottom: 1,
-                child: Container(
-                  width: 18,
-                  height: 18,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: option.base,
-                    border: Border.all(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      width: 1.5,
-                    ),
-                  ),
-                  child: const Icon(Icons.check, color: Colors.white, size: 11),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PersonalityCard extends StatelessWidget {
-  final String emoji;
-  final String label;
-  final String description;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _PersonalityCard({
-    required this.emoji,
-    required this.label,
-    required this.description,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: label,
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.all(AppSizes.md),
-          decoration: BoxDecoration(
-            color: isSelected ? scheme.primaryContainer : scheme.surface,
-            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-            border: Border.all(
-              color: isSelected
-                  ? AppColors.primaryDeepFor(context)
-                  : Colors.transparent,
-              width: 1.5,
-            ),
-          ),
-          child: Row(
-            children: [
-              Text(emoji, style: const TextStyle(fontSize: 24)),
-              const SizedBox(width: AppSizes.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: AppTextStyles.headingSmall(
-                        color: isSelected
-                            ? AppColors.primaryDeepFor(context)
-                            : scheme.onSurface,
-                      ),
-                    ),
-                    Text(description, style: AppTextStyles.moodIndicator()),
-                  ],
-                ),
-              ),
-              if (isSelected)
-                Icon(
-                  Icons.check_circle,
-                  color: AppColors.primaryDeepFor(context),
-                  size: AppSizes.iconMd,
-                ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
