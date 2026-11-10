@@ -54,7 +54,7 @@ Voice selection is **global**, not per-persona. Known gaps are tracked in
 - **Riverpod 3** — manual `Notifier`/`AsyncNotifier` providers (no codegen)
 - **ObjectBox** — local-first storage for chat, memory, persona, mood, settings
 - **go_router** — declarative routing with a pure redirect guard
-- **material_ui** — Material widgets; custom Sakura design system
+- **material_ui** — Material widgets; custom Sakura Dusk design system
 - Exact versions and pinned transitive dependencies: [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md)
 
 Architecture:
@@ -113,9 +113,10 @@ Setup details per platform: [`docs/PLATFORM_SETUP.md`](docs/PLATFORM_SETUP.md).
 
 ## 🎨 Design System
 
-Sakura Romance theme: blush pink surfaces, electric purple accent, Shippori Mincho headings and
-Nunito body text, light/dark/system modes. Tokens live in
-`lib/core/design/tokens/` (`AppColors`, `AppSizes`, `AppDurations`, `AppTextStyles`).
+Sakura Dusk: warm ivory paper, plum ink, rose + lavender accents, Fraunces headings and Plus
+Jakarta Sans body text, light/dark/system modes. Tokens live in
+`lib/core/design/tokens/` (`AppColors`, `AppGradients`, `AppShadows`, `AppSizes`,
+`AppDurations`, `AppTextStyles`). Every screen shares `AppScaffold`/`AppBackground`.
 See [`docs/DESIGN.md`](docs/DESIGN.md).
 
 ## 🔐 Privacy

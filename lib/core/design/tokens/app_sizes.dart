@@ -76,10 +76,4 @@ abstract final class AppSizes {
   // ── Aksesibilitas ─────────────────────────────────────────────────────
   /// Target sentuh minimum (docs/DESIGN.md §5): 48 dp.
   static const double touchTarget = 48;
-
-  // ── Chat bubble & input bar (dipertahankan sampai rewrite Step 7) ──────
-  static const double bubbleMaxWidthFraction = 0.75;
-  static const double inputBarHeight = 56;
-  static const double bubblePaddingH = 14;
-  static const double bubblePaddingV = 10;
 }

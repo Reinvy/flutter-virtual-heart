@@ -34,11 +34,14 @@ lib/
 │   ├── design/
 │   │   ├── app_theme.dart       # ThemeData light/dark (dibangun sekali)
 │   │   ├── app_theme_provider.dart
-│   │   ├── mood_visuals.dart    # moodEmoji bersama
-│   │   ├── components/          # primary_button, secondary_button, app_icon_button,
+│   │   ├── mood_visuals.dart    # moodEmoji + moodLabel + moodColor bersama
+│   │   ├── components/          # app_scaffold, app_background, bloom_mark,
+│   │   │                        # app_icon_badge, app_sheet, sheet_header,
+│   │   │                        # primary_button, secondary_button, app_icon_button,
 │   │   │                        # section_card, confirm_dialog, empty_state,
-│   │   │                        # sakura_background, sakura_divider, speaker_button
-│   │   └── tokens/              # app_colors, app_sizes, app_durations, text_styles
+│   │   │                        # speaker_button
+│   │   └── tokens/              # app_colors, app_effects, app_sizes,
+│   │                            # app_durations, text_styles
 │   ├── errors/app_logger.dart   # satu-satunya logger
 │   ├── l10n/app_strings.dart    # AppStrings + IndonesianStrings + EnglishStrings
 │   ├── router/app_router.dart   # GoRouter + resolveRedirect (fungsi murni)
@@ -77,7 +80,9 @@ lib/
     ├── model/          # model_download_screen, model_error_text
     ├── chat/           # chat_screen, chat_controller, mood_provider, widgets/
     ├── memory/         # memory_screen, memory_controller
-    ├── settings/       # settings_screen, privacy_screen + widget section
+    ├── settings/       # settings_screen, privacy_screen + widgets/ (section, row,
+    │                   # permission_row, appearance, language, model, voice,
+    │                   # notifications, data_privacy, persona)
     └── notifications/  # app_lifecycle_observer, notification_controller
 ```
 

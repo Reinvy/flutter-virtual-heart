@@ -110,6 +110,7 @@ class PersonaProfileSheet extends ConsumerWidget {
         decoration: BoxDecoration(gradient: AppGradients.profileHeader(context)),
         padding: const EdgeInsets.all(AppSizes.spaceMd + 4),
         child: Stack(
+          alignment: Alignment.topCenter,
           children: [
             Positioned(
               top: -28,
@@ -251,9 +252,7 @@ class PersonaProfileSheet extends ConsumerWidget {
       children: [
         Text(
           strings.personaHobbies,
-          style: AppTextStyles.headingSmall(
-            color: scheme.onSurface,
-          ).copyWith(fontSize: 17),
+          style: AppTextStyles.headingSmall(color: scheme.onSurface),
         ),
         const SizedBox(height: AppSizes.spaceSm),
         Wrap(
@@ -267,7 +266,6 @@ class PersonaProfileSheet extends ConsumerWidget {
                   horizontal: AppSizes.spaceSm + 2,
                   vertical: 8,
                 ),
-                alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: scheme.primaryContainer,
                   borderRadius: BorderRadius.circular(AppSizes.radiusFull),

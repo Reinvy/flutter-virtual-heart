@@ -100,10 +100,11 @@ class GenderOptionCard extends StatelessWidget {
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.spaceMd,
-                vertical: AppSizes.spaceSm + 2,
+                horizontal: AppSizes.spaceSm,
+                vertical: 14,
               ),
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
                     width: 44,
@@ -122,15 +123,15 @@ class GenderOptionCard extends StatelessWidget {
                           : scheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(width: AppSizes.spaceSm),
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: AppTextStyles.settingsLabel(
-                        color: selected
-                            ? AppColors.primaryDeepFor(context)
-                            : scheme.onSurface,
-                      ),
+                  const SizedBox(height: AppSizes.spaceXs),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.settingsLabel(
+                      color: selected
+                          ? AppColors.primaryDeepFor(context)
+                          : scheme.onSurface,
                     ),
                   ),
                 ],

@@ -32,7 +32,7 @@ akhir dokumen bersifat mesin-terbaca: `tool/check_docs.dart` membandingkannya de
 | `objectbox` / `objectbox_flutter_libs` | `^5.3.2` | database lokal | binding generated |
 | `path_provider` | `^2.1.6` | direktori app | |
 | `go_router` | `^18.1.3` | navigasi | guard murni `resolveRedirect` |
-| `google_fonts` | `^9.0.0` | Shippori Mincho + Nunito | fetch runtime (lihat PRIVACY) |
+| `google_fonts` | `^9.0.0` | Fraunces + Plus Jakarta Sans | fetch runtime (lihat PRIVACY) |
 | `flutter_animate` | `^4.5.2` | animasi deklaratif | |
 | `flutter_svg` | `^2.3.2` | aset SVG | |
 | `gpt_markdown` | `^1.4.1` | render markdown jawaban | |

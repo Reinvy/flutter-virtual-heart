@@ -42,6 +42,7 @@ bergeser).
 | KI-15 | rendah | Theme | `lib/core/design/tokens/app_colors.dart`, beberapa widget | partial | Warna eksplisit sekarang memakai `AppColors.*For(context)`/`ColorScheme` (dijaga `test/core/design_contrast_test.dart` ≥ 4.5:1), tetapi beberapa ukuran mentah masih ditulis langsung di widget. |
 | KI-18 | sedang | Test | `test/` | partial | Fungsi murni, controller, router, dan widget inti sudah dites. `ChatNotifier` end-to-end, `ModelServiceNotifier`, `TtsService`/`SttService`, dan notifikasi tetap butuh engine/perangkat (lihat `TESTING.md`). |
 | KI-23 | rendah | Test | `lib/objectbox.g.dart` | fixed | `test/core/objectbox_settings_test.dart` sekarang benar-benar berjalan (library native diunduh `install.sh`; CI gagal bila tidak ada) dan `make gen-check` mendeteksi drift binding. |
+| KI-24 | sedang | UI/visual | `lib/core/design/components/app_scaffold.dart`, `lib/core/design/components/app_background.dart` | unverified | Redesign Sakura Dusk diverifikasi visual lewat harness widget-test (light/dark, 390×844, 320 dp) karena `flutter run -d linux` tidak bisa dibangun di lingkungan ini (CMake tidak tersedia). Tampilan di perangkat Android/iOS fisik belum diverifikasi; gradient/glow, font runtime, dan sheet harus dicek ulang di perangkat. `make apk` tetap dijalankan untuk membuktikan build Android.
 
 ## 5. Rilis & supply chain
 
