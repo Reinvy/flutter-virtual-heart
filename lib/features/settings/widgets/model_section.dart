@@ -3,11 +3,12 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/design/components/section_card.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/router/app_router.dart';
 import '../../../models/app_settings.dart';
 import '../../../services/ai/model_catalog.dart';
+import 'settings_row.dart';
+import 'settings_section.dart';
 
 /// Label model aktif: nama katalog bila dikenal, selain itu nama file.
 String currentModelLabel(AppSettings settings, AppStrings strings) {
@@ -26,26 +27,20 @@ class ModelSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(appStringsProvider);
-    final scheme = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return SettingsSection(
+      title: strings.settingsModel,
+      icon: Icons.memory_rounded,
       children: [
-        sectionHeader(context, strings.settingsModel, Icons.memory_rounded),
-        sectionCard(
-          context: context,
-          children: [
-            ListTile(
-              leading: Icon(Icons.smart_toy_outlined, color: scheme.primary),
-              title: Text(strings.modelCurrent),
-              subtitle: Text(currentModelLabel(settings, strings)),
-            ),
-            ListTile(
-              leading: Icon(Icons.swap_horiz_rounded, color: scheme.primary),
-              title: Text(strings.modelChange),
-              trailing: Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
-              onTap: () => context.push(AppRoutes.modelDownload),
-            ),
-          ],
+        SettingsRow(
+          icon: Icons.smart_toy_outlined,
+          title: strings.modelCurrent,
+          subtitle: currentModelLabel(settings, strings),
+        ),
+        SettingsRow(
+          icon: Icons.swap_horiz_rounded,
+          title: strings.modelChange,
+          showChevron: true,
+          onTap: () => context.push(AppRoutes.modelDownload),
         ),
       ],
     );

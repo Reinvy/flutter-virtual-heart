@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/design/components/app_scaffold.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
@@ -23,34 +24,36 @@ class SettingsScreen extends ConsumerWidget {
     final strings = ref.watch(appStringsProvider);
     final settings = ref.watch(appSettingsProvider);
 
-    return Scaffold(
+    return AppScaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-          onPressed: () => context.canPop() ? context.pop() : context.go(AppRoutes.chat),
+        leading: BackButton(
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go(AppRoutes.chat),
         ),
-        title: Text(strings.settingsTitle, style: Theme.of(context).textTheme.headlineSmall),
-        centerTitle: true,
+        title: Text(strings.settingsTitle),
+        centerTitle: false,
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceMd, vertical: AppSizes.spaceXs),
-        children: [
-          PersonaSection(settings: settings),
-          const SizedBox(height: AppSizes.spaceMd),
-          AppearanceSection(settings: settings),
-          const SizedBox(height: AppSizes.spaceMd),
-          LanguageSection(settings: settings),
-          const SizedBox(height: AppSizes.spaceMd),
-          ModelSection(settings: settings),
-          const SizedBox(height: AppSizes.spaceMd),
-          VoiceSection(settings: settings),
-          const SizedBox(height: AppSizes.spaceMd),
-          NotificationsSection(settings: settings),
-          const SizedBox(height: AppSizes.spaceMd),
-          const DataPrivacySection(),
-          const SizedBox(height: AppSizes.spaceXl),
-        ],
+      body: AppContent(
+        maxWidth: 720,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceXs),
+          children: [
+            PersonaSection(settings: settings),
+            const SizedBox(height: AppSizes.spaceLg),
+            AppearanceSection(settings: settings),
+            const SizedBox(height: AppSizes.spaceLg),
+            LanguageSection(settings: settings),
+            const SizedBox(height: AppSizes.spaceLg),
+            ModelSection(settings: settings),
+            const SizedBox(height: AppSizes.spaceLg),
+            VoiceSection(settings: settings),
+            const SizedBox(height: AppSizes.spaceLg),
+            NotificationsSection(settings: settings),
+            const SizedBox(height: AppSizes.spaceLg),
+            const DataPrivacySection(),
+            const SizedBox(height: AppSizes.spaceXl),
+          ],
+        ),
       ),
     );
   }

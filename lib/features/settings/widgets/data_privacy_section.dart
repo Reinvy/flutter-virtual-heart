@@ -5,14 +5,15 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../../core/design/components/app_icon_badge.dart';
 import '../../../core/design/components/confirm_dialog.dart';
-import '../../../core/design/components/section_card.dart';
+import '../../../core/design/tokens/app_sizes.dart';
+import '../../../core/design/tokens/text_styles.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/router/app_router.dart';
 import '../../../models/message.dart';
@@ -25,6 +26,8 @@ import '../../memory/memory_controller.dart';
 import 'package:virtual_heart/services/ai/model_ready_provider.dart';
 import '../../persona/persona_controller.dart';
 import 'package:virtual_heart/services/settings/settings_service.dart';
+import 'settings_row.dart';
+import 'settings_section.dart';
 
 class DataPrivacySection extends ConsumerWidget {
   const DataPrivacySection({super.key});
@@ -182,56 +185,72 @@ class DataPrivacySection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(appStringsProvider);
     final scheme = Theme.of(context).colorScheme;
-    final subtleColor = scheme.onSurfaceVariant;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return SettingsSection(
+      title: strings.settingsDataPrivacy,
+      icon: Icons.lock_outline_rounded,
       children: [
-        sectionHeader(context, strings.settingsDataPrivacy, Icons.lock_outline_rounded),
-        sectionCard(
-          context: context,
-          children: [
-            ListTile(
-              dense: true,
-              leading: Icon(Icons.storage_rounded, color: subtleColor),
-              title: Text(strings.settingsLocalStorage),
-              subtitle: Text(strings.settingsLocalStorageBody),
-              isThreeLine: true,
-            ),
-            ListTile(
-              dense: true,
-              leading: Icon(Icons.privacy_tip_outlined, color: subtleColor),
-              title: Text(strings.settingsPrivacyPolicy),
-              trailing: Icon(Icons.chevron_right_rounded, color: subtleColor),
-              onTap: () => context.push(AppRoutes.privacy),
-            ),
-            ListTile(
-              dense: true,
-              leading: Icon(Icons.delete_outline_rounded, color: scheme.error),
-              title: Text(strings.settingsDeleteConversations, style: TextStyle(color: scheme.error)),
-              onTap: () => _confirmDeleteAll(context, ref),
-            ),
-            ListTile(
-              dense: true,
-              leading: Icon(Icons.download_rounded, color: scheme.primary),
-              title: Text(strings.settingsExportChat),
-              subtitle: Text(strings.settingsExportChatDesc),
-              trailing: Icon(Icons.chevron_right_rounded, color: subtleColor),
-              onTap: () => _exportChat(context, ref),
-            ),
-            ListTile(
-              dense: true,
-              leading: Icon(Icons.warning_amber_rounded, color: scheme.error),
-              title: Text(
-                strings.settingsResetAll,
-                style: TextStyle(color: scheme.error),
+        Container(
+          margin: const EdgeInsets.all(AppSizes.spaceMd),
+          padding: const EdgeInsets.all(AppSizes.spaceMd),
+          decoration: BoxDecoration(
+            color: scheme.primaryContainer.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(AppSizes.radiusControl),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppIconBadge(icon: Icons.shield_outlined),
+              const SizedBox(width: AppSizes.spaceSm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      strings.settingsLocalStorage,
+                      style: AppTextStyles.settingsLabel(
+                        color: scheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.spaceXxs),
+                    Text(
+                      strings.settingsLocalStorageBody,
+                      style: AppTextStyles.bodySmall(
+                        color: scheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              subtitle: Text(strings.settingsResetAllDesc),
-              isThreeLine: true,
-              onTap: () => _confirmResetAll(context, ref),
-            ),
-          ],
+            ],
+          ),
+        ),
+        SettingsRow(
+          icon: Icons.privacy_tip_outlined,
+          title: strings.settingsPrivacyPolicy,
+          showChevron: true,
+          onTap: () => context.push(AppRoutes.privacy),
+        ),
+        SettingsRow(
+          icon: Icons.download_rounded,
+          title: strings.settingsExportChat,
+          subtitle: strings.settingsExportChatDesc,
+          showChevron: true,
+          onTap: () => _exportChat(context, ref),
+        ),
+        SettingsRow(
+          icon: Icons.delete_outline_rounded,
+          title: strings.settingsDeleteConversations,
+          destructive: true,
+          onTap: () => _confirmDeleteAll(context, ref),
+        ),
+        SettingsRow(
+          icon: Icons.warning_amber_rounded,
+          title: strings.settingsResetAll,
+          subtitle: strings.settingsResetAllDesc,
+          destructive: true,
+          onTap: () => _confirmResetAll(context, ref),
         ),
       ],
-    ).animate().fadeIn(duration: 300.ms, delay: 300.ms).slideY(begin: 0.04, end: 0);
+    );
   }
 }

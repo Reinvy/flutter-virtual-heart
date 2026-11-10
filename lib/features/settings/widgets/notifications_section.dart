@@ -1,17 +1,20 @@
 // Settings — Notifications (FR-15..FR-17 + status izin FR-18).
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../../../core/design/components/section_card.dart';
+import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/design/tokens/app_sizes.dart';
+import '../../../core/design/tokens/text_styles.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../models/app_settings.dart';
 import '../../../services/notification_service.dart';
 import '../../notifications/notification_controller.dart';
 import 'package:virtual_heart/services/settings/settings_service.dart';
+import 'settings_permission_row.dart';
+import 'settings_row.dart';
+import 'settings_section.dart';
 
 class NotificationsSection extends ConsumerWidget {
   final AppSettings settings;
@@ -36,7 +39,6 @@ class NotificationsSection extends ConsumerWidget {
     final timeStr =
         '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
     final updated = settings.copyWith(notificationMorningTime: timeStr);
-    ref.read(appSettingsProvider.notifier).save(updated);
     await _apply(context, ref, updated);
   }
 
@@ -101,94 +103,107 @@ class NotificationsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(appStringsProvider);
-    final scheme = Theme.of(context).colorScheme;
-    final subtleColor = scheme.onSurfaceVariant;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+
+    return SettingsSection(
+      title: strings.settingsNotifications,
+      icon: Icons.notifications_outlined,
       children: [
-        sectionHeader(context, strings.settingsNotifications, Icons.notifications_outlined),
-        sectionCard(
-          context: context,
-          children: [
-            SwitchListTile(
-              dense: true,
-              secondary: const Icon(Icons.wb_sunny_outlined),
-              title: Text(strings.settingsMorningMessage),
-              subtitle: Text(strings.settingsMorningMessageDesc),
-              value: settings.notificationMorningEnabled,
-              onChanged: (v) async {
-                HapticFeedback.selectionClick();
-                await _toggle(
-                  context,
-                  ref,
-                  build: () => settings.copyWith(notificationMorningEnabled: v),
-                  enabled: v,
-                );
-              },
+        SettingsRow(
+          icon: Icons.wb_sunny_outlined,
+          title: strings.settingsMorningMessage,
+          subtitle: strings.settingsMorningMessageDesc,
+          trailing: Switch.adaptive(
+            value: settings.notificationMorningEnabled,
+            onChanged: (v) async {
+              HapticFeedback.selectionClick();
+              await _toggle(
+                context,
+                ref,
+                build: () => settings.copyWith(notificationMorningEnabled: v),
+                enabled: v,
+              );
+            },
+          ),
+        ),
+        if (settings.notificationMorningEnabled)
+          SettingsRow(
+            icon: Icons.access_time_rounded,
+            title: strings.settingsMorningTime,
+            onTap: () => _pickTime(context, ref),
+            trailing: _ValueChevron(
+              value: settings.notificationMorningTime,
             ),
-            if (settings.notificationMorningEnabled)
-              ListTile(
-                dense: true,
-                leading: const Icon(Icons.access_time_rounded),
-                title: Text(strings.settingsMorningTime),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      settings.notificationMorningTime,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: scheme.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(width: AppSizes.spaceXs),
-                    Icon(Icons.chevron_right_rounded, color: subtleColor),
-                  ],
-                ),
-                onTap: () => _pickTime(context, ref),
+          ),
+        SettingsRow(
+          icon: Icons.timer_outlined,
+          title: strings.settingsCheckin,
+          subtitle: strings.settingsCheckinDesc,
+          trailing: Switch.adaptive(
+            value: settings.notificationCheckinEnabled,
+            onChanged: (v) async {
+              HapticFeedback.selectionClick();
+              await _toggle(
+                context,
+                ref,
+                build: () => settings.copyWith(notificationCheckinEnabled: v),
+                enabled: v,
+              );
+            },
+          ),
+        ),
+        if (settings.notificationCheckinEnabled)
+          SettingsRow(
+            icon: Icons.hourglass_bottom_rounded,
+            title: strings.settingsCheckinHours,
+            onTap: () => _pickCheckinHours(context, ref),
+            trailing: _ValueChevron(
+              value: strings.settingsCheckinHoursValue(
+                settings.notificationCheckinHours,
               ),
-            SwitchListTile(
-              dense: true,
-              secondary: const Icon(Icons.timer_outlined),
-              title: Text(strings.settingsCheckin),
-              subtitle: Text(strings.settingsCheckinDesc),
-              value: settings.notificationCheckinEnabled,
-              onChanged: (v) async {
-                HapticFeedback.selectionClick();
-                await _toggle(
-                  context,
-                  ref,
-                  build: () => settings.copyWith(notificationCheckinEnabled: v),
-                  enabled: v,
-                );
-              },
             ),
-            if (settings.notificationCheckinEnabled)
-              ListTile(
-                dense: true,
-                leading: const Icon(Icons.hourglass_bottom_rounded),
-                title: Text(strings.settingsCheckinHours),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      strings.settingsCheckinHoursValue(settings.notificationCheckinHours),
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: scheme.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(width: AppSizes.spaceXs),
-                    Icon(Icons.chevron_right_rounded, color: subtleColor),
-                  ],
-                ),
-                onTap: () => _pickCheckinHours(context, ref),
-              ),
-            _NotificationPermissionTile(strings: strings),
-          ],
+          ),
+        _NotificationPermissionTile(strings: strings),
+      ],
+    );
+  }
+}
+
+/// Nilai waktu dalam pill + chevron untuk baris yang membuka picker.
+class _ValueChevron extends StatelessWidget {
+  const _ValueChevron({required this.value});
+
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 10,
+            vertical: AppSizes.spaceXxs,
+          ),
+          decoration: BoxDecoration(
+            color: scheme.primaryContainer,
+            borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+          ),
+          child: Text(
+            value,
+            style: AppTextStyles.settingsLabel(
+              color: AppColors.primaryDeepFor(context),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSizes.spaceXs),
+        Icon(
+          Icons.chevron_right_rounded,
+          size: 20,
+          color: scheme.onSurfaceVariant,
         ),
       ],
-    ).animate().fadeIn(duration: 300.ms, delay: 240.ms).slideY(begin: 0.04, end: 0);
+    );
   }
 }
 
@@ -248,37 +263,31 @@ class _NotificationPermissionTileState extends ConsumerState<_NotificationPermis
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final granted = _granted;
 
     if (granted == true) {
-      return ListTile(
-        dense: true,
-        leading: Icon(Icons.notifications_active_outlined, color: scheme.primary),
-        title: Text(widget.strings.settingsNotifPermissionGranted),
-        trailing: Icon(Icons.check_circle_outline_rounded, color: scheme.primary),
+      return SettingsPermissionRow(
+        icon: Icons.notifications_active_outlined,
+        title: widget.strings.settingsNotifPermissionGranted,
+        subtitle: '',
+        state: SettingsPermissionState.granted,
       );
     }
 
     final undetermined = granted == null;
-    return ListTile(
-      dense: true,
-      leading: Icon(Icons.notifications_none_rounded, color: scheme.onSurfaceVariant),
-      title: Text(
-        undetermined
-            ? widget.strings.settingsNotifPermissionUndetermined
-            : widget.strings.settingsNotifPermissionDenied,
-      ),
-      subtitle: Text(widget.strings.settingsNotifPermissionOpenSettings),
-      trailing: TextButton(
-        onPressed: undetermined ? _request : _openSettings,
-        child: Text(
-          undetermined
-              ? widget.strings.settingsNotifPermissionEnable
-              : widget.strings.settingsNotifPermissionOpenSettings,
-        ),
-      ),
-      onTap: undetermined ? _request : _openSettings,
+    return SettingsPermissionRow(
+      icon: Icons.notifications_none_rounded,
+      title: undetermined
+          ? widget.strings.settingsNotifPermissionUndetermined
+          : widget.strings.settingsNotifPermissionDenied,
+      subtitle: widget.strings.settingsNotifPermissionOpenSettings,
+      state: undetermined
+          ? SettingsPermissionState.notRequested
+          : SettingsPermissionState.denied,
+      actionLabel: undetermined
+          ? widget.strings.settingsNotifPermissionEnable
+          : widget.strings.settingsNotifPermissionOpenSettings,
+      onAction: undetermined ? _request : _openSettings,
     );
   }
 }
