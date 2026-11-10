@@ -1,21 +1,36 @@
 // Design tokens — Motion (docs/DESIGN.md §2.6)
+//
+// Semua animasi dekoratif/loop wajib memeriksa
+// `MediaQuery.disableAnimationsOf(context)` dan berhenti statis.
 import 'package:material_ui/material_ui.dart';
 
 abstract final class AppDurations {
   AppDurations._();
 
+  /// Perubahan instan: warna border, opacity.
+  static const Duration durationInstant = Duration(milliseconds: 90);
+
   /// Micro-interactions: hover, state toggle, chip.
-  static const Duration durationFast = Duration(milliseconds: 120);
+  static const Duration durationFast = Duration(milliseconds: 140);
 
   /// Transisi antar layar, sheet.
-  static const Duration durationNormal = Duration(milliseconds: 240);
+  static const Duration durationNormal = Duration(milliseconds: 260);
 
   /// Elemen hero, onboarding.
-  static const Duration durationSlow = Duration(milliseconds: 400);
+  static const Duration durationSlow = Duration(milliseconds: 420);
+
+  /// Siklus napas BloomMark.
+  static const Duration durationBreath = Duration(milliseconds: 2600);
+
+  /// Jeda antar item pada animasi berurutan.
+  static const Duration stagger = Duration(milliseconds: 60);
 
   /// Kurva standar untuk sebagian besar animasi.
   static const Curve curveStandard = Curves.easeOutCubic;
 
-  /// Kurva emotive — heartbeat, bounce lembut.
-  static const Curve curveEmotive = Curves.easeInOutBack;
+  /// Kurva emotive — napas, transisi lembut dua arah.
+  static const Curve curveEmotive = Curves.easeInOutCubic;
+
+  /// Kurva pegas untuk state pop (badge, check).
+  static const Curve curveSpring = Curves.easeOutBack;
 }

@@ -1,72 +1,125 @@
 // Design tokens — Warna (docs/DESIGN.md §2.1)
 //
-// Tema: **Sakura Romance** — terinspirasi Yae Miko (Genshin Impact):
-// pink sakura, putih hangat, aksen ungu elektrik (Electro), hati merah muda.
+// Tema: **Sakura Dusk / Senja Sakura** — kertas ivory hangat, tinta plum,
+// satu aksen rose yang tenang, lavender sebagai aksen kedua.
 // Mode utama & default: **Light**. Dark mode disetel independen (bukan inversi).
 //
 // Aturan penamaan:
 //   - Token umum (default light): `background`, `surface`, `primary`, dst.
 //   - Varian mode eksplisit: `*Dark` untuk mode spesifik.
-//   - Teks kecil di light memakai `primaryDeep` (kontras >= 4.5:1);
-//     `primary` dipakai untuk fill tombol & ikon besar (>= 3:1).
+//   - Teks kecil di light memakai `primaryDeep`/`accentDeep`/`goldText`
+//     (kontras >= 4.5:1); `primary` dipakai untuk fill tombol & ikon besar.
+//   - `accent`/`gold` murni dekoratif — jangan untuk teks kecil.
 import 'package:material_ui/material_ui.dart';
 
 abstract final class AppColors {
   AppColors._();
 
-  // ── Mode Utama (default): Sakura Light ────────────────────────────────
-  static const Color background = Color(0xFFFDF4F7); // blush sakura hangat
-  static const Color surface = Color(0xFFFFFFFF); // bersih
-  static const Color surfaceElevated = Color(0xFFFBE7EF); // rose sangat muda
-  static const Color primary = Color(0xFFC24D7E); // Sakura Pink
-  static const Color primaryDeep = Color(0xFF9E3A63); // sakura gelap (teks kecil)
-  static const Color primarySoft = Color(0xFFF8DCE7); // rose muda (chip/badge)
-  static const Color secondary = Color(0xFF6D4FA8); // Electro Purple
-  static const Color secondarySoft = Color(0xFFEFE6FA); // lavender muda
-  static const Color accent = Color(0xFFE8546E); // Heart Red
-  static const Color gold = Color(0xFFC9A227); // sparkle / aksen dekoratif
-  static const Color textPrimary = Color(0xFF241021);
-  static const Color textSecondary = Color(0xFF6E5466);
-  static const Color textOnPrimary = Color(0xFFFFFFFF);
-  static const Color divider = Color(0xFFF2E1EA);
-  static const Color success = Color(0xFF3E7C4F);
-  static const Color warning = Color(0xFF9C6F1E);
-  static const Color error = Color(0xFFC03948);
+  // ── Mode Utama (default): Sakura Dusk Light ───────────────────────────
+  static const Color background = Color(0xFFFFF8F4); // kertas ivory hangat
+  static const Color surface = Color(0xFFFFFDFB);
+  static const Color surfaceElevated = Color(0xFFFFF1EE);
+  static const Color surfaceMuted = Color(0xFFF8E7ED);
+  static const Color primary = Color(0xFFB23A63); // rose tenang
+  static const Color primaryDeep = Color(0xFF8C2A4E); // rose gelap (teks kecil)
+  static const Color primarySoft = Color(0xFFFBE0E9);
+  static const Color secondary = Color(0xFF7357B8); // lavender plum
+  static const Color secondarySoft = Color(0xFFEFE9FA);
+  static const Color accent = Color(0xFFD95669); // dekoratif
+  static const Color accentDeep = Color(0xFFA63C4E); // teks kecil di atas surface
+  static const Color gold = Color(0xFFC79A3B); // dekoratif
+  static const Color goldText = Color(0xFF8F6A1F); // teks kecil
+  static const Color textPrimary = Color(0xFF2A1620); // tinta plum
+  static const Color textSecondary = Color(0xFF6F5464);
+  static const Color textOnPrimary = Color(0xFFFFF9FB);
+  static const Color divider = Color(0xFFF0DDE5);
+  static const Color error = Color(0xFFB93B4A);
+  static const Color success = Color(0xFF3C7A55);
+  static const Color warning = Color(0xFF966A20);
+
+  // ── Gradien & permukaan khusus ────────────────────────────────────────
+  static const Color actionStart = Color(0xFFB23A63);
+  static const Color actionEnd = Color(0xFF9B2C53);
+  static const Color bubbleUserStart = Color(0xFFB23A63);
+  static const Color bubbleUserEnd = Color(0xFF8C2A4E);
+  static const Color bubbleUserOn = Color(0xFFFFF9FB);
+  static const Color bgTop = Color(0xFFFFF8F4);
+  static const Color bgMid = Color(0xFFFFF3F7);
+  static const Color bgBottom = Color(0xFFF7F1FC);
+  static const Color profileTop = Color(0xFFF7DCE6);
+  static const Color profileMid = Color(0xFFF3E8FA);
+  static const Color profileEnd = Color(0xFFFFF8F4);
 
   // ── Dark Mode (disetel independen) ────────────────────────────────────
-  static const Color backgroundDark = Color(0xFF120D14);
-  static const Color surfaceDark = Color(0xFF1D1420);
-  static const Color surfaceElevatedDark = Color(0xFF2A1B26);
-  static const Color primaryDark = Color(0xFFF28CB0);
-  static const Color primaryDeepDark = Color(0xFFF8A9C6);
-  static const Color primarySoftDark = Color(0xFF47223A);
-  static const Color secondaryDark = Color(0xFFB79BE0);
-  static const Color secondarySoftDark = Color(0xFF352652);
-  static const Color accentDark = Color(0xFFF4778C);
-  static const Color goldDark = Color(0xFFE8C766);
-  static const Color textPrimaryDark = Color(0xFFF7EFF5);
-  static const Color textSecondaryDark = Color(0xFFC4AEC0);
+  static const Color backgroundDark = Color(0xFF140F16);
+  static const Color surfaceDark = Color(0xFF1E1620);
+  static const Color surfaceElevatedDark = Color(0xFF2A1F2B);
+  static const Color surfaceMutedDark = Color(0xFF332434);
+  static const Color primaryDark = Color(0xFFF7A0BD);
+  static const Color primaryDeepDark = Color(0xFFFFC2D6);
+  static const Color primarySoftDark = Color(0xFF4A2338);
+  static const Color secondaryDark = Color(0xFFC9AEF5);
+  static const Color secondarySoftDark = Color(0xFF362A4E);
+  static const Color accentDark = Color(0xFFFF8A9C);
+  static const Color accentDeepDark = Color(0xFFFFB0BE);
+  static const Color goldDark = Color(0xFFEACB7A);
+  static const Color goldTextDark = Color(0xFFF0D79A);
+  static const Color textPrimaryDark = Color(0xFFFBF1F6);
+  static const Color textSecondaryDark = Color(0xFFCDB6C7);
   static const Color textOnPrimaryDark = Color(0xFF2A0E1E);
-  static const Color dividerDark = Color(0xFF382639);
-  static const Color successDark = Color(0xFF7BC67E);
-  static const Color warningDark = Color(0xFFE5B567);
-  static const Color errorDark = Color(0xFFEE6B77);
+  static const Color dividerDark = Color(0xFF3B2A3C);
+  static const Color errorDark = Color(0xFFFF8D98);
+  static const Color successDark = Color(0xFF8BD4A1);
+  static const Color warningDark = Color(0xFFEAC37A);
+
+  static const Color actionStartDark = Color(0xFFF7A0BD);
+  static const Color actionEndDark = Color(0xFFD9739B);
+  static const Color bubbleUserStartDark = Color(0xFF8A3459);
+  static const Color bubbleUserEndDark = Color(0xFF5E213C);
+  static const Color bubbleUserOnDark = Color(0xFFFFEAF2);
+  static const Color bgTopDark = Color(0xFF100B12);
+  static const Color bgMidDark = Color(0xFF170E19);
+  static const Color bgBottomDark = Color(0xFF201326);
+  static const Color profileTopDark = Color(0xFF3A1F31);
+  static const Color profileMidDark = Color(0xFF24182E);
+  static const Color profileEndDark = Color(0xFF1E1620);
 
   // ── Helper brightness-aware ───────────────────────────────────────────
   //
-  // Token `primaryDeep`/`accent`/`textSecondary` hanya aman di light mode.
-  // Widget yang memakai warna eksplisit (bukan ColorScheme) wajib lewat
-  // helper ini supaya kontras di dark mode tidak rusak.
+  // Token tanpa suffix hanya aman di light mode. Widget yang memakai warna
+  // eksplisit (bukan ColorScheme) wajib lewat helper ini supaya kontras di
+  // dark mode tidak rusak.
+
+  static bool _isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
 
   static Color primaryDeepFor(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark ? primaryDeepDark : primaryDeep;
+      _isDark(context) ? primaryDeepDark : primaryDeep;
 
   static Color accentFor(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark ? accentDark : accent;
+      _isDark(context) ? accentDark : accent;
+
+  static Color accentDeepFor(BuildContext context) =>
+      _isDark(context) ? accentDeepDark : accentDeep;
 
   static Color secondaryFor(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark ? secondaryDark : secondary;
+      _isDark(context) ? secondaryDark : secondary;
+
+  static Color goldFor(BuildContext context) =>
+      _isDark(context) ? goldDark : gold;
+
+  static Color goldTextFor(BuildContext context) =>
+      _isDark(context) ? goldTextDark : goldText;
+
+  static Color bubbleUserOnFor(BuildContext context) =>
+      _isDark(context) ? bubbleUserOnDark : bubbleUserOn;
+
+  static Color successFor(BuildContext context) =>
+      _isDark(context) ? successDark : success;
+
+  static Color errorFor(BuildContext context) =>
+      _isDark(context) ? errorDark : error;
 
   static Color textSecondaryFor(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark ? textSecondaryDark : textSecondary;
+      _isDark(context) ? textSecondaryDark : textSecondary;
 }

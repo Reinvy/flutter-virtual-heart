@@ -1,63 +1,61 @@
 // Tema aplikasi (docs/DESIGN.md §2 & §5)
 //
-// **Default: Light mode (Sakura Light)** — latar blush sakura, permukaan
-// bersih, aksen rose pink + ungu elektrik. Dark mode independen (bukan
-// inversi) sebagai opsi pengguna.
+// **Default: Light mode (Sakura Dusk)** — kertas ivory hangat, tinta plum,
+// aksen rose tenang + lavender. Dark mode independen (bukan inversi).
+//
+// Satu sumber tipografi: `AppTextStyles` membangun `TextTheme`; jangan
+// mendefinisikan ukuran font kedua kali di sini.
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 
 import 'tokens/app_colors.dart';
 import 'tokens/app_sizes.dart';
+import 'tokens/text_styles.dart';
 
 abstract final class AppTheme {
   AppTheme._();
 
-  /// Tema default: Sakura Light.
+  /// Tema default: Sakura Dusk Light.
   static final ThemeData light = _build(
     brightness: Brightness.light,
     colorScheme: const ColorScheme.light(
       primary: AppColors.primary,
       onPrimary: AppColors.textOnPrimary,
       primaryContainer: AppColors.primarySoft,
-      onPrimaryContainer: AppColors.primaryDeep,
+      onPrimaryContainer: Color(0xFF7A2445),
       secondary: AppColors.secondary,
-      onSecondary: AppColors.textOnPrimary,
+      onSecondary: Color(0xFFFFFFFF),
       secondaryContainer: AppColors.secondarySoft,
-      onSecondaryContainer: AppColors.secondary,
-      tertiary: AppColors.accent,
-      onTertiary: AppColors.textOnPrimary,
-      tertiaryContainer: Color(0xFFFBE0E5),
-      onTertiaryContainer: Color(0xFF8E2A3C),
+      onSecondaryContainer: Color(0xFF4A3585),
+      tertiary: AppColors.accentDeep,
+      onTertiary: Color(0xFFFFFFFF),
+      tertiaryContainer: Color(0xFFFBE0E4),
+      onTertiaryContainer: Color(0xFF8B2F3C),
       error: AppColors.error,
-      onError: AppColors.textOnPrimary,
-      errorContainer: Color(0xFFFADCE0),
-      onErrorContainer: Color(0xFF8E2431),
+      onError: Color(0xFFFFFFFF),
+      errorContainer: Color(0xFFFBE0E3),
+      onErrorContainer: Color(0xFF7E2530),
       surface: AppColors.surface,
       onSurface: AppColors.textPrimary,
-      surfaceDim: Color(0xFFF7E8EF),
-      surfaceBright: AppColors.surface,
-      surfaceContainerLowest: AppColors.surface,
-      surfaceContainerLow: Color(0xFFFBEFF5),
-      surfaceContainer: Color(0xFFF9E9F0),
-      surfaceContainerHigh: Color(0xFFF6E2EB),
-      surfaceContainerHighest: Color(0xFFF1DBE5),
+      surfaceDim: Color(0xFFF6E9EE),
+      surfaceBright: Color(0xFFFFFFFF),
+      surfaceContainerLowest: Color(0xFFFFFFFF),
+      surfaceContainerLow: Color(0xFFFFF7F5),
+      surfaceContainer: Color(0xFFFAEDF1),
+      surfaceContainerHigh: Color(0xFFF6E4EA),
+      surfaceContainerHighest: Color(0xFFF1DAE3),
       onSurfaceVariant: AppColors.textSecondary,
-      outline: Color(0xFFB89AA9),
+      outline: Color(0xFFA98C9B),
       outlineVariant: AppColors.divider,
-      shadow: Color(0x33241021),
-      scrim: Color(0x66120D14),
-      inverseSurface: Color(0xFF33202B),
-      onInverseSurface: AppColors.textPrimaryDark,
-      inversePrimary: Color(0xFFF8A9C6),
+      shadow: Color(0x331A0F18),
+      scrim: Color(0x66140F16),
+      inverseSurface: Color(0xFF35202B),
+      onInverseSurface: Color(0xFFFBEEF4),
+      inversePrimary: Color(0xFFF7A0BD),
     ),
-    scaffoldBg: AppColors.background,
-    surface: AppColors.surface,
-    surfaceAlt: AppColors.surfaceElevated,
     textColor: AppColors.textPrimary,
     subtleColor: AppColors.textSecondary,
-    inputFill: AppColors.surfaceElevated,
-    dividerColor: AppColors.divider,
     statusBarBrightness: Brightness.dark,
   );
 
@@ -67,118 +65,87 @@ abstract final class AppTheme {
       primary: AppColors.primaryDark,
       onPrimary: AppColors.textOnPrimaryDark,
       primaryContainer: AppColors.primarySoftDark,
-      onPrimaryContainer: AppColors.primaryDeepDark,
+      onPrimaryContainer: Color(0xFFFFD6E4),
       secondary: AppColors.secondaryDark,
-      onSecondary: AppColors.textOnPrimaryDark,
+      onSecondary: Color(0xFF221338),
       secondaryContainer: AppColors.secondarySoftDark,
-      onSecondaryContainer: AppColors.secondaryDark,
+      onSecondaryContainer: Color(0xFFE7D9FF),
       tertiary: AppColors.accentDark,
-      onTertiary: AppColors.textOnPrimaryDark,
+      onTertiary: Color(0xFF3A0C18),
       tertiaryContainer: Color(0xFF4A2430),
-      onTertiaryContainer: Color(0xFFF8A9C6),
+      onTertiaryContainer: Color(0xFFFFD3DA),
       error: AppColors.errorDark,
-      onError: AppColors.textOnPrimaryDark,
+      onError: Color(0xFF3B0A11),
       errorContainer: Color(0xFF54222B),
-      onErrorContainer: Color(0xFFF3B0B8),
+      onErrorContainer: Color(0xFFFFD9DD),
       surface: AppColors.surfaceDark,
       onSurface: AppColors.textPrimaryDark,
-      surfaceDim: AppColors.surfaceDark,
-      surfaceBright: Color(0xFF3A2436),
-      surfaceContainerLowest: Color(0xFF160E19),
-      surfaceContainerLow: Color(0xFF241724),
-      surfaceContainer: Color(0xFF2A1B26),
-      surfaceContainerHigh: Color(0xFF33212F),
-      surfaceContainerHighest: Color(0xFF3E283A),
+      surfaceDim: Color(0xFF1A121C),
+      surfaceBright: Color(0xFF3A2A38),
+      surfaceContainerLowest: Color(0xFF171019),
+      surfaceContainerLow: Color(0xFF241A26),
+      surfaceContainer: Color(0xFF2A1F2B),
+      surfaceContainerHigh: Color(0xFF332434),
+      surfaceContainerHighest: Color(0xFF3E2C3E),
       onSurfaceVariant: AppColors.textSecondaryDark,
-      outline: Color(0xFF8A7084),
+      outline: Color(0xFF8D7387),
       outlineVariant: AppColors.dividerDark,
       shadow: Color(0x99000000),
       scrim: Color(0xCC000000),
       inverseSurface: AppColors.textPrimaryDark,
-      onInverseSurface: Color(0xFF33202B),
+      onInverseSurface: Color(0xFF35202B),
       inversePrimary: AppColors.primary,
     ),
-    scaffoldBg: AppColors.backgroundDark,
-    surface: AppColors.surfaceDark,
-    surfaceAlt: AppColors.surfaceElevatedDark,
     textColor: AppColors.textPrimaryDark,
     subtleColor: AppColors.textSecondaryDark,
-    inputFill: AppColors.surfaceElevatedDark,
-    dividerColor: AppColors.dividerDark,
     statusBarBrightness: Brightness.light,
   );
 
   static ThemeData _build({
     required Brightness brightness,
     required ColorScheme colorScheme,
-    required Color scaffoldBg,
-    required Color surface,
-    required Color surfaceAlt,
     required Color textColor,
     required Color subtleColor,
-    required Color inputFill,
-    required Color dividerColor,
     required Brightness statusBarBrightness,
   }) {
-    final baseTextTheme = GoogleFonts.nunitoTextTheme().copyWith(
-      displayLarge: GoogleFonts.shipporiMincho(
-        fontSize: 32,
-        fontWeight: FontWeight.w700,
-        color: textColor,
-      ),
-      displayMedium: GoogleFonts.shipporiMincho(
-        fontSize: 28,
-        fontWeight: FontWeight.w700,
-        color: textColor,
-      ),
-      displaySmall: GoogleFonts.shipporiMincho(
-        fontSize: 24,
-        fontWeight: FontWeight.w700,
-        color: textColor,
-      ),
-      headlineLarge: GoogleFonts.shipporiMincho(
-        fontSize: 22,
-        fontWeight: FontWeight.w700,
-        color: textColor,
-      ),
-      headlineMedium: GoogleFonts.shipporiMincho(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: textColor,
-      ),
-      headlineSmall: GoogleFonts.shipporiMincho(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: textColor,
-      ),
-      titleLarge: GoogleFonts.shipporiMincho(fontSize: 16, fontWeight: FontWeight.w600, color: textColor),
-      titleMedium: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w600, color: textColor),
-      bodyLarge: GoogleFonts.nunito(fontSize: 15, fontWeight: FontWeight.w400, color: textColor),
-      bodyMedium: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w400, color: textColor),
-      bodySmall: GoogleFonts.nunito(fontSize: 12, fontWeight: FontWeight.w400, color: subtleColor),
-      labelLarge: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w600, color: textColor),
-      labelMedium: GoogleFonts.nunito(fontSize: 12, fontWeight: FontWeight.w500, color: textColor),
-      labelSmall: GoogleFonts.nunito(fontSize: 11, fontWeight: FontWeight.w500, color: subtleColor),
+    final textTheme = TextTheme(
+      displayLarge: AppTextStyles.displayHero(color: textColor),
+      displayMedium: AppTextStyles.displayLarge(color: textColor),
+      displaySmall: AppTextStyles.displaySmall(color: textColor),
+      headlineLarge: AppTextStyles.headingLarge(color: textColor),
+      headlineMedium: AppTextStyles.headingMedium(color: textColor),
+      headlineSmall: AppTextStyles.headingSmall(color: textColor),
+      titleLarge: AppTextStyles.titleLarge(color: textColor),
+      titleMedium: AppTextStyles.settingsLabel(color: textColor),
+      titleSmall: AppTextStyles.titleSmall(color: textColor),
+      bodyLarge: AppTextStyles.bodyLarge(color: textColor),
+      bodyMedium: AppTextStyles.bodyMedium(color: textColor),
+      bodySmall: AppTextStyles.bodySmall(color: subtleColor),
+      labelLarge: AppTextStyles.button(color: textColor),
+      labelMedium: AppTextStyles.caption(color: textColor),
+      labelSmall: AppTextStyles.badge(color: subtleColor),
     );
+
+    const pill = StadiumBorder();
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: scaffoldBg,
-      textTheme: baseTextTheme,
+      scaffoldBackgroundColor: brightness == Brightness.dark
+          ? AppColors.backgroundDark
+          : AppColors.background,
+      textTheme: textTheme,
 
       appBarTheme: AppBarTheme(
-        backgroundColor: scaffoldBg,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.shipporiMincho(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: textColor,
-        ),
-        iconTheme: IconThemeData(color: textColor, size: AppSizes.iconMd),
+        toolbarHeight: 60,
+        titleTextStyle: AppTextStyles.headingSmall(color: textColor),
+        iconTheme: IconThemeData(color: textColor, size: 22),
         systemOverlayStyle: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
           statusBarIconBrightness: statusBarBrightness,
@@ -186,39 +153,40 @@ abstract final class AppTheme {
       ),
 
       cardTheme: CardThemeData(
-        color: surface,
+        color: colorScheme.surface,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusLg)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusCard),
+        ),
         margin: EdgeInsets.zero,
       ),
 
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: inputFill,
-        hintStyle: GoogleFonts.nunito(
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-          color: subtleColor,
+        fillColor: colorScheme.surfaceContainerLow,
+        hintStyle: AppTextStyles.bodyMedium(color: subtleColor),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spaceMd,
+          vertical: AppSizes.spaceMd,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceMd, vertical: AppSizes.spaceXs),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           borderSide: BorderSide(color: colorScheme.error, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           borderSide: BorderSide(color: colorScheme.error, width: 1.5),
         ),
       ),
@@ -227,40 +195,33 @@ abstract final class AppTheme {
         style: FilledButton.styleFrom(
           backgroundColor: colorScheme.primary,
           foregroundColor: colorScheme.onPrimary,
-          disabledBackgroundColor: colorScheme.onSurface.withValues(alpha: 0.12),
+          disabledBackgroundColor: colorScheme.onSurface.withValues(alpha: 0.08),
           disabledForegroundColor: colorScheme.onSurface.withValues(alpha: 0.38),
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceLg, vertical: AppSizes.spaceMd),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusFull)),
-          textStyle: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
-      ),
-
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceLg, vertical: AppSizes.spaceMd),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusFull)),
-          textStyle: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w600),
+          minimumSize: const Size(0, AppSizes.controlHeight),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: pill,
+          textStyle: AppTextStyles.button(color: colorScheme.onPrimary),
         ),
       ),
 
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: colorScheme.secondary,
-          side: BorderSide(color: colorScheme.secondary),
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceLg, vertical: AppSizes.spaceMd),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusFull)),
-          textStyle: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w600),
+          side: BorderSide(color: colorScheme.secondary, width: 1.2),
+          minimumSize: const Size(0, AppSizes.controlHeight),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: pill,
+          textStyle: AppTextStyles.button(color: colorScheme.secondary),
         ),
       ),
 
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: colorScheme.primary,
-          textStyle: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w600),
+          minimumSize: const Size(0, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          textStyle: AppTextStyles.button(color: colorScheme.primary),
         ),
       ),
 
@@ -269,9 +230,12 @@ abstract final class AppTheme {
           foregroundColor: colorScheme.onSurfaceVariant,
           selectedForegroundColor: colorScheme.onPrimaryContainer,
           selectedBackgroundColor: colorScheme.primaryContainer,
+          backgroundColor: Colors.transparent,
           side: BorderSide(color: colorScheme.outlineVariant),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusFull)),
-          textStyle: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w600),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusSegment),
+          ),
+          textStyle: AppTextStyles.button(),
         ),
       ),
 
@@ -280,14 +244,15 @@ abstract final class AppTheme {
         selectedColor: colorScheme.primaryContainer,
         disabledColor: colorScheme.surfaceContainerHighest,
         side: BorderSide(color: colorScheme.outlineVariant),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusFull)),
-        labelStyle: GoogleFonts.nunito(fontSize: 13, fontWeight: FontWeight.w600, color: colorScheme.onSurface),
-        secondaryLabelStyle: GoogleFonts.nunito(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
+        shape: pill,
+        labelStyle: AppTextStyles.titleSmall(color: colorScheme.onSurface),
+        secondaryLabelStyle: AppTextStyles.titleSmall(
           color: colorScheme.onPrimaryContainer,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceSm, vertical: AppSizes.spaceXxs),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spaceSm,
+          vertical: AppSizes.spaceXxs,
+        ),
       ),
 
       switchTheme: SwitchThemeData(
@@ -305,68 +270,98 @@ abstract final class AppTheme {
       listTileTheme: ListTileThemeData(
         iconColor: colorScheme.onSurfaceVariant,
         textColor: colorScheme.onSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusSm)),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spaceMd,
+          vertical: AppSizes.spaceSm,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
 
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: colorScheme.primary,
         linearTrackColor: colorScheme.surfaceContainerHighest,
         circularTrackColor: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppSizes.radiusFull),
       ),
 
       iconTheme: IconThemeData(color: textColor, size: AppSizes.iconMd),
 
-      dividerTheme: DividerThemeData(color: dividerColor, thickness: 1, space: 0),
+      dividerTheme: DividerThemeData(
+        color: colorScheme.outlineVariant,
+        thickness: 1,
+        space: 1,
+      ),
 
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: surfaceAlt,
+        backgroundColor: colorScheme.surface,
         surfaceTintColor: Colors.transparent,
+        modalBackgroundColor: colorScheme.surface,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusLg)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusSheet)),
         ),
         elevation: 0,
-        showDragHandle: true,
-        dragHandleColor: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+        showDragHandle: false,
       ),
 
       snackBarTheme: SnackBarThemeData(
         backgroundColor: colorScheme.inverseSurface,
-        contentTextStyle: GoogleFonts.nunito(fontSize: 14, color: colorScheme.onInverseSurface),
+        contentTextStyle: AppTextStyles.bodyMedium(color: colorScheme.onInverseSurface),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusMd)),
+        insetPadding: const EdgeInsets.all(AppSizes.spaceMd),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
 
       dialogTheme: DialogThemeData(
-        backgroundColor: surface,
+        backgroundColor: colorScheme.surface,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusLg)),
-        titleTextStyle: GoogleFonts.shipporiMincho(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: textColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusCard),
         ),
-        contentTextStyle: GoogleFonts.nunito(fontSize: 14, color: subtleColor),
+        titleTextStyle: AppTextStyles.headingMedium(color: textColor),
+        contentTextStyle: AppTextStyles.bodyMedium(color: subtleColor),
       ),
 
       timePickerTheme: TimePickerThemeData(
-        backgroundColor: surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusLg)),
-        hourMinuteTextStyle: GoogleFonts.nunito(fontSize: 40, fontWeight: FontWeight.w600, color: textColor),
+        backgroundColor: colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusCard),
+        ),
+        hourMinuteTextStyle: AppTextStyles.displayLarge(color: textColor),
+        dayPeriodTextStyle: AppTextStyles.bodyMedium(color: textColor),
         dialHandColor: colorScheme.primary,
         dialBackgroundColor: colorScheme.surfaceContainerHighest,
         entryModeIconColor: colorScheme.primary,
-        dayPeriodTextStyle: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w600, color: textColor),
         dayPeriodColor: colorScheme.surfaceContainerHigh,
-        helpTextStyle: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w600, color: subtleColor),
+        helpTextStyle: AppTextStyles.caption(color: subtleColor),
       ),
 
       tooltipTheme: TooltipThemeData(
-        textStyle: GoogleFonts.nunito(fontSize: 12, color: colorScheme.onInverseSurface),
+        textStyle: AppTextStyles.caption(color: colorScheme.onInverseSurface),
         decoration: BoxDecoration(
           color: colorScheme.inverseSurface,
-          borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+          borderRadius: BorderRadius.circular(10),
         ),
       ),
+
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: colorScheme.primary,
+        selectionColor: colorScheme.primaryContainer,
+        selectionHandleColor: colorScheme.primary,
+      ),
+
+      extensions: [
+        GptMarkdownThemeData(
+          brightness: brightness,
+          h1: AppTextStyles.headingLarge(color: textColor),
+          h2: AppTextStyles.headingMedium(color: textColor),
+          h3: AppTextStyles.headingSmall(color: textColor),
+          h4: AppTextStyles.settingsLabel(color: textColor),
+          linkColor: colorScheme.primary,
+          highlightColor: colorScheme.primaryContainer,
+          hrLineColor: colorScheme.outlineVariant,
+          autoAddDividerLineAfterH1: false,
+        ),
+      ],
     );
   }
 }
