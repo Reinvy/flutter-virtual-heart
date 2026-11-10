@@ -3,9 +3,11 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/design/components/app_icon_button.dart';
 import '../../core/design/components/confirm_dialog.dart';
 import '../../core/design/components/primary_button.dart';
+import '../../core/design/components/sheet_header.dart';
+import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_durations.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
@@ -128,12 +130,22 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
     return null;
   }
 
+  Widget _label(BuildContext context, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSizes.spaceXs),
+      child: Text(
+        text,
+        style: AppTextStyles.headingSmall(
+          color: AppColors.primaryDeepFor(context),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final strings = ref.watch(appStringsProvider);
     final scheme = Theme.of(context).colorScheme;
-    final sheetBg = scheme.surface;
-    final subtleColor = scheme.onSurfaceVariant;
 
     return PopScope(
       canPop: false,
@@ -141,8 +153,8 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
         if (!didPop) _confirmClose();
       },
       child: AnimatedPadding(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
+        duration: AppDurations.durationFast,
+        curve: AppDurations.curveStandard,
         padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
         child: DraggableScrollableSheet(
           initialChildSize: 0.9,
@@ -151,74 +163,63 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
           expand: false,
           builder: (_, scrollCtrl) => Container(
             decoration: BoxDecoration(
-              color: sheetBg,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSizes.radiusLg)),
+              color: scheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppSizes.radiusSheet),
+              ),
             ),
             child: Form(
               key: _formKey,
               autovalidateMode: AutovalidateMode.onUserInteraction,
               child: Column(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSizes.md,
-                      AppSizes.sm,
-                      AppSizes.sm,
-                      0,
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            strings.settingsEditPersona,
-                            style: Theme.of(context).textTheme.headlineSmall,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        AppIconButton(
-                          icon: Icons.close_rounded,
-                          onPressed: _confirmClose,
-                          tooltip: strings.commonClose,
-                        ),
-                      ],
-                    ),
+                  const SizedBox(height: 10),
+                  appSheetHandle(context),
+                  appSheetHeader(
+                    context,
+                    title: strings.settingsEditPersona,
+                    onClose: _confirmClose,
+                    closeTooltip: strings.commonClose,
                   ),
-                  const Divider(height: 1),
+                  Divider(height: 1, thickness: 1, color: scheme.outlineVariant),
                   Expanded(
                     child: ListView(
                       controller: scrollCtrl,
-                      padding: const EdgeInsets.all(AppSizes.md),
+                      padding: const EdgeInsets.all(AppSizes.spaceMd),
                       children: [
-                        _SheetLabel(strings.settingsSheetPersonaGender, subtleColor),
-                        const SizedBox(height: AppSizes.sm),
-                        SegmentedButton<PersonaGender>(
-                          segments: [
-                            ButtonSegment(
-                              value: PersonaGender.girlfriend,
-                              label: Text(strings.personaGenderGirlfriend),
-                              icon: const Icon(Icons.female_rounded),
-                            ),
-                            ButtonSegment(
-                              value: PersonaGender.boyfriend,
-                              label: Text(strings.personaGenderBoyfriend),
-                              icon: const Icon(Icons.male_rounded),
-                            ),
-                          ],
-                          selected: {_gender},
-                          onSelectionChanged: (s) {
-                            if (s.isEmpty) return;
-                            HapticFeedback.selectionClick();
-                            setState(() {
-                              _markDirty();
-                              _gender = s.first;
-                              _avatarId = s.first == PersonaGender.girlfriend ? 'gf_1' : 'bf_1';
-                            });
-                          },
+                        _label(context, strings.settingsSheetPersonaGender),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: SegmentedButton<PersonaGender>(
+                            showSelectedIcon: false,
+                            segments: [
+                              ButtonSegment(
+                                value: PersonaGender.girlfriend,
+                                label: Text(strings.personaGenderGirlfriend),
+                                icon: const Icon(Icons.female_rounded),
+                              ),
+                              ButtonSegment(
+                                value: PersonaGender.boyfriend,
+                                label: Text(strings.personaGenderBoyfriend),
+                                icon: const Icon(Icons.male_rounded),
+                              ),
+                            ],
+                            selected: {_gender},
+                            onSelectionChanged: (s) {
+                              if (s.isEmpty) return;
+                              HapticFeedback.selectionClick();
+                              setState(() {
+                                _markDirty();
+                                _gender = s.first;
+                                _avatarId = s.first == PersonaGender.girlfriend
+                                    ? 'gf_1'
+                                    : 'bf_1';
+                              });
+                            },
+                          ),
                         ),
-                        const SizedBox(height: AppSizes.lg),
-                        _SheetLabel(strings.settingsSheetPersonaName, subtleColor),
-                        const SizedBox(height: AppSizes.sm),
+                        const SizedBox(height: AppSizes.spaceLg),
+                        _label(context, strings.settingsSheetPersonaName),
                         TextFormField(
                           controller: _nameCtrl,
                           decoration: InputDecoration(
@@ -229,9 +230,8 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
                           validator: _validateName,
                           onChanged: (_) => _markDirty(),
                         ),
-                        const SizedBox(height: AppSizes.lg),
-                        _SheetLabel(strings.settingsSheetHowTheyCallYou, subtleColor),
-                        const SizedBox(height: AppSizes.sm),
+                        const SizedBox(height: AppSizes.spaceLg),
+                        _label(context, strings.settingsSheetHowTheyCallYou),
                         TextFormField(
                           controller: _nicknameCtrl,
                           decoration: InputDecoration(
@@ -242,35 +242,68 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
                           validator: _validateNickname,
                           onChanged: (_) => _markDirty(),
                         ),
-                        const SizedBox(height: AppSizes.lg),
-                        _SheetLabel(strings.settingsSheetPersonality, subtleColor),
-                        const SizedBox(height: AppSizes.sm),
-                        Wrap(
-                          spacing: AppSizes.sm,
-                          runSpacing: AppSizes.sm,
-                          children: PersonalityPreset.values.map((preset) {
-                            final selected = _personality == preset;
-                            return ChoiceChip(
-                              label: Text(_personalityLabel(strings, preset)),
-                              selected: selected,
-                              onSelected: (_) {
-                                HapticFeedback.selectionClick();
-                                setState(() {
-                                  _markDirty();
-                                  _personality = preset;
-                                });
-                              },
+                        const SizedBox(height: AppSizes.spaceLg),
+                        _label(context, strings.settingsSheetPersonality),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final twoColumns = constraints.maxWidth >= 520;
+                            if (!twoColumns) {
+                              return Column(
+                                children: [
+                                  for (final preset in PersonalityPreset.values)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 10),
+                                      child: PersonalityOptionCard(
+                                        preset: preset,
+                                        selected: _personality == preset,
+                                        onTap: () {
+                                          setState(() {
+                                            _markDirty();
+                                            _personality = preset;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                ],
+                              );
+                            }
+                            final width =
+                                (constraints.maxWidth - AppSizes.spaceSm) / 2;
+                            return Wrap(
+                              spacing: AppSizes.spaceSm,
+                              runSpacing: AppSizes.spaceSm,
+                              children: [
+                                for (final preset in PersonalityPreset.values)
+                                  SizedBox(
+                                    width: width,
+                                    child: PersonalityOptionCard(
+                                      preset: preset,
+                                      selected: _personality == preset,
+                                      compact: true,
+                                      onTap: () {
+                                        setState(() {
+                                          _markDirty();
+                                          _personality = preset;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                              ],
                             );
-                          }).toList(),
+                          },
                         ),
-                        const SizedBox(height: AppSizes.lg),
-                        _SheetLabel(strings.personaHobbies, subtleColor),
-                        const SizedBox(height: AppSizes.xs),
-                        Text(strings.personaHobbiesHint, style: AppTextStyles.timestamp()),
-                        const SizedBox(height: AppSizes.sm),
+                        const SizedBox(height: AppSizes.spaceLg),
+                        _label(context, strings.personaHobbies),
+                        Text(
+                          strings.personaHobbiesHint,
+                          style: AppTextStyles.caption(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: AppSizes.spaceXs),
                         Wrap(
-                          spacing: AppSizes.sm,
-                          runSpacing: AppSizes.sm,
+                          spacing: AppSizes.spaceXs,
+                          runSpacing: AppSizes.spaceXs,
                           children: [
                             for (final hobby in kHobbiesList)
                               HobbyChip(
@@ -285,20 +318,25 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
                               ),
                           ],
                         ),
-                        const SizedBox(height: AppSizes.lg),
-                        _SheetLabel(strings.settingsSheetChooseAvatar, subtleColor),
-                        const SizedBox(height: AppSizes.sm),
+                        const SizedBox(height: AppSizes.spaceLg),
+                        _label(context, strings.settingsSheetChooseAvatar),
                         SizedBox(
-                          height: 68,
+                          height: 88,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 2,
+                              vertical: 4,
+                            ),
                             itemCount: _currentAvatars.length,
-                            separatorBuilder: (_, _) => const SizedBox(width: AppSizes.sm),
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(width: AppSizes.spaceSm),
                             itemBuilder: (_, i) {
                               final opt = _currentAvatars[i];
+                              final selected = _avatarId == opt.id;
                               return Semantics(
                                 button: true,
-                                selected: _avatarId == opt.id,
+                                selected: selected,
                                 child: GestureDetector(
                                   onTap: () {
                                     HapticFeedback.selectionClick();
@@ -307,26 +345,40 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
                                       _avatarId = opt.id;
                                     });
                                   },
-                                  child: avatarCircle(context, opt, 56, selected: _avatarId == opt.id),
+                                  child: avatarCircle(
+                                    context,
+                                    opt,
+                                    64,
+                                    selected: selected,
+                                  ),
                                 ),
                               );
                             },
                           ),
                         ),
-                        const SizedBox(height: AppSizes.xl),
+                        const SizedBox(height: AppSizes.spaceXl),
                       ],
                     ),
                   ),
-                  SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSizes.md,
-                        vertical: AppSizes.sm,
+                  Container(
+                    decoration: BoxDecoration(
+                      color: scheme.surface,
+                      border: Border(
+                        top: BorderSide(color: scheme.outlineVariant),
                       ),
-                      child: PrimaryButton(
-                        label: strings.settingsSaveChanges,
-                        loading: _isSaving,
-                        onPressed: _save,
+                    ),
+                    child: SafeArea(
+                      top: false,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSizes.spaceMd,
+                          vertical: AppSizes.spaceSm,
+                        ),
+                        child: PrimaryButton(
+                          label: strings.settingsSaveChanges,
+                          loading: _isSaving,
+                          onPressed: _save,
+                        ),
                       ),
                     ),
                   ),
@@ -335,32 +387,6 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  String _personalityLabel(AppStrings strings, PersonalityPreset preset) {
-    return switch (preset) {
-      PersonalityPreset.gentle => strings.personaPersonalityGentle,
-      PersonalityPreset.cheerful => strings.personaPersonalityCheerful,
-      PersonalityPreset.mature => strings.personaPersonalityMature,
-      PersonalityPreset.mysterious => strings.personaPersonalityMysterious,
-    };
-  }
-}
-
-class _SheetLabel extends StatelessWidget {
-  final String text;
-  final Color color;
-  const _SheetLabel(this.text, this.color);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        color: color,
-        fontWeight: FontWeight.w600,
       ),
     );
   }

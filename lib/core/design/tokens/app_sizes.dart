@@ -82,13 +82,4 @@ abstract final class AppSizes {
   static const double inputBarHeight = 56;
   static const double bubblePaddingH = 14;
   static const double bubblePaddingV = 10;
-
-  // ── Alias kompatibilitas (kode lama, dihapus setelah migrasi) ─────────
-  static const double xs = spaceXxs;
-  static const double sm = spaceXs;
-  static const double md = spaceMd;
-  static const double lg = spaceLg;
-  static const double xl = spaceXl;
-  static const double xxl = spaceXxl;
-  static const double radiusXl = 28; // dipakai bottom sheet (dipertahankan)
 }

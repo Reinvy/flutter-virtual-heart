@@ -2,10 +2,12 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/design/components/app_sheet.dart';
+import '../../core/design/components/bloom_mark.dart';
 import '../../core/design/components/primary_button.dart';
+import '../../core/design/components/sheet_header.dart';
 import '../../core/design/mood_visuals.dart';
-import '../../core/design/components/sakura_divider.dart';
-import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_effects.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
@@ -13,6 +15,7 @@ import '../../models/mood_state.dart';
 import '../../models/persona_config.dart';
 import '../chat/mood_provider.dart';
 import 'avatar_catalog.dart';
+import 'persona_options.dart';
 
 /// Menampilkan bottom sheet profil persona.
 ///
@@ -20,11 +23,9 @@ import 'avatar_catalog.dart';
 /// form edit (`PersonaEditSheet`), sehingga alur edit tidak lagi bergantung
 /// pada route `/persona-setup`.
 Future<bool?> showPersonaProfileSheet(BuildContext context, PersonaConfig? persona) {
-  return showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => PersonaProfileSheet(persona: persona),
+  return showAppSheet<bool>(
+    context,
+    child: PersonaProfileSheet(persona: persona),
   );
 }
 
@@ -33,57 +34,60 @@ class PersonaProfileSheet extends ConsumerWidget {
 
   final PersonaConfig? persona;
 
-  /// Warna mood dari ColorScheme — kontras aman di light & dark.
-  static Color _moodColor(ColorScheme scheme, MoodType mood) {
-    return switch (mood) {
-      MoodType.happy => scheme.primary,
-      MoodType.longing => scheme.secondary,
-      MoodType.playful => scheme.tertiary,
-      MoodType.sad => scheme.secondary,
-      MoodType.excited => scheme.primary,
-    };
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mood = ref.watch(moodProvider);
+    final strings = ref.read(appStringsProvider);
     final scheme = Theme.of(context).colorScheme;
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.4,
-      maxChildSize: 0.85,
+      initialChildSize: 0.64,
+      minChildSize: 0.45,
+      maxChildSize: 0.9,
+      expand: false,
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
             color: scheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSizes.radiusLg)),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppSizes.radiusSheet),
+            ),
           ),
           child: ListView(
             controller: scrollController,
-            padding: const EdgeInsets.fromLTRB(AppSizes.md, AppSizes.sm, AppSizes.md, AppSizes.xl),
+            padding: const EdgeInsets.only(bottom: AppSizes.spaceXl),
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  tooltip: ref.read(appStringsProvider).commonClose,
-                  onPressed: () => Navigator.of(context).pop(),
+              const SizedBox(height: 10),
+              appSheetHandle(context),
+              appSheetHeader(
+                context,
+                title: strings.settingsPersona,
+                onClose: () => Navigator.of(context).pop(),
+                closeTooltip: strings.commonClose,
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceMd),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildHero(context, ref),
+                    const SizedBox(height: AppSizes.spaceLg),
+                    _buildMoodSection(mood, context, ref),
+                    if ((persona?.hobbies ?? []).isNotEmpty) ...[
+                      const SizedBox(height: AppSizes.spaceLg),
+                      _buildHobbiesSection(context, ref),
+                    ],
+                    const SizedBox(height: AppSizes.spaceLg),
+                    _buildPersonalitySection(context, ref),
+                    const SizedBox(height: AppSizes.spaceLg),
+                    PrimaryButton(
+                      label: strings.settingsEditPersona,
+                      icon: Icons.edit_outlined,
+                      onPressed: () => Navigator.of(context).pop(true),
+                    ),
+                  ],
                 ),
               ),
-              _buildAvatar(context),
-              const SizedBox(height: AppSizes.md),
-              _buildNameSection(context, ref),
-              const SakuraDivider(),
-              _buildMoodSection(mood, context, ref),
-              const SizedBox(height: AppSizes.lg),
-              if ((persona?.hobbies ?? []).isNotEmpty) ...[
-                _buildHobbiesSection(context, ref),
-                const SizedBox(height: AppSizes.lg),
-              ],
-              _buildPersonalitySection(context, ref),
-              const SizedBox(height: AppSizes.xl),
-              _buildEditButton(context, ref),
             ],
           ),
         );
@@ -91,101 +95,145 @@ class PersonaProfileSheet extends ConsumerWidget {
     );
   }
 
-  Widget _buildAvatar(BuildContext context) {
-    return Center(
-      child: avatarCircle(context, avatarOptForId(persona?.avatarId), 72),
-    );
-  }
-
-  Widget _buildNameSection(BuildContext context, WidgetRef ref) {
+  Widget _buildHero(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final strings = ref.read(appStringsProvider);
-    final subtleColor = scheme.onSurfaceVariant;
     final genderLabel = (persona?.gender == PersonaGender.boyfriend)
         ? strings.personaGenderBoyfriend
         : strings.personaGenderGirlfriend;
     final nickname = persona?.nicknameForUser ?? '';
 
-    return Column(
-      children: [
-        Text(
-          persona?.name ?? 'VirtualHeart',
-          style: AppTextStyles.headingLarge(color: scheme.onSurface),
-          textAlign: TextAlign.center,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(gradient: AppGradients.profileHeader(context)),
+        padding: const EdgeInsets.all(AppSizes.spaceMd + 4),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -28,
+              right: -20,
+              child: Opacity(
+                opacity: 0.18,
+                child: const BloomMark(size: 120, glow: false),
+              ),
+            ),
+            Column(
+              children: [
+                avatarCircle(
+                  context,
+                  avatarOptForId(persona?.avatarId),
+                  AppSizes.avatarProfile,
+                ),
+                const SizedBox(height: AppSizes.spaceMd),
+                Text(
+                  persona?.name ?? strings.appName,
+                  style: AppTextStyles.displaySmall(color: scheme.onSurface),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  genderLabel,
+                  style: AppTextStyles.bodySmall(color: scheme.onSurfaceVariant),
+                  textAlign: TextAlign.center,
+                ),
+                if (nickname.isNotEmpty) ...[
+                  const SizedBox(height: AppSizes.spaceXxs),
+                  Text(
+                    fillPlaceholders(strings.personaCallsYou, {
+                      'nickname': nickname,
+                    }),
+                    style: AppTextStyles.bodySmall(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ],
+            ),
+          ],
         ),
-        const SizedBox(height: AppSizes.xs),
-        Text(
-          genderLabel,
-          style: AppTextStyles.bodyMedium(color: subtleColor),
-          textAlign: TextAlign.center,
-        ),
-        if (nickname.isNotEmpty) ...[
-          const SizedBox(height: AppSizes.xs),
-          Text(
-            fillPlaceholders(strings.personaCallsYou, {'nickname': nickname}),
-            style: AppTextStyles.bodyMedium(color: subtleColor),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ],
+      ),
     );
   }
 
   Widget _buildMoodSection(MoodState mood, BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
-    final subtleColor = scheme.onSurfaceVariant;
     final strings = ref.read(appStringsProvider);
-    final emoji = moodEmoji(mood.current);
-    final label = switch (mood.current) {
-      MoodType.happy => strings.moodHappy,
-      MoodType.longing => strings.moodLonging,
-      MoodType.playful => strings.moodPlayful,
-      MoodType.sad => strings.moodSad,
-      MoodType.excited => strings.moodExcited,
-    };
-    final color = _moodColor(scheme, mood.current);
+    final color = moodColor(context, mood.current);
     final intensityPct = (mood.intensity * 100).round();
+    final motionOk = !MediaQuery.disableAnimationsOf(context);
 
     return Container(
-      padding: const EdgeInsets.all(AppSizes.md),
+      padding: const EdgeInsets.all(AppSizes.spaceMd),
       decoration: BoxDecoration(
-        color: mood.current == MoodType.sad
-            ? scheme.secondaryContainer
-            : color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-        border: Border.all(
-          color: mood.current == MoodType.sad
-              ? scheme.secondary
-              : color.withValues(alpha: 0.4),
+        gradient: LinearGradient(
+          colors: [color.withValues(alpha: 0.14), scheme.surface],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
         ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusPanel),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 32)),
-          const SizedBox(width: AppSizes.md),
+          Container(
+            width: 48,
+            height: 48,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(AppSizes.radiusBadge),
+            ),
+            child: Text(
+              moodEmoji(mood.current),
+              style: const TextStyle(fontSize: 26),
+            ),
+          ),
+          const SizedBox(width: AppSizes.spaceSm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(strings.chatCurrentMood, style: AppTextStyles.moodIndicator(color: subtleColor)),
-                const SizedBox(height: AppSizes.xs),
-                Text(label, style: AppTextStyles.headingSmall(color: color)),
+                Text(
+                  strings.chatCurrentMood,
+                  style: AppTextStyles.caption(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  moodLabel(strings, mood.current),
+                  style: AppTextStyles.headingSmall(color: color),
+                ),
               ],
             ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('$intensityPct%', style: AppTextStyles.headingSmall(color: color)),
-              const SizedBox(height: AppSizes.xs),
+              Text(
+                '$intensityPct%',
+                style: AppTextStyles.settingsLabel(color: color),
+              ),
+              const SizedBox(height: 6),
               SizedBox(
-                width: 64,
-                child: LinearProgressIndicator(
-                  value: mood.intensity,
-                  backgroundColor: color.withValues(alpha: 0.2),
-                  color: color,
-                  borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-                  minHeight: 6,
+                width: 72,
+                height: 6,
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: mood.intensity),
+                  duration: motionOk ? const Duration(milliseconds: 400) : Duration.zero,
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, _) => ClipRRect(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                    child: LinearProgressIndicator(
+                      value: value,
+                      backgroundColor: color.withValues(alpha: 0.2),
+                      color: color,
+                      minHeight: 6,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -196,19 +244,45 @@ class PersonaProfileSheet extends ConsumerWidget {
   }
 
   Widget _buildHobbiesSection(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
     final strings = ref.read(appStringsProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           strings.personaHobbies,
-          style: AppTextStyles.headingSmall(color: AppColors.primaryDeepFor(context)),
+          style: AppTextStyles.headingSmall(
+            color: scheme.onSurface,
+          ).copyWith(fontSize: 17),
         ),
-        const SizedBox(height: AppSizes.sm),
+        const SizedBox(height: AppSizes.spaceSm),
         Wrap(
-          spacing: AppSizes.sm,
-          runSpacing: AppSizes.sm,
-          children: (persona?.hobbies ?? []).map((hobby) => _HobbyChip(label: hobby)).toList(),
+          spacing: AppSizes.spaceXs,
+          runSpacing: AppSizes.spaceXs,
+          children: [
+            for (final hobby in persona?.hobbies ?? <String>[])
+              Container(
+                constraints: const BoxConstraints(minHeight: 36),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.spaceSm + 2,
+                  vertical: 8,
+                ),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                  border: Border.all(
+                    color: scheme.primary.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Text(
+                  hobby,
+                  style: AppTextStyles.bodySmall(
+                    color: scheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
+          ],
         ),
       ],
     );
@@ -217,59 +291,46 @@ class PersonaProfileSheet extends ConsumerWidget {
   Widget _buildPersonalitySection(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final strings = ref.read(appStringsProvider);
-    final subtleColor = scheme.onSurfaceVariant;
-    final cardBg = scheme.surfaceContainerLow;
     final preset = persona?.personalityPreset ?? PersonalityPreset.gentle;
-
-    final (emoji, label, description) = switch (preset) {
-      PersonalityPreset.gentle => (
-        '🌸',
-        strings.personaPersonalityGentle,
-        strings.personaPersonalityGentleDesc,
-      ),
-      PersonalityPreset.cheerful => (
-        '✨',
-        strings.personaPersonalityCheerful,
-        strings.personaPersonalityCheerfulDesc,
-      ),
-      PersonalityPreset.mature => (
-        '🌙',
-        strings.personaPersonalityMature,
-        strings.personaPersonalityMatureDesc,
-      ),
-      PersonalityPreset.mysterious => (
-        '🔮',
-        strings.personaPersonalityMysterious,
-        strings.personaPersonalityMysteriousDesc,
-      ),
-    };
+    final data = personalityVisual(strings, preset);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           strings.personaPersonality,
-          style: AppTextStyles.headingSmall(color: AppColors.primaryDeepFor(context)),
+          style: AppTextStyles.headingSmall(color: scheme.onSurface),
         ),
-        const SizedBox(height: AppSizes.sm),
+        const SizedBox(height: AppSizes.spaceSm),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(AppSizes.md),
+          padding: const EdgeInsets.all(AppSizes.spaceMd),
           decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            color: scheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(AppSizes.radiusControl),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(emoji, style: const TextStyle(fontSize: 28)),
-              const SizedBox(width: AppSizes.md),
+              Text(data.emoji, style: const TextStyle(fontSize: 24)),
+              const SizedBox(width: AppSizes.spaceSm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(label, style: AppTextStyles.settingsLabel(color: scheme.onSurface)),
-                    const SizedBox(height: AppSizes.xs),
-                    Text(description, style: AppTextStyles.bodyMedium(color: subtleColor)),
+                    Text(
+                      data.label,
+                      style: AppTextStyles.settingsLabel(
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.spaceXxs - 2),
+                    Text(
+                      data.description,
+                      style: AppTextStyles.bodySmall(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -277,38 +338,6 @@ class PersonaProfileSheet extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildEditButton(BuildContext context, WidgetRef ref) {
-    final strings = ref.read(appStringsProvider);
-    return PrimaryButton(
-      label: strings.settingsEditPersona,
-      icon: Icons.edit_outlined,
-      onPressed: () => Navigator.of(context).pop(true),
-    );
-  }
-}
-
-class _HobbyChip extends StatelessWidget {
-  const _HobbyChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: AppSizes.sm),
-      decoration: BoxDecoration(
-        color: scheme.primaryContainer,
-        borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-        border: Border.all(color: AppColors.primaryDeepFor(context).withValues(alpha: 0.4)),
-      ),
-      child: Text(
-        label,
-        style: AppTextStyles.bodyMedium(color: AppColors.primaryDeepFor(context)),
-      ),
     );
   }
 }
