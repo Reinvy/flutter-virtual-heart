@@ -3,14 +3,18 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../core/design/components/app_icon_badge.dart';
+import '../../core/design/components/app_scaffold.dart';
+import '../../core/design/components/bloom_mark.dart';
 import '../../core/design/components/primary_button.dart';
-import '../../core/design/components/sakura_background.dart';
 import '../../core/design/components/secondary_button.dart';
+import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_durations.dart';
+import '../../core/design/tokens/app_effects.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
@@ -69,40 +73,30 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
     final isActive = chosen != null ? (activeReady && activeFile == chosen.fileName) : activeReady;
     final installTarget = _selected ?? kDefaultModelOption;
 
-    return Scaffold(
+    return AppScaffold(
       appBar: AppBar(
         leading: context.canPop() ? const BackButton() : null,
         title: Text(strings.modelChooseTitle),
-        elevation: 0,
       ),
-      body: SafeArea(
-        child: Stack(
+      body: AppContent(
+        maxWidth: 720,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceMd),
           children: [
-            const Positioned.fill(child: SakuraBackground(petals: 8)),
-            ListView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSizes.spaceMd,
-                AppSizes.spaceMd,
-                AppSizes.spaceMd,
-                AppSizes.spaceXl,
-              ),
-              children: [
-                _buildHeader(strings),
-                const SizedBox(height: AppSizes.spaceLg),
-                if (building)
-                  _buildLoading(strings)
-                else ...[
-                  _buildModelList(strings, activeReady, activeFile),
-                  const SizedBox(height: AppSizes.spaceLg),
-                  _buildTokenField(strings),
-                  const SizedBox(height: AppSizes.spaceLg),
-                  _buildActions(strings, busy: busy, isActive: isActive, target: installTarget),
-                  if (busy) _buildProgress(strings, status?.progress ?? 0),
-                  if (modelState.hasError && !busy)
-                    _buildError(strings, modelState.error!, retryLabel: strings.modelRetry),
-                ],
-              ],
-            ),
+            _buildHeader(strings),
+            const SizedBox(height: AppSizes.spaceLg),
+            if (building)
+              _buildLoading(strings)
+            else ...[
+              _buildModelList(strings, activeReady, activeFile),
+              const SizedBox(height: AppSizes.spaceLg),
+              _buildTokenField(strings),
+              const SizedBox(height: AppSizes.spaceLg),
+              _buildActions(strings, busy: busy, isActive: isActive, target: installTarget),
+              if (busy) _buildProgress(strings, status?.progress ?? 0),
+              if (modelState.hasError && !busy)
+                _buildError(strings, modelState.error!, retryLabel: strings.modelRetry),
+            ],
           ],
         ),
       ),
@@ -110,19 +104,18 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
   }
 
   Widget _buildHeader(AppStrings strings) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Text(strings.modelChooseTitle, style: AppTextStyles.headingLarge())
-            .animate()
-            .fadeIn(duration: 400.ms),
-        const SizedBox(height: AppSizes.spaceXs),
-        Text(
-          strings.modelChooseSubtitle,
-          style: AppTextStyles.bodyMedium(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+        const BloomMark(size: 56, glow: false),
+        const SizedBox(width: AppSizes.spaceMd),
+        Expanded(
+          child: Text(
+            strings.modelChooseSubtitle,
+            style: AppTextStyles.bodyLarge(
+              color: AppColors.textSecondaryFor(context),
+            ),
           ),
-        ).animate().fadeIn(duration: 400.ms, delay: 100.ms),
+        ),
       ],
     );
   }
@@ -130,12 +123,15 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
   Widget _buildLoading(AppStrings strings) {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceLg),
+      padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceXl),
       child: Column(
         children: [
-          const CircularProgressIndicator(),
-          const SizedBox(height: AppSizes.spaceMd),
-          Text(strings.modelLoadingTitle, style: AppTextStyles.headingSmall()),
+          const BloomMark(size: 88, animate: true),
+          const SizedBox(height: 20),
+          Text(
+            strings.modelLoadingTitle,
+            style: AppTextStyles.headingSmall(color: scheme.onSurface),
+          ),
           const SizedBox(height: AppSizes.spaceXs),
           Text(
             strings.modelLoadingBody,
@@ -152,12 +148,12 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          strings.modelAvailable,
-          style: AppTextStyles.headingSmall(
-            color: Theme.of(context).colorScheme.primary,
+          strings.modelAvailable.toUpperCase(),
+          style: AppTextStyles.sectionLabel(
+            color: AppColors.primaryDeepFor(context),
           ),
         ),
-        const SizedBox(height: AppSizes.spaceSm),
+        const SizedBox(height: 10),
         ...kModelOptions.map(
           (opt) => Padding(
             padding: const EdgeInsets.only(bottom: AppSizes.spaceXs),
@@ -184,8 +180,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
         hintText: strings.modelHfTokenHint,
         prefixIcon: const Icon(Icons.key_rounded),
         helperText: strings.modelHfTokenHelper,
-        helperStyle: AppTextStyles.moodIndicator(color: scheme.onSurfaceVariant),
-        isDense: true,
+        helperStyle: AppTextStyles.caption(color: scheme.onSurfaceVariant),
       ),
     );
   }
@@ -231,27 +226,45 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
   }
 
   Widget _buildProgress(AppStrings strings, double progress) {
+    final scheme = Theme.of(context).colorScheme;
     final pct = (progress * 100).round();
     return Padding(
       padding: const EdgeInsets.only(top: AppSizes.spaceLg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '${strings.modelProgress} $pct%',
-            style: AppTextStyles.moodIndicator(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+      child: Container(
+        padding: const EdgeInsets.all(AppSizes.spaceMd),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(AppSizes.radiusControl),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    strings.modelProgress,
+                    style: AppTextStyles.caption(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                Text(
+                  '$pct%',
+                  style: AppTextStyles.settingsLabel(color: scheme.onSurface),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: AppSizes.spaceXs),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-            child: LinearProgressIndicator(
-              value: progress.clamp(0, 1),
-              minHeight: 8,
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+              child: LinearProgressIndicator(
+                value: progress.clamp(0, 1),
+                minHeight: 8,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -265,19 +278,24 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
         padding: const EdgeInsets.all(AppSizes.spaceMd),
         decoration: BoxDecoration(
           color: scheme.errorContainer,
-          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+          borderRadius: BorderRadius.circular(AppSizes.radiusPanel),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.error_outline, color: scheme.error),
+                AppIconBadge(
+                  icon: Icons.error_outline_rounded,
+                  color: scheme.error,
+                ),
                 const SizedBox(width: AppSizes.spaceSm),
                 Expanded(
                   child: Text(
                     strings.modelErrorTitle,
-                    style: AppTextStyles.headingSmall(color: scheme.onErrorContainer),
+                    style: AppTextStyles.headingSmall(
+                      color: scheme.onErrorContainer,
+                    ),
                   ),
                 ),
               ],
@@ -456,69 +474,104 @@ class _ModelTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
+    final radius = BorderRadius.circular(AppSizes.radiusPanel);
+    return Semantics(
+      button: true,
+      selected: selected,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(AppSizes.spaceMd),
+        duration: AppDurations.durationFast,
+        curve: AppDurations.curveStandard,
         decoration: BoxDecoration(
-          color: selected ? scheme.primaryContainer : scheme.surface,
-          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-          border: Border.all(
-            color: selected ? scheme.primary : scheme.outlineVariant,
-            width: selected ? 1.5 : 1,
-          ),
+          borderRadius: radius,
+          boxShadow: selected ? AppShadows.card(context) : const [],
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Material(
+          color: selected
+              ? scheme.primaryContainer.withValues(alpha: 0.45)
+              : scheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: radius,
+            side: BorderSide(
+              color: selected ? scheme.primary : scheme.outlineVariant,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSizes.spaceMd),
+              child: Row(
                 children: [
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: AppSizes.spaceXs,
-                    runSpacing: 2,
-                    children: [
-                      Text(
-                        option.name,
-                        style: AppTextStyles.headingSmall(
-                          color: selected ? scheme.onPrimaryContainer : scheme.onSurface,
+                  const AppIconBadge(icon: Icons.memory_rounded, size: 40),
+                  const SizedBox(width: AppSizes.spaceSm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: AppSizes.spaceXs,
+                          runSpacing: 2,
+                          children: [
+                            Text(
+                              option.name,
+                              style: AppTextStyles.headingSmall(
+                                color: scheme.onSurface,
+                              ),
+                            ),
+                            if (active)
+                              _Badge(
+                                label: activeLabel,
+                                background: scheme.tertiaryContainer,
+                                foreground: scheme.onTertiaryContainer,
+                              ),
+                            if (option.gated)
+                              _Badge(
+                                label: hfTokenBadge,
+                                background: scheme.secondaryContainer,
+                                foreground: scheme.onSecondaryContainer,
+                              ),
+                          ],
                         ),
-                      ),
-                      if (active)
-                        _Badge(
-                          label: activeLabel,
-                          background: scheme.tertiaryContainer,
-                          foreground: scheme.onTertiaryContainer,
+                        const SizedBox(height: AppSizes.spaceXxs),
+                        Text(
+                          option.description,
+                          style: AppTextStyles.bodySmall(
+                            color: scheme.onSurfaceVariant,
+                          ),
                         ),
-                      if (option.gated)
-                        _Badge(
-                          label: hfTokenBadge,
-                          background: scheme.secondaryContainer,
-                          foreground: scheme.onSecondaryContainer,
+                        const SizedBox(height: AppSizes.spaceXs),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSizes.spaceXs,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: scheme.surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                          ),
+                          child: Text(
+                            option.sizeLabel,
+                            style: AppTextStyles.badge(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
                         ),
-                    ],
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    option.description,
-                    style: AppTextStyles.moodIndicator(color: scheme.onSurfaceVariant),
+                  const SizedBox(width: AppSizes.spaceSm),
+                  Icon(
+                    selected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_off,
+                    color: selected ? scheme.primary : scheme.outline,
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: AppSizes.spaceSm),
-            Text(
-              option.sizeLabel,
-              style: AppTextStyles.settingsLabel(color: scheme.onSurfaceVariant),
-            ),
-            const SizedBox(width: AppSizes.spaceSm),
-            Icon(
-              selected ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: selected ? scheme.primary : scheme.outline,
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -540,7 +593,7 @@ class _Badge extends StatelessWidget {
         color: background,
         borderRadius: BorderRadius.circular(AppSizes.radiusFull),
       ),
-      child: Text(label, style: AppTextStyles.timestamp(color: foreground)),
+      child: Text(label, style: AppTextStyles.badge(color: foreground)),
     );
   }
 }
