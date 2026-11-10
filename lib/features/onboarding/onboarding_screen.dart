@@ -1,17 +1,18 @@
 // Fitur Onboarding (FR-02) — 3 halaman pengenalan.
 //
-// Ikon: sakura (SVG), psikologi, sparkle. Dots pagination berbentuk pill
-// sakura; skip memakai GhostButton.
+// BloomMark berikon per halaman, indikator bar bergradien, skip di kanan atas.
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/design/components/app_scaffold.dart';
+import '../../core/design/components/bloom_mark.dart';
 import '../../core/design/components/primary_button.dart';
 import '../../core/design/components/secondary_button.dart';
 import '../../core/design/tokens/app_colors.dart';
+import '../../core/design/tokens/app_durations.dart';
+import '../../core/design/tokens/app_effects.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
@@ -41,8 +42,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     HapticFeedback.lightImpact();
     if (_currentPage < 2) {
       _controller.nextPage(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
+        duration: AppDurations.durationSlow,
+        curve: AppDurations.curveEmotive,
       );
     } else {
       _finish();
@@ -65,100 +66,103 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     final pages = [
       (
-        icon: Icons.favorite,
+        icon: Icons.favorite_rounded,
         color: AppColors.accentFor(context),
         title: strings.onboardingPage1Title,
         body: strings.onboardingPage1Body,
-        sakura: true,
       ),
       (
         icon: Icons.psychology_outlined,
-        color: AppColors.secondary,
+        color: AppColors.secondaryFor(context),
         title: strings.onboardingPage2Title,
         body: strings.onboardingPage2Body,
-        sakura: false,
       ),
       (
-        icon: Icons.auto_awesome,
+        icon: Icons.auto_awesome_rounded,
         color: AppColors.primaryDeepFor(context),
         title: strings.onboardingPage3Title,
         body: strings.onboardingPage3Body,
-        sakura: false,
       ),
     ];
 
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Align(
-              alignment: Alignment.topRight,
-              child: AnimatedOpacity(
-                opacity: isLast ? 0 : 1,
-                duration: const Duration(milliseconds: 250),
-                child: Padding(
-                  padding: const EdgeInsets.only(right: AppSizes.spaceSm),
-                  child: GhostButton(
+    return AppScaffold(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSizes.spaceLg,
+              AppSizes.spaceSm,
+              AppSizes.spaceSm,
+              0,
+            ),
+            child: Row(
+              children: [
+                const BloomMark(size: 26, glow: false),
+                const SizedBox(width: AppSizes.spaceXs),
+                Text(
+                  strings.appName,
+                  style: AppTextStyles.headingSmall(
+                    color: AppColors.primaryDeepFor(context),
+                  ),
+                ),
+                const Spacer(),
+                if (isLast)
+                  const SizedBox(width: 72)
+                else
+                  GhostButton(
                     label: strings.onboardingSkip,
-                    onPressed: isLast ? null : _finish,
+                    onPressed: _finish,
                     color: scheme.onSurfaceVariant,
                   ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: PageView.builder(
+              controller: _controller,
+              onPageChanged: _onPageChanged,
+              itemCount: pages.length,
+              itemBuilder: (_, index) => _PageContent(
+                icon: pages[index].icon,
+                color: pages[index].color,
+                title: pages[index].title,
+                body: pages[index].body,
+                isActive: index == _currentPage,
+              ),
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              pages.length,
+              (i) => AnimatedContainer(
+                duration: AppDurations.durationNormal,
+                curve: AppDurations.curveStandard,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: i == _currentPage ? 28 : 8,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: i == _currentPage ? null : scheme.outlineVariant,
+                  gradient: i == _currentPage
+                      ? AppGradients.selectedRing(context)
+                      : null,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusFull),
                 ),
               ),
             ),
-
-            Expanded(
-              child: PageView.builder(
-                controller: _controller,
-                onPageChanged: _onPageChanged,
-                itemCount: pages.length,
-                itemBuilder: (_, index) => _PageContent(
-                  icon: pages[index].icon,
-                  color: pages[index].color,
-                  title: pages[index].title,
-                  body: pages[index].body,
-                  isActive: index == _currentPage,
-                  useSakura: pages[index].sakura,
-                ),
-              ),
+          ),
+          const SizedBox(height: AppSizes.spaceLg),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceXl),
+            child: PrimaryButton(
+              label: isLast
+                  ? strings.onboardingGetStarted
+                  : strings.onboardingNext,
+              onPressed: _next,
             ),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                pages.length,
-                (i) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spaceXxs,
-                  ),
-                  width: i == _currentPage ? 24 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: i == _currentPage
-                        ? AppColors.primaryDeepFor(context)
-                        : scheme.onSurfaceVariant.withValues(alpha: 0.3137),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: AppSizes.spaceLg),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceXl),
-              child: PrimaryButton(
-                label: isLast
-                    ? strings.onboardingGetStarted
-                    : strings.onboardingNext,
-                onPressed: _next,
-              ),
-            ),
-
-            const SizedBox(height: AppSizes.spaceXl),
-          ],
-        ),
+          ),
+          const SizedBox(height: AppSizes.spaceXl),
+        ],
       ),
     );
   }
@@ -171,7 +175,6 @@ class _PageContent extends StatelessWidget {
     required this.title,
     required this.body,
     required this.isActive,
-    required this.useSakura,
   });
 
   final IconData icon;
@@ -179,20 +182,13 @@ class _PageContent extends StatelessWidget {
   final String title;
   final String body;
   final bool isActive;
-  final bool useSakura;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final child = useSakura
-        ? SvgPicture.asset(
-            'assets/icons/sakura.svg',
-            width: 56,
-            height: 56,
-            colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-          )
-        : Icon(icon, size: 56, color: color);
-    return LayoutBuilder(
+    final motionOk = !MediaQuery.disableAnimationsOf(context);
+
+    final content = LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSizes.spaceXl,
@@ -201,59 +197,62 @@ class _PageContent extends StatelessWidget {
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                    width: 120,
-                    height: 120,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 260,
+              height: 260,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: color.withValues(alpha: 0.098),
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withValues(alpha: 0.2353),
-                          blurRadius: 40,
-                          spreadRadius: 8,
-                        ),
-                      ],
+                      gradient: RadialGradient(
+                        colors: [
+                          color.withValues(alpha: 0.12),
+                          color.withValues(alpha: 0),
+                        ],
+                      ),
                     ),
-                    child: child,
-                  )
-                  .animate(target: isActive ? 1 : 0)
-                  .scale(
-                    begin: const Offset(0.85, 0.85),
-                    end: const Offset(1.0, 1.0),
-                    duration: 450.ms,
-                    curve: Curves.easeOut,
-                  )
-                  .fadeIn(duration: 450.ms),
-
-              const SizedBox(height: AppSizes.spaceXl),
-
-              Text(
-                    title,
-                    style: AppTextStyles.headingLarge(color: scheme.onSurface),
-                    textAlign: TextAlign.center,
-                  )
-                  .animate(target: isActive ? 1 : 0)
-                  .fadeIn(duration: 400.ms, delay: 100.ms)
-                  .slideY(begin: 0.15, end: 0, duration: 400.ms, delay: 100.ms),
-
-              const SizedBox(height: AppSizes.spaceMd),
-
-              Text(
-                    body,
-                    style: AppTextStyles.bodyMedium(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                    textAlign: TextAlign.center,
-                  )
-                  .animate(target: isActive ? 1 : 0)
-                  .fadeIn(duration: 400.ms, delay: 200.ms)
-                  .slideY(begin: 0.15, end: 0, duration: 400.ms, delay: 200.ms),
+                  ),
+                  BloomMark(size: 148, icon: icon, animate: motionOk && isActive),
+                ],
+              ),
+            ),
+            const SizedBox(height: 28),
+            Text(
+              title,
+              style: AppTextStyles.displaySmall(color: scheme.onSurface),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSizes.spaceSm),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Text(
+                body,
+                style: AppTextStyles.bodyLarge(
+                  color: AppColors.textSecondaryFor(context),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
             ],
           ),
         ),
+      ),
+    );
+
+    if (!motionOk) return content;
+    return AnimatedOpacity(
+      opacity: isActive ? 1 : 0.55,
+      duration: AppDurations.durationSlow,
+      curve: AppDurations.curveStandard,
+      child: AnimatedSlide(
+        offset: isActive ? Offset.zero : const Offset(0, 0.02),
+        duration: AppDurations.durationSlow,
+        curve: AppDurations.curveStandard,
+        child: content,
       ),
     );
   }

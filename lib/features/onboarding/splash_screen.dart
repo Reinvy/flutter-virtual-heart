@@ -1,14 +1,13 @@
 // Fitur Onboarding — layar splash (alur awal).
 //
-// "Sakura Fall": gradien blush lembut, logo hati berdenyut dalam lingkaran
-// rose, dan kelopak sakura melayang (CustomPainter, tanpa aset).
+// BloomMark bernapas di atas latar senja; tiga titik menandakan proses boot.
 // Menghormati MediaQuery.disableAnimations.
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/design/components/sakura_background.dart';
+import '../../core/design/components/app_scaffold.dart';
+import '../../core/design/components/bloom_mark.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
@@ -68,76 +67,100 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final motionOk = !MediaQuery.disableAnimationsOf(context);
-    final scheme = Theme.of(context).colorScheme;
+    final strings = ref.watch(appStringsProvider);
 
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? const [AppColors.backgroundDark, AppColors.surfaceDark]
-                : [AppColors.primarySoft, Colors.white, AppColors.secondarySoft],
-            stops: isDark ? null : const [0.0, 0.5, 1.0],
+    return AppScaffold(
+      safeArea: false,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const BloomMark(size: 132, animate: true),
+              const SizedBox(height: AppSizes.spaceXl),
+              Text(
+                strings.appName,
+                style: AppTextStyles.displayHero(
+                  color: AppColors.primaryDeepFor(context),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                strings.appTagline,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.caption(
+                  color: AppColors.textSecondaryFor(context),
+                ).copyWith(letterSpacing: 1.2),
+              ),
+              const SizedBox(height: 40),
+              const _BootDots(),
+            ],
           ),
         ),
-        child: Stack(
-          children: [
-            Positioned.fill(child: SakuraBackground(petals: 10, opacity: 1)),
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 116,
-                    height: 116,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: isDark
-                            ? [AppColors.primaryDark, AppColors.primarySoftDark]
-                            : [AppColors.primary, AppColors.primarySoft],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: scheme.primary.withValues(alpha: 0.35),
-                          blurRadius: 32,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: Icon(Icons.favorite, size: 56, color: Colors.white),
-                  ).animate(
-                    onPlay: motionOk ? (c) => c.repeat(reverse: true) : null,
-                  ).scale(
-                    begin: const Offset(1, 1),
-                    end: const Offset(1.08, 1.08),
-                    duration: 900.ms,
-                    curve: Curves.easeInOut,
-                  ),
-                  const SizedBox(height: AppSizes.spaceLg),
-                  Text(
-                    ref.watch(appStringsProvider).appName,
-                    style: AppTextStyles.appName(
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.primaryDeep,
-                    ).copyWith(fontSize: 28),
-                  ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
-                  const SizedBox(height: AppSizes.spaceXs),
-                  Text(
-                    ref.watch(appStringsProvider).appTagline,
-                    style: AppTextStyles.moodIndicator(
-                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondary,
-                    ),
-                  ).animate().fadeIn(duration: 600.ms, delay: 350.ms),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
+    );
+  }
+}
+
+class _BootDots extends StatefulWidget {
+  const _BootDots();
+
+  @override
+  State<_BootDots> createState() => _BootDotsState();
+}
+
+class _BootDotsState extends State<_BootDots> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  );
+
+  bool _motionOk = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final ok = !MediaQuery.disableAnimationsOf(context);
+    if (ok == _motionOk) return;
+    _motionOk = ok;
+    if (ok) {
+      _controller.repeat();
+    } else {
+      _controller.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.primary;
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (i) {
+            final phase = (_controller.value + i / 3) % 1;
+            final alpha = _motionOk
+                ? 0.35 + 0.65 * (1 - (2 * phase - 1).abs())
+                : 0.5;
+            return Container(
+              width: 6,
+              height: 6,
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: color.withValues(alpha: alpha),
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 }
