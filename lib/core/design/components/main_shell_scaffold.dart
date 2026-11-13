@@ -7,6 +7,7 @@ import '../../l10n/app_strings.dart';
 import '../active_shell_tab_provider.dart';
 import '../tokens/app_durations.dart';
 import '../tokens/app_sizes.dart';
+import 'double_back_exit_scope.dart';
 import '../tokens/text_styles.dart';
 
 class MainShellScaffold extends ConsumerStatefulWidget {
@@ -19,6 +20,8 @@ class MainShellScaffold extends ConsumerStatefulWidget {
 }
 
 class _MainShellScaffoldState extends ConsumerState<MainShellScaffold> {
+  final _backExitKey = GlobalKey<DoubleBackExitScopeState>();
+
   @override
   void initState() {
     super.initState();
@@ -43,6 +46,9 @@ class _MainShellScaffoldState extends ConsumerState<MainShellScaffold> {
   }
 
   void _onTapTab(int index) {
+    if (index != widget.navigationShell.currentIndex) {
+      _backExitKey.currentState?.reset();
+    }
     ref.read(activeShellTabProvider.notifier).setTab(index);
     widget.navigationShell.goBranch(
       index,
@@ -79,33 +85,43 @@ class _MainShellScaffoldState extends ConsumerState<MainShellScaffold> {
       ),
     ];
 
-    return Scaffold(
-      body: widget.navigationShell,
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(
-          color: scheme.surface,
-          border: Border(
-            top: BorderSide(color: scheme.outlineVariant, width: 1),
+    return DoubleBackExitScope(
+      key: _backExitKey,
+      onBackBlocked: () {
+        if (currentIndex != 0) {
+          _onTapTab(0);
+          return true;
+        }
+        return false;
+      },
+      child: Scaffold(
+        body: widget.navigationShell,
+        bottomNavigationBar: DecoratedBox(
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            border: Border(
+              top: BorderSide(color: scheme.outlineVariant, width: 1),
+            ),
           ),
-        ),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 64,
-            child: Row(
-              children: [
-                for (int i = 0; i < tabs.length; i++)
-                  Expanded(
-                    child: _ShellTabItem(
-                      key: ValueKey('shell-tab-$i'),
-                      icon: tabs[i].icon,
-                      activeIcon: tabs[i].activeIcon,
-                      label: tabs[i].label,
-                      selected: i == currentIndex,
-                      onTap: () => _onTapTab(i),
+          child: SafeArea(
+            top: false,
+            child: SizedBox(
+              height: 64,
+              child: Row(
+                children: [
+                  for (int i = 0; i < tabs.length; i++)
+                    Expanded(
+                      child: _ShellTabItem(
+                        key: ValueKey('shell-tab-$i'),
+                        icon: tabs[i].icon,
+                        activeIcon: tabs[i].activeIcon,
+                        label: tabs[i].label,
+                        selected: i == currentIndex,
+                        onTap: () => _onTapTab(i),
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

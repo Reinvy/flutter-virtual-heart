@@ -5,6 +5,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:virtual_heart/services/settings/settings_service.dart';
+
 import '../../models/app_settings.dart';
 
 /// Kumpulan string UI. Implementasi: [IndonesianStrings] & [EnglishStrings].
@@ -20,6 +21,7 @@ abstract class AppStrings {
   String get navMemory;
   String get navSettings;
   String get commonCancel;
+  String get exitBackAgainPrompt;
 
   // ── Age Gate (FR-01) ────────────────────────────────────────────────────
   String get ageGateTitle;
@@ -281,7 +283,6 @@ abstract class AppStrings {
   // ── Umum (lanjutan) ─────────────────────────────────────────────────────
   String get commonClose;
 
-
   // ── Companion Hub ───────────────────────────────────────────────────────
   String get hubSectionStatus;
   String get hubOpenChat;
@@ -323,6 +324,8 @@ class IndonesianStrings extends AppStrings {
   String get navMemory => 'Memori';
   @override
   String get navSettings => 'Setelan';
+  @override
+  String get exitBackAgainPrompt => 'Tekan sekali lagi untuk keluar';
 
   @override
   String get ageGateTitle => 'Verifikasi Usia';
@@ -335,7 +338,8 @@ class IndonesianStrings extends AppStrings {
   @override
   String get ageGateDecline => 'Tidak, keluar dari aplikasi';
   @override
-  String get ageGateTerms => 'Dengan melanjutkan, kamu menyetujui Kebijakan Privasi VirtualHeart.';
+  String get ageGateTerms =>
+      'Dengan melanjutkan, kamu menyetujui Kebijakan Privasi VirtualHeart.';
   @override
   String get ageGatePrivacyLink => 'Baca Kebijakan Privasi';
   @override
@@ -403,7 +407,8 @@ class IndonesianStrings extends AppStrings {
   @override
   String get personaHobbies => 'Hobi & Minat (opsional)';
   @override
-  String get personaHobbiesHint => 'Pilih beberapa agar percakapan lebih personal';
+  String get personaHobbiesHint =>
+      'Pilih beberapa agar percakapan lebih personal';
   @override
   String get personaNickname => 'Panggilan darinya untukku';
   @override
@@ -421,13 +426,17 @@ class IndonesianStrings extends AppStrings {
   @override
   String get personaPersonalityMysterious => 'Misterius';
   @override
-  String get personaPersonalityGentleDesc => 'Perhatian, hangat, dan selalu ada untukmu';
+  String get personaPersonalityGentleDesc =>
+      'Perhatian, hangat, dan selalu ada untukmu';
   @override
-  String get personaPersonalityCheerfulDesc => 'Penuh energi, suka bercanda, dan membangkitkan semangat';
+  String get personaPersonalityCheerfulDesc =>
+      'Penuh energi, suka bercanda, dan membangkitkan semangat';
   @override
-  String get personaPersonalityMatureDesc => 'Bijak, tenang, dan bisa diandalkan';
+  String get personaPersonalityMatureDesc =>
+      'Bijak, tenang, dan bisa diandalkan';
   @override
-  String get personaPersonalityMysteriousDesc => 'Menarik, penuh teka-teki, dan memikat';
+  String get personaPersonalityMysteriousDesc =>
+      'Menarik, penuh teka-teki, dan memikat';
   @override
   String get personaCallsYou => 'Memanggilmu "{nickname}"';
   @override
@@ -482,7 +491,8 @@ class IndonesianStrings extends AppStrings {
   @override
   String get modelProgress => 'Mengunduh:';
   @override
-  String get modelFileInvalid => 'Format file tidak didukung. Gunakan .litertlm atau .task.';
+  String get modelFileInvalid =>
+      'Format file tidak didukung. Gunakan .litertlm atau .task.';
   @override
   String get modelHfTokenBadge => 'HF Token';
   @override
@@ -496,15 +506,18 @@ class IndonesianStrings extends AppStrings {
   @override
   String get modelNotInstalled => 'Belum ada model';
   @override
-  String get modelErrorNetwork => 'Tidak ada koneksi. Periksa jaringan lalu coba lagi.';
+  String get modelErrorNetwork =>
+      'Tidak ada koneksi. Periksa jaringan lalu coba lagi.';
   @override
   String get modelErrorAuth => 'Akses ditolak. Periksa token HuggingFace.';
   @override
   String get modelErrorNotFound => 'Model tidak ditemukan di server.';
   @override
-  String get modelErrorRateLimit => 'Terlalu banyak permintaan. Coba lagi nanti.';
+  String get modelErrorRateLimit =>
+      'Terlalu banyak permintaan. Coba lagi nanti.';
   @override
-  String get modelErrorStorage => 'Penyimpanan tidak cukup. Kosongkan ruang lalu coba lagi.';
+  String get modelErrorStorage =>
+      'Penyimpanan tidak cukup. Kosongkan ruang lalu coba lagi.';
   @override
   String get modelErrorInvalidFile => 'File model tidak valid atau rusak.';
   @override
@@ -525,7 +538,8 @@ class IndonesianStrings extends AppStrings {
   @override
   String get chatInputHint => 'Ceritakan harimu...';
   @override
-  String get chatSttUnavailable => 'Pengenalan suara tidak tersedia di perangkat ini';
+  String get chatSttUnavailable =>
+      'Pengenalan suara tidak tersedia di perangkat ini';
   @override
   String get chatTtsUnavailable =>
       'Model suara belum tersedia. Cek layar model di pengaturan.';
@@ -578,7 +592,8 @@ class IndonesianStrings extends AppStrings {
   @override
   String get chatStop => 'Hentikan';
   @override
-  String get chatGenerationFailed => 'Aku belum bisa menjawab sekarang. Coba lagi, ya.';
+  String get chatGenerationFailed =>
+      'Aku belum bisa menjawab sekarang. Coba lagi, ya.';
   @override
   String get chatContextLimit =>
       'Percakapan ini terlalu panjang untuk model. Hapus sebagian riwayat atau mulai '
@@ -605,11 +620,13 @@ class IndonesianStrings extends AppStrings {
   @override
   String get chatMicStop => 'Hentikan rekaman';
   @override
-  String get chatMicPermission => 'Izin mikrofon ditolak. Aktifkan di pengaturan.';
+  String get chatMicPermission =>
+      'Izin mikrofon ditolak. Aktifkan di pengaturan.';
   @override
   String get chatMicOpenSettings => 'Buka Pengaturan';
   @override
-  String get chatTtsDisabled => 'Aktifkan suara di Pengaturan untuk membacakan pesan.';
+  String get chatTtsDisabled =>
+      'Aktifkan suara di Pengaturan untuk membacakan pesan.';
 
   @override
   String get memoryTitle => 'Memori AI';
@@ -700,7 +717,8 @@ class IndonesianStrings extends AppStrings {
   @override
   String get settingsTtsEnable => 'Aktifkan Text-to-Speech';
   @override
-  String get settingsTtsEnableDesc => 'AI akan membacakan pesannya dengan suara';
+  String get settingsTtsEnableDesc =>
+      'AI akan membacakan pesannya dengan suara';
   @override
   String get settingsTtsAutoPlay => 'Putar Otomatis';
   @override
@@ -725,7 +743,8 @@ class IndonesianStrings extends AppStrings {
   @override
   String get settingsDiscardTitle => 'Buang perubahan?';
   @override
-  String get settingsDiscardBody => 'Perubahan yang belum disimpan akan hilang.';
+  String get settingsDiscardBody =>
+      'Perubahan yang belum disimpan akan hilang.';
   @override
   String get settingsDiscard => 'Buang';
   @override
@@ -814,7 +833,8 @@ class IndonesianStrings extends AppStrings {
   @override
   String get settingsNotifPermissionOpenSettings => 'Buka Pengaturan';
   @override
-  String get settingsNotifPermissionUndetermined => 'Izin notifikasi belum diminta';
+  String get settingsNotifPermissionUndetermined =>
+      'Izin notifikasi belum diminta';
   @override
   String get settingsNotifPermissionEnable => 'Aktifkan';
   @override
@@ -935,7 +955,8 @@ class IndonesianStrings extends AppStrings {
   @override
   String get routeNotFoundTitle => 'Halaman tidak ditemukan';
   @override
-  String get routeNotFoundBody => 'Tautan ini tidak mengarah ke layar yang valid.';
+  String get routeNotFoundBody =>
+      'Tautan ini tidak mengarah ke layar yang valid.';
   @override
   String get routeGoHome => 'Kembali ke Awal';
 }
@@ -959,6 +980,8 @@ class EnglishStrings extends AppStrings {
   String get navMemory => 'Memory';
   @override
   String get navSettings => 'Settings';
+  @override
+  String get exitBackAgainPrompt => 'Press back again to exit';
 
   @override
   String get ageGateTitle => 'Age Verification';
@@ -1040,7 +1063,8 @@ class EnglishStrings extends AppStrings {
   @override
   String get personaHobbies => 'Hobbies & Interests (optional)';
   @override
-  String get personaHobbiesHint => 'Select a few to make conversations more personal';
+  String get personaHobbiesHint =>
+      'Select a few to make conversations more personal';
   @override
   String get personaNickname => 'How they call me';
   @override
@@ -1058,13 +1082,16 @@ class EnglishStrings extends AppStrings {
   @override
   String get personaPersonalityMysterious => 'Mysterious';
   @override
-  String get personaPersonalityGentleDesc => 'Caring, warm, and always there for you';
+  String get personaPersonalityGentleDesc =>
+      'Caring, warm, and always there for you';
   @override
-  String get personaPersonalityCheerfulDesc => 'Full of energy, loves joking, and uplifting';
+  String get personaPersonalityCheerfulDesc =>
+      'Full of energy, loves joking, and uplifting';
   @override
   String get personaPersonalityMatureDesc => 'Wise, calm, and dependable';
   @override
-  String get personaPersonalityMysteriousDesc => 'Intriguing, full of puzzles, and captivating';
+  String get personaPersonalityMysteriousDesc =>
+      'Intriguing, full of puzzles, and captivating';
   @override
   String get personaCallsYou => 'Calls you "{nickname}"';
   @override
@@ -1105,7 +1132,8 @@ class EnglishStrings extends AppStrings {
   @override
   String get modelProgress => 'Downloading:';
   @override
-  String get modelFileInvalid => 'Unsupported file format. Use .litertlm or .task.';
+  String get modelFileInvalid =>
+      'Unsupported file format. Use .litertlm or .task.';
   @override
   String get modelHfTokenBadge => 'HF Token';
   @override
@@ -1119,7 +1147,8 @@ class EnglishStrings extends AppStrings {
   @override
   String get modelNotInstalled => 'No model installed';
   @override
-  String get modelErrorNetwork => 'No connection. Check your network and try again.';
+  String get modelErrorNetwork =>
+      'No connection. Check your network and try again.';
   @override
   String get modelErrorAuth => 'Access denied. Check your HuggingFace token.';
   @override
@@ -1127,7 +1156,8 @@ class EnglishStrings extends AppStrings {
   @override
   String get modelErrorRateLimit => 'Too many requests. Try again later.';
   @override
-  String get modelErrorStorage => 'Not enough storage. Free up space and try again.';
+  String get modelErrorStorage =>
+      'Not enough storage. Free up space and try again.';
   @override
   String get modelErrorInvalidFile => 'The model file is invalid or corrupted.';
   @override
@@ -1148,7 +1178,8 @@ class EnglishStrings extends AppStrings {
   @override
   String get chatInputHint => 'Tell me about your day...';
   @override
-  String get chatSttUnavailable => 'Speech recognition is not available on this device';
+  String get chatSttUnavailable =>
+      'Speech recognition is not available on this device';
   @override
   String get chatTtsUnavailable =>
       "Voice model isn't available yet. Check the model screen in settings.";
@@ -1201,7 +1232,8 @@ class EnglishStrings extends AppStrings {
   @override
   String get chatStop => 'Stop';
   @override
-  String get chatGenerationFailed => 'I couldn\'t reply just now. Please try again.';
+  String get chatGenerationFailed =>
+      'I couldn\'t reply just now. Please try again.';
   @override
   String get chatContextLimit =>
       'This conversation is too long for the model. Delete some history or start a new '
@@ -1228,7 +1260,8 @@ class EnglishStrings extends AppStrings {
   @override
   String get chatMicStop => 'Stop recording';
   @override
-  String get chatMicPermission => 'Microphone permission denied. Enable it in settings.';
+  String get chatMicPermission =>
+      'Microphone permission denied. Enable it in settings.';
   @override
   String get chatMicOpenSettings => 'Open Settings';
   @override
@@ -1381,7 +1414,8 @@ class EnglishStrings extends AppStrings {
   @override
   String get settingsExportChat => 'Export Chat (.txt)';
   @override
-  String get settingsExportChatDesc => 'Save conversation history to a text file';
+  String get settingsExportChatDesc =>
+      'Save conversation history to a text file';
   @override
   String get settingsDelete => 'Delete';
   @override
@@ -1426,17 +1460,20 @@ class EnglishStrings extends AppStrings {
   @override
   String get settingsMicPermissionOpenSettings => 'Open Settings';
   @override
-  String get settingsMicPermissionNotRequested => 'Microphone permission not requested yet';
+  String get settingsMicPermissionNotRequested =>
+      'Microphone permission not requested yet';
   @override
   String get settingsMicPermissionRequest => 'Request Permission';
   @override
-  String get settingsNotifPermissionGranted => 'Notification permission granted';
+  String get settingsNotifPermissionGranted =>
+      'Notification permission granted';
   @override
   String get settingsNotifPermissionDenied => 'Notification permission denied';
   @override
   String get settingsNotifPermissionOpenSettings => 'Open Settings';
   @override
-  String get settingsNotifPermissionUndetermined => 'Notification permission not requested yet';
+  String get settingsNotifPermissionUndetermined =>
+      'Notification permission not requested yet';
   @override
   String get settingsNotifPermissionEnable => 'Enable';
   @override
@@ -1471,7 +1508,8 @@ class EnglishStrings extends AppStrings {
   String timeMinutesAgo(int minutes) =>
       minutes == 1 ? '1 minute ago' : '$minutes minutes ago';
   @override
-  String timeHoursAgo(int hours) => hours == 1 ? '1 hour ago' : '$hours hours ago';
+  String timeHoursAgo(int hours) =>
+      hours == 1 ? '1 hour ago' : '$hours hours ago';
   @override
   String timeDaysAgo(int days) => days == 1 ? '1 day ago' : '$days days ago';
 
@@ -1557,7 +1595,8 @@ class EnglishStrings extends AppStrings {
   @override
   String get routeNotFoundTitle => 'Page not found';
   @override
-  String get routeNotFoundBody => 'This route does not point to a valid screen.';
+  String get routeNotFoundBody =>
+      'This route does not point to a valid screen.';
   @override
   String get routeGoHome => 'Go Home';
 }

@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../core/design/components/app_icon_badge.dart';
 import '../../core/design/components/app_scaffold.dart';
+import '../../core/design/components/double_back_exit_scope.dart';
 import '../../core/design/components/primary_button.dart';
 import '../../core/design/components/resonance_mark.dart';
 import '../../core/design/components/secondary_button.dart';
@@ -22,7 +23,9 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
 import '../../services/ai/model_catalog.dart';
 import '../../services/ai/model_service.dart';
+
 import 'package:virtual_heart/services/settings/settings_service.dart';
+
 import 'model_error_text.dart';
 
 class ModelDownloadScreen extends ConsumerStatefulWidget {
@@ -66,8 +69,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
     final modelState = ref.watch(modelServiceProvider);
     final status = modelState.value;
     final bool busy = status?.installing ?? false;
-    final bool building =
-        modelState.isLoading && !modelState.hasValue && !busy;
+    final bool building = modelState.isLoading && !modelState.hasValue && !busy;
     final bool activeReady = status?.ready ?? false;
     final String activeFile = settings.modelVariant;
 
@@ -76,15 +78,22 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
         ? (activeReady && activeFile == chosen.fileName)
         : activeReady;
     final installTarget = _selected ?? kDefaultModelOption;
+    final hasBackRoute =
+        GoRouter.maybeOf(context)?.canPop() ?? Navigator.canPop(context);
+    final canPopRoute = !busy && hasBackRoute;
 
-    return PopScope(
-      canPop: !busy,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && busy) _cancel();
+    return DoubleBackExitScope(
+      canPop: canPopRoute,
+      onBackBlocked: () {
+        if (busy) {
+          _cancel();
+          return true;
+        }
+        return false;
       },
       child: AppScaffold(
         appBar: AppBar(
-          leading: context.canPop() && !busy ? const BackButton() : null,
+          leading: hasBackRoute && !busy ? const BackButton() : null,
           title: Text(strings.modelChooseTitle),
         ),
         body: AppContent(
@@ -97,12 +106,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
               if (building)
                 _buildLoading(strings)
               else ...[
-                _buildModelList(
-                  strings,
-                  activeReady,
-                  activeFile,
-                  busy: busy,
-                ),
+                _buildModelList(strings, activeReady, activeFile, busy: busy),
                 const SizedBox(height: AppSizes.spaceLg),
                 _buildTokenField(strings, busy: busy),
                 const SizedBox(height: AppSizes.spaceLg),
@@ -155,10 +159,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
           const SizedBox(height: 20),
           Text(
             strings.modelLoadingTitle,
-            style: AppTextStyles.headingSmall(
-              context,
-              color: scheme.onSurface,
-            ),
+            style: AppTextStyles.headingSmall(context, color: scheme.onSurface),
           ),
           const SizedBox(height: AppSizes.spaceXs),
           Text(
@@ -282,9 +283,8 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
                 if (progress > 0)
                   Text(
                     '$pct%',
-                    style: AppTextStyles.caption(
-                      color: scheme.onSurface,
-                    ).copyWith(fontWeight: FontWeight.w700),
+                    style: AppTextStyles.caption(color: scheme.onSurface)
+                        .copyWith(fontWeight: FontWeight.w700),
                   ),
               ],
             ),
@@ -309,7 +309,9 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
     required ModelOption target,
   }) {
     final scheme = Theme.of(context).colorScheme;
-    final kind = error is ModelException ? error.kind : classifyModelError(error);
+    final kind = error is ModelException
+        ? error.kind
+        : classifyModelError(error);
     return Padding(
       padding: const EdgeInsets.only(top: AppSizes.spaceMd),
       child: Container(
@@ -348,7 +350,9 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: _lastRetryWasFile ? _pickFile : () => _startDownload(target),
+                onPressed: _lastRetryWasFile
+                    ? _pickFile
+                    : () => _startDownload(target),
                 child: Text(
                   retryLabel,
                   style: AppTextStyles.button(color: scheme.error),
@@ -446,6 +450,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
       _pickingFile = false;
     }
   }
+
   Future<String?> _askModelType(AppStrings strings) {
     const families = <String, String>{
       'qwen': 'Qwen 2.5',

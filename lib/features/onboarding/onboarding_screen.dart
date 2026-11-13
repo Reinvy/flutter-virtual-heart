@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/design/components/app_scaffold.dart';
 import '../../core/design/components/primary_button.dart';
+import '../../core/design/components/double_back_exit_scope.dart';
 import '../../core/design/components/resonance_mark.dart';
 import '../../core/design/components/secondary_button.dart';
 import '../../core/design/tokens/app_colors.dart';
@@ -17,6 +18,7 @@ import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
+
 import 'package:virtual_heart/services/settings/settings_service.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -65,6 +67,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         .save(settings.copyWith(isOnboardingDone: true));
     if (mounted) context.go(AppRoutes.personaSetup);
   }
+
   @override
   Widget build(BuildContext context) {
     final strings = ref.watch(appStringsProvider);
@@ -89,93 +92,113 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       ),
     ];
 
-    return AppScaffold(
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSizes.pageGutter,
-              AppSizes.spaceSm,
-              AppSizes.spaceSm,
-              0,
-            ),
-            child: Row(
-              children: [
-                const ResonanceMark(size: 24),
-                const SizedBox(width: AppSizes.spaceXs),
-                Flexible(
-                  child: Text(
-                    strings.appName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.headingSmall(
-                      context,
-                      color: AppColors.primaryDeepFor(context),
+    return DoubleBackExitScope(
+      onBackBlocked: () {
+        if (_finishing) return true;
+        final current = _controller.hasClients
+            ? (_controller.page?.round() ?? _currentPage)
+            : _currentPage;
+        if (current > 0) {
+          _controller.previousPage(
+            duration: AppDurations.durationSlow,
+            curve: AppDurations.curveEmotive,
+          );
+          return true;
+        }
+        return false;
+      },
+      child: AppScaffold(
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSizes.pageGutter,
+                AppSizes.spaceSm,
+                AppSizes.spaceSm,
+                0,
+              ),
+              child: Row(
+                children: [
+                  const ResonanceMark(size: 24),
+                  const SizedBox(width: AppSizes.spaceXs),
+                  Flexible(
+                    child: Text(
+                      strings.appName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.headingSmall(
+                        context,
+                        color: AppColors.primaryDeepFor(context),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: AppSizes.spaceSm),
-                Text(
-                  strings.onboardingStep(_currentPage + 1, pages.length),
-                  style: AppTextStyles.caption(color: scheme.onSurfaceVariant),
-                ),
-                const Spacer(),
-                if (!isLast)
-                  GhostButton(
-                    label: strings.onboardingSkip,
-                    onPressed: _finish,
-                    color: scheme.onSurfaceVariant,
+                  const SizedBox(width: AppSizes.spaceSm),
+                  Text(
+                    strings.onboardingStep(_currentPage + 1, pages.length),
+                    style: AppTextStyles.caption(
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: PageView.builder(
-              controller: _controller,
-              onPageChanged: _onPageChanged,
-              itemCount: pages.length,
-              itemBuilder: (_, index) => _PageContent(
-                icon: pages[index].icon,
-                title: pages[index].title,
-                body: pages[index].body,
-                isActive: index == _currentPage,
+                  const Spacer(),
+                  if (!isLast)
+                    GhostButton(
+                      label: strings.onboardingSkip,
+                      onPressed: _finish,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                ],
               ),
             ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              pages.length,
-              (i) => AnimatedContainer(
-                duration: AppDurations.durationNormal,
-                curve: AppDurations.curveStandard,
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: i == _currentPage ? 32 : 12,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: i == _currentPage
-                      ? scheme.primary
-                      : scheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+            Expanded(
+              child: PageView.builder(
+                controller: _controller,
+                onPageChanged: _onPageChanged,
+                itemCount: pages.length,
+                itemBuilder: (_, index) => _PageContent(
+                  icon: pages[index].icon,
+                  title: pages[index].title,
+                  body: pages[index].body,
+                  isActive: index == _currentPage,
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: AppSizes.spaceLg),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.pageGutter),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: PrimaryButton(
-                label: isLast
-                    ? strings.onboardingGetStarted
-                    : strings.onboardingNext,
-                onPressed: _next,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                pages.length,
+                (i) => AnimatedContainer(
+                  duration: AppDurations.durationNormal,
+                  curve: AppDurations.curveStandard,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: i == _currentPage ? 32 : 12,
+                  height: 3,
+                  decoration: BoxDecoration(
+                    color: i == _currentPage
+                        ? scheme.primary
+                        : scheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: AppSizes.spaceXl),
-        ],
+            const SizedBox(height: AppSizes.spaceLg),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.pageGutter,
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: PrimaryButton(
+                  label: isLast
+                      ? strings.onboardingGetStarted
+                      : strings.onboardingNext,
+                  onPressed: _next,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSizes.spaceXl),
+          ],
+        ),
       ),
     );
   }

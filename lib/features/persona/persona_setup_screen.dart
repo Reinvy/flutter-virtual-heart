@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/design/components/app_scaffold.dart';
+import '../../core/design/components/double_back_exit_scope.dart';
 import '../../core/design/components/primary_button.dart';
 import '../../core/design/components/resonance_mark.dart';
 import '../../core/design/tokens/app_colors.dart';
@@ -15,9 +16,13 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
 import '../../models/persona_config.dart';
 import '../../services/ai/model_service.dart';
+
 import 'package:virtual_heart/services/ai/model_ready_provider.dart';
+
 import '../notifications/notification_controller.dart';
+
 import 'package:virtual_heart/services/settings/settings_service.dart';
+
 import 'avatar_catalog.dart';
 import 'persona_options.dart';
 import 'persona_controller.dart';
@@ -54,6 +59,7 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
       _selectedAvatarId = existing.avatarId;
     }
   }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -119,65 +125,68 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
     final strings = ref.watch(appStringsProvider);
     final scheme = Theme.of(context).colorScheme;
 
-    return AppScaffold(
-      safeArea: false,
-      body: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            SafeArea(bottom: false, child: _buildHeader(strings)),
-            Divider(height: 1, thickness: 1, color: scheme.outlineVariant),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(top: AppSizes.spaceLg),
-                child: AppContent(
-                  maxWidth: 640,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildGenderSection(strings),
-                      const SizedBox(height: 28),
-                      _buildAvatarSection(strings),
-                      const SizedBox(height: 28),
-                      _buildNameSection(strings),
-                      const SizedBox(height: 20),
-                      _buildNicknameSection(strings),
-                      const SizedBox(height: 28),
-                      _buildPersonalitySection(strings),
-                      const SizedBox(height: 28),
-                      _buildHobbiesSection(strings),
-                      const SizedBox(height: 40),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                color: scheme.surface,
-                border: Border(
-                  top: BorderSide(color: scheme.outlineVariant, width: 1),
-                ),
-              ),
-              child: SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.pageGutter,
-                    vertical: AppSizes.spaceSm,
-                  ),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 640),
-                    child: PrimaryButton(
-                      label: strings.personaSave,
-                      loading: _isSaving,
-                      onPressed: _save,
+    return DoubleBackExitScope(
+      onBackBlocked: () => _isSaving,
+      child: AppScaffold(
+        safeArea: false,
+        body: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              SafeArea(bottom: false, child: _buildHeader(strings)),
+              Divider(height: 1, thickness: 1, color: scheme.outlineVariant),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(top: AppSizes.spaceLg),
+                  child: AppContent(
+                    maxWidth: 640,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildGenderSection(strings),
+                        const SizedBox(height: 28),
+                        _buildAvatarSection(strings),
+                        const SizedBox(height: 28),
+                        _buildNameSection(strings),
+                        const SizedBox(height: 20),
+                        _buildNicknameSection(strings),
+                        const SizedBox(height: 28),
+                        _buildPersonalitySection(strings),
+                        const SizedBox(height: 28),
+                        _buildHobbiesSection(strings),
+                        const SizedBox(height: 40),
+                      ],
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+              Container(
+                decoration: BoxDecoration(
+                  color: scheme.surface,
+                  border: Border(
+                    top: BorderSide(color: scheme.outlineVariant, width: 1),
+                  ),
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.pageGutter,
+                      vertical: AppSizes.spaceSm,
+                    ),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 640),
+                      child: PrimaryButton(
+                        label: strings.personaSave,
+                        loading: _isSaving,
+                        onPressed: _save,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

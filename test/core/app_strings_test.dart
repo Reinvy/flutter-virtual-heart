@@ -51,11 +51,20 @@ List<(String, String Function(AppStrings))> _newKeys() => [
   ('settingsDiscardTitle', (s) => s.settingsDiscardTitle),
   ('settingsDiscardBody', (s) => s.settingsDiscardBody),
   ('settingsDiscard', (s) => s.settingsDiscard),
-  ('settingsMicPermissionNotRequested', (s) => s.settingsMicPermissionNotRequested),
+  (
+    'settingsMicPermissionNotRequested',
+    (s) => s.settingsMicPermissionNotRequested,
+  ),
   ('settingsMicPermissionRequest', (s) => s.settingsMicPermissionRequest),
-  ('settingsNotifPermissionUndetermined', (s) => s.settingsNotifPermissionUndetermined),
+  (
+    'settingsNotifPermissionUndetermined',
+    (s) => s.settingsNotifPermissionUndetermined,
+  ),
   ('settingsNotifPermissionEnable', (s) => s.settingsNotifPermissionEnable),
-  ('settingsNotifPermissionDeniedSnack', (s) => s.settingsNotifPermissionDeniedSnack),
+  (
+    'settingsNotifPermissionDeniedSnack',
+    (s) => s.settingsNotifPermissionDeniedSnack,
+  ),
   ('settingsPrivacyPolicy', (s) => s.settingsPrivacyPolicy),
   ('settingsVoiceBackendOnDevice', (s) => s.settingsVoiceBackendOnDevice),
   ('privacyTitle', (s) => s.privacyTitle),
@@ -97,6 +106,7 @@ List<(String, String Function(AppStrings))> _newKeys() => [
   ('hubViewAll', (s) => s.hubViewAll),
   ('hubEngineTitle', (s) => s.hubEngineTitle),
   ('hubEngineReady', (s) => s.hubEngineReady),
+  ('exitBackAgainPrompt', (s) => s.exitBackAgainPrompt),
 ];
 
 void main() {
@@ -134,12 +144,15 @@ void main() {
       }
     });
 
-    test('copy kebijakan privasi menyebut batas jaringan dan penghapusan data', () {
-      expect(id.privacyPolicy, contains('Jaringan hanya dipakai'));
-      expect(id.privacyPolicy, contains('Data & Privasi'));
-      expect(en.privacyPolicy, contains('Network access is used only'));
-      expect(en.privacyPolicy, contains('Data & Privacy'));
-    });
+    test(
+      'copy kebijakan privasi menyebut batas jaringan dan penghapusan data',
+      () {
+        expect(id.privacyPolicy, contains('Jaringan hanya dipakai'));
+        expect(id.privacyPolicy, contains('Data & Privasi'));
+        expect(en.privacyPolicy, contains('Network access is used only'));
+        expect(en.privacyPolicy, contains('Data & Privacy'));
+      },
+    );
 
     test('age gate hanya mengklaim persetujuan kebijakan privasi', () {
       expect(id.ageGateTerms, isNot(contains('Syarat')));
@@ -165,7 +178,10 @@ void main() {
   group('DateFormatter', () {
     test('formatRelative default Bahasa Indonesia', () {
       final now = DateTime.now();
-      expect(DateFormatter.formatRelative(now.subtract(const Duration(seconds: 30))), 'Baru saja');
+      expect(
+        DateFormatter.formatRelative(now.subtract(const Duration(seconds: 30))),
+        'Baru saja',
+      );
       expect(
         DateFormatter.formatRelative(now.subtract(const Duration(minutes: 5))),
         '5 menit lalu',
@@ -184,11 +200,17 @@ void main() {
       const en = EnglishStrings();
       final now = DateTime.now();
       expect(
-        DateFormatter.formatRelative(now.subtract(const Duration(minutes: 1)), en),
+        DateFormatter.formatRelative(
+          now.subtract(const Duration(minutes: 1)),
+          en,
+        ),
         '1 minute ago',
       );
       expect(
-        DateFormatter.formatRelative(now.subtract(const Duration(hours: 1)), en),
+        DateFormatter.formatRelative(
+          now.subtract(const Duration(hours: 1)),
+          en,
+        ),
         '1 hour ago',
       );
       expect(

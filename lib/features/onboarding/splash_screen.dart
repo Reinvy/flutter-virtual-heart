@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/design/components/app_scaffold.dart';
+import '../../core/design/components/double_back_exit_scope.dart';
 import '../../core/design/components/resonance_mark.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
@@ -15,6 +16,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
 import '../../services/ai/model_service.dart';
 import '../../services/notification_service.dart';
+
 import 'package:virtual_heart/services/settings/settings_service.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -59,11 +61,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     }
 
     if (!mounted) return;
-    final currentPath =
-        GoRouter.of(context).routeInformationProvider.value.uri.path;
+    final currentPath = GoRouter.of(context)
+        .routeInformationProvider
+        .value
+        .uri
+        .path;
     if (currentPath != AppRoutes.splash) return;
     context.go(route);
   }
+
   /// Menunggu model selesai dimuat (dibatasi 8 detik agar splash tidak macet).
   Future<bool> _loadModelReady() async {
     try {
@@ -80,35 +86,39 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   Widget build(BuildContext context) {
     final strings = ref.watch(appStringsProvider);
 
-    return AppScaffold(
-      safeArea: false,
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.pageGutter),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const ResonanceMark(size: 112, animate: true),
-                const SizedBox(height: AppSizes.spaceXl),
-                Text(
-                  strings.appName,
-                  style: AppTextStyles.displayHero(
-                    context,
-                    color: AppColors.primaryDeepFor(context),
+    return DoubleBackExitScope(
+      child: AppScaffold(
+        safeArea: false,
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.pageGutter,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const ResonanceMark(size: 112, animate: true),
+                  const SizedBox(height: AppSizes.spaceXl),
+                  Text(
+                    strings.appName,
+                    style: AppTextStyles.displayHero(
+                      context,
+                      color: AppColors.primaryDeepFor(context),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  strings.appTagline.toUpperCase(),
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.sectionLabel(
-                    color: AppColors.textSecondaryFor(context),
-                  ).copyWith(letterSpacing: 2.0),
-                ),
-                const SizedBox(height: 40),
-                const _BootHairline(),
-              ],
+                  const SizedBox(height: 10),
+                  Text(
+                    strings.appTagline.toUpperCase(),
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.sectionLabel(
+                      color: AppColors.textSecondaryFor(context),
+                    ).copyWith(letterSpacing: 2.0),
+                  ),
+                  const SizedBox(height: 40),
+                  const _BootHairline(),
+                ],
+              ),
             ),
           ),
         ),
@@ -162,7 +172,10 @@ class _BootHairlineState extends State<_BootHairline>
         borderRadius: BorderRadius.circular(AppSizes.radiusFull),
         child: Stack(
           children: [
-            ColoredBox(color: scheme.outlineVariant, child: const SizedBox.expand()),
+            ColoredBox(
+              color: scheme.outlineVariant,
+              child: const SizedBox.expand(),
+            ),
             if (_motionOk)
               AnimatedBuilder(
                 animation: _controller,
@@ -181,11 +194,7 @@ class _BootHairlineState extends State<_BootHairline>
             else
               Align(
                 alignment: Alignment.center,
-                child: Container(
-                  width: 48,
-                  height: 2,
-                  color: scheme.primary,
-                ),
+                child: Container(width: 48, height: 2, color: scheme.primary),
               ),
           ],
         ),

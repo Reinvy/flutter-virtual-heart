@@ -138,6 +138,7 @@ statis (`ResonanceMark`, `_BootHairline`, `_PulseSquare`, pulse mic).
 | `sectionCard(context:, children:)` | fungsi | kartu datar `radiusCard` 16, border 1px `outlineVariant`, divider penuh antar anak |
 | `showConfirmDialog(...)` | fungsi | dialog konfirmasi datar; `cancelLabel` wajib |
 | `EmptyState` | kelas | bingkai ikon `radiusCard` atau `mark: true` (`ResonanceMark`) |
+| `DoubleBackExitScope` | kelas | penjaga back 2x untuk keluar (SnackBar 2 dtk) + intersep tab/halaman akar |
 
 ## 7. Pola layar & Navigasi 4-Tab
 
@@ -193,3 +194,4 @@ statis (`ResonanceMark`, `_BootHairline`, `_PulseSquare`, pulse mic).
 
 - Struktur `lib/`, daftar provider, dan aturan layer: lihat [`ARCHITECTURE.md`](ARCHITECTURE.md).
 - Navigasi: `resolveRedirect` di `core/router/app_router.dart`; pasca-setup mengarah ke `/hub`.
+- Tombol back di halaman akar (`MainShellScaffold`/tab Hub, layar setup awal) memakai `DoubleBackExitScope`: tekan back di tab non-Hub kembali ke Hub, sedangkan tekan pertama di layar akar menampilkan `AppStrings.exitBackAgainPrompt` dan tekan kedua dalam 2 detik baru menutup aplikasi.

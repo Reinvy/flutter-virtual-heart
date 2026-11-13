@@ -1,4 +1,5 @@
 // Widget test — AgeGateScreen (FR-01): verifikasi 13+, konfirmasi, privasi.
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -49,7 +50,9 @@ Widget wrap({
       appSettingsProvider.overrideWith(
         () => notifier ?? FakeSettingsNotifier(settings ?? AppSettings()),
       ),
-      appStringsProvider.overrideWith((ref) => strings ?? const IndonesianStrings()),
+      appStringsProvider.overrideWith(
+        (ref) => strings ?? const IndonesianStrings(),
+      ),
     ],
     child: MaterialApp.router(routerConfig: router),
   );
@@ -60,7 +63,9 @@ void main() {
 
   setUp(() {
     // Matikan animasi global → flutter_animate tidak membuat pending timer.
-    TestWidgetsFlutterBinding.instance.platformDispatcher
+    TestWidgetsFlutterBinding
+        .instance
+        .platformDispatcher
         .accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
       disableAnimations: true,
     );
@@ -71,7 +76,9 @@ void main() {
         .clearAccessibilityFeaturesTestValue();
   });
 
-  testWidgets('menampilkan verifikasi 13+ (Indonesia, default)', (tester) async {
+  testWidgets('menampilkan verifikasi 13+ (Indonesia, default)', (
+    tester,
+  ) async {
     await tester.pumpWidget(wrap());
     await tester.pumpAndSettle();
 
@@ -80,7 +87,9 @@ void main() {
     expect(find.text('Tidak, keluar dari aplikasi'), findsOneWidget);
   });
 
-  testWidgets('konfirmasi menandai isAgeVerified dan lanjut ke onboarding', (tester) async {
+  testWidgets('konfirmasi menandai isAgeVerified dan lanjut ke onboarding', (
+    tester,
+  ) async {
     final notifier = FakeSettingsNotifier(AppSettings());
     await tester.pumpWidget(wrap(notifier: notifier));
     await tester.pumpAndSettle();
@@ -92,7 +101,9 @@ void main() {
     expect(find.text('ONBOARDING'), findsOneWidget);
   });
 
-  testWidgets('tautan kebijakan privasi bisa dibuka sebelum menyetujui', (tester) async {
+  testWidgets('tautan kebijakan privasi bisa dibuka sebelum menyetujui', (
+    tester,
+  ) async {
     await tester.pumpWidget(wrap());
     await tester.pumpAndSettle();
 
@@ -114,4 +125,46 @@ void main() {
     expect(find.text('Age Verification'), findsOneWidget);
     expect(find.text('Yes, I am 13 or older'), findsOneWidget);
   });
+
+  testWidgets(
+    'back sekali tidak menutup aplikasi di age gate; 2x baru keluar',
+    (tester) async {
+      var systemPopCalls = 0;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+            if (call.method == 'SystemNavigator.pop') {
+              systemPopCalls++;
+            }
+            return null;
+          });
+      addTearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null);
+      });
+
+      await tester.pumpWidget(wrap());
+      await tester.pumpAndSettle();
+
+      // Buka privasi lalu back → kembali ke age gate tanpa keluar/prompt.
+      await tester.tap(find.text('Baca Kebijakan Privasi'));
+      await tester.pumpAndSettle();
+      expect(find.text('PRIVACY'), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Verifikasi Usia'), findsOneWidget);
+      expect(systemPopCalls, 0);
+
+      // Back pertama di age gate → muncul prompt, belum keluar.
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(systemPopCalls, 0);
+      expect(find.text('Tekan sekali lagi untuk keluar'), findsOneWidget);
+
+      // Back kedua → keluar aplikasi.
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(systemPopCalls, 1);
+    },
+  );
 }

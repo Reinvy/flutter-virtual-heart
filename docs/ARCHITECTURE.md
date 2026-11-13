@@ -38,7 +38,8 @@ lib/
 │   │   ├── components/               # app_scaffold, app_background, main_shell_scaffold,
 │   │   │                             # resonance_mark, app_icon_badge, app_sheet, sheet_header,
 │   │   │                             # primary_button, secondary_button, app_icon_button,
-│   │   │                             # section_card, confirm_dialog, empty_state, speaker_button
+│   │   │                             # section_card, confirm_dialog, empty_state, speaker_button,
+│   │   │                             # double_back_exit_scope
 │   │   └── tokens/                   # app_colors (AppPalette/AppPalettes), app_effects (AppBorders),
 │   │                                 # app_sizes, app_durations, text_styles
 │   ├── errors/app_logger.dart   # satu-satunya logger
