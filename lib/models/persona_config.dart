@@ -23,10 +23,12 @@ class PersonaConfig {
 
   List<String> hobbies = [];
 
-  PersonaGender get gender => PersonaGender.values[genderIndex];
+  PersonaGender get gender =>
+      PersonaGender.values[genderIndex.clamp(0, PersonaGender.values.length - 1)];
   set gender(PersonaGender value) => genderIndex = value.index;
 
-  PersonalityPreset get personalityPreset => PersonalityPreset.values[personalityPresetIndex];
+  PersonalityPreset get personalityPreset =>
+      PersonalityPreset.values[personalityPresetIndex.clamp(0, PersonalityPreset.values.length - 1)];
   set personalityPreset(PersonalityPreset value) => personalityPresetIndex = value.index;
 
   PersonaConfig({

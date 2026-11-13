@@ -24,7 +24,8 @@ class Message {
   // Enum backing field (stored as int index)
   int roleIndex = 0;
 
-  MessageRole get role => MessageRole.values[roleIndex];
+  MessageRole get role =>
+      MessageRole.values[roleIndex.clamp(0, MessageRole.values.length - 1)];
   set role(MessageRole value) => roleIndex = value.index;
 
   Message({

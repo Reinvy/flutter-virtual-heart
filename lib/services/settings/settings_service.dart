@@ -25,7 +25,8 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
   }
 
   @override
-  bool updateShouldNotify(AppSettings previous, AppSettings next) => true;
+  bool updateShouldNotify(AppSettings previous, AppSettings next) =>
+      previous.id != next.id || !previous.hasSameValues(next);
 
   /// Menulis ulang ringkasan percakapan (FR-13).
   ///

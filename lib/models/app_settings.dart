@@ -163,6 +163,31 @@ class AppSettings {
     );
   }
 
+  /// Membandingkan seluruh nilai field persisten (kecuali [id]).
+  bool hasSameValues(AppSettings other) {
+    return ttsEnabled == other.ttsEnabled &&
+        ttsAutoPlay == other.ttsAutoPlay &&
+        ttsBackend == other.ttsBackend &&
+        sttBackend == other.sttBackend &&
+        ttsModel == other.ttsModel &&
+        sttModel == other.sttModel &&
+        notificationMorningEnabled == other.notificationMorningEnabled &&
+        notificationMorningTime == other.notificationMorningTime &&
+        notificationCheckinEnabled == other.notificationCheckinEnabled &&
+        notificationCheckinHours == other.notificationCheckinHours &&
+        modelVariant == other.modelVariant &&
+        modelSource == other.modelSource &&
+        modelUrl == other.modelUrl &&
+        isAgeVerified == other.isAgeVerified &&
+        isOnboardingDone == other.isOnboardingDone &&
+        isPersonaSetup == other.isPersonaSetup &&
+        conversationSummary == other.conversationSummary &&
+        summaryMessageCount == other.summaryMessageCount &&
+        themeIndex == other.themeIndex &&
+        themeStyleIndex == other.themeStyleIndex &&
+        languageIndex == other.languageIndex;
+  }
+
   /// `HH:mm` dengan jam 0–23 dan menit 0–59.
   static bool isValidMorningTime(String value) {
     if (!_hhmm.hasMatch(value)) return false;

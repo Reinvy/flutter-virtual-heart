@@ -8,7 +8,14 @@ abstract final class DateFormatter {
 
   static String formatTime(DateTime dt) => DateFormat('HH:mm').format(dt);
 
-  static String formatDate(DateTime dt) => DateFormat('d MMMM yyyy').format(dt);
+  static String formatDate(DateTime dt, [AppStrings? strings]) {
+    final locale = strings is EnglishStrings ? 'en' : 'id';
+    try {
+      return DateFormat('d MMMM yyyy', locale).format(dt);
+    } catch (_) {
+      return DateFormat('d MMMM yyyy').format(dt);
+    }
+  }
 
   /// Format relatif yang sadar bahasa. Default: Bahasa Indonesia.
   static String formatRelative(DateTime dt, [AppStrings? strings]) {
@@ -19,6 +26,6 @@ abstract final class DateFormatter {
     if (diff.inHours < 1) return s.timeMinutesAgo(diff.inMinutes);
     if (diff.inDays < 1) return s.timeHoursAgo(diff.inHours);
     if (diff.inDays < 7) return s.timeDaysAgo(diff.inDays);
-    return formatDate(dt);
+    return formatDate(dt, s);
   }
 }

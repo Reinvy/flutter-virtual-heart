@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/errors/app_logger.dart';
 import '../../models/memory_fact.dart';
-
+import 'prompt_builder.dart';
 /// Extracts [MemoryFact] items from a raw conversation snippet by sending a
 /// dedicated extraction prompt to the on-device model.
 ///
@@ -47,12 +48,14 @@ Facts (write ONLY FACT: lines, no other text):''';
   ) async {
     if (conversation.trim().isEmpty) return const [];
 
-    final prompt = _prompt.replaceFirst('{conversation}', conversation);
+    final bounded = PromptBuilder.truncate(conversation, 3000);
+    final prompt = _prompt.replaceFirst('{conversation}', bounded);
 
     try {
       final raw = await generateFn(prompt);
       return _parse(raw);
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug('Memory extraction failed', e);
       return const [];
     }
   }

@@ -15,6 +15,7 @@ import '../mood_store.dart';
 
 class ObjectBoxService implements MoodStore {
   static ObjectBoxService? _instance;
+  static Future<ObjectBoxService>? _pendingCreate;
 
   late final Store store;
 
@@ -29,7 +30,18 @@ class ObjectBoxService implements MoodStore {
 
   ObjectBoxService._();
 
-  static Future<ObjectBoxService> create() async {
+  static Future<ObjectBoxService> create() {
+    if (_instance != null) return Future.value(_instance!);
+    final existing = _pendingCreate;
+    if (existing != null) return existing;
+    final future = _createInternal().whenComplete(() {
+      _pendingCreate = null;
+    });
+    _pendingCreate = future;
+    return future;
+  }
+
+  static Future<ObjectBoxService> _createInternal() async {
     if (_instance != null) return _instance!;
 
     final service = ObjectBoxService._();
@@ -64,11 +76,6 @@ class ObjectBoxService implements MoodStore {
     return service;
   }
 
-  static ObjectBoxService get instance {
-    assert(_instance != null, 'ObjectBoxService.create() must be called first.');
-    return _instance!;
-  }
-
   /// Mengembalikan [AppSettings] kanonik (baris id terkecil) atau membuat
   /// default baru, lalu menormalkan nilai yang mungkin rusak.
   ///
@@ -84,7 +91,9 @@ class ObjectBoxService implements MoodStore {
       appSettingsBox.removeMany(all.skip(1).map((row) => row.id).toList());
     }
     final canonical = all.first.normalized();
-    appSettingsBox.put(canonical);
+    if (all.length > 1 || !canonical.hasSameValues(all.first)) {
+      appSettingsBox.put(canonical);
+    }
     return canonical;
   }
 

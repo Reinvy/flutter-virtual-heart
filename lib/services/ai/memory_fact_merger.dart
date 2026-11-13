@@ -31,7 +31,9 @@ MemoryMergeResult mergeFacts({
   required List<MemoryFact> incoming,
   required String sourceSnippet,
   int maxFacts = maxMemoryFactsStored,
+  DateTime? now,
 }) {
+  final stamp = now ?? DateTime.now();
   final byKey = <String, MemoryFact>{};
   for (final fact in existing) {
     final key = _normalize(fact.key);
@@ -55,7 +57,8 @@ MemoryMergeResult mergeFacts({
         ..key = key
         ..value = value
         ..category = fact.category
-        ..sourceSnippet = snippet;
+        ..sourceSnippet = snippet
+        ..lastReferencedAt = stamp;
       if (touched.add(normalized)) upserts.add(match);
     } else {
       final created = MemoryFact(
@@ -63,6 +66,8 @@ MemoryMergeResult mergeFacts({
         value: value,
         category: fact.category,
         sourceSnippet: snippet,
+        createdAt: stamp,
+        lastReferencedAt: stamp,
       );
       byKey[normalized] = created;
       touched.add(normalized);
@@ -81,10 +86,9 @@ MemoryMergeResult mergeFacts({
     final excess = all.length - maxFacts;
     for (var i = 0; i < excess; i++) {
       final fact = all[i];
+      upserts.remove(fact);
       if (fact.id != 0) {
         deleteIds.add(fact.id);
-      } else {
-        upserts.remove(fact);
       }
     }
   }

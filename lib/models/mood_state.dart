@@ -19,7 +19,8 @@ class MoodState {
   // Enum backing field (stored as int index)
   int currentIndex = 0;
 
-  MoodType get current => MoodType.values[currentIndex];
+  MoodType get current =>
+      MoodType.values[currentIndex.clamp(0, MoodType.values.length - 1)];
   set current(MoodType value) => currentIndex = value.index;
 
   MoodState({

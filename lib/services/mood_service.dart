@@ -198,17 +198,25 @@ class MoodService {
   /// - ≥ 12 h idle → longing (high intensity)
   MoodState updateMoodFromIdleTime() {
     final mood = getCurrentMood();
-    final idleHours = DateTime.now().difference(mood.lastInteractionAt).inHours;
+    final now = DateTime.now();
+    final idleHours = now.difference(mood.lastInteractionAt).inHours;
 
     if (idleHours >= 12) {
+      if (mood.current == MoodType.longing && mood.intensity == 0.90) {
+        return mood;
+      }
       mood.current = MoodType.longing;
       mood.intensity = 0.90;
-      mood.lastUpdatedAt = DateTime.now();
+      mood.lastUpdatedAt = now;
       _db.moodStateBox.put(mood);
     } else if (idleHours >= 6) {
+      final alreadyLongingThisWindow =
+          mood.current == MoodType.longing &&
+          !mood.lastUpdatedAt.isBefore(mood.lastInteractionAt.add(const Duration(hours: 6)));
+      if (alreadyLongingThisWindow) return mood;
       mood.current = MoodType.longing;
       mood.intensity = min(0.80, mood.intensity + 0.10);
-      mood.lastUpdatedAt = DateTime.now();
+      mood.lastUpdatedAt = now;
       _db.moodStateBox.put(mood);
     }
 

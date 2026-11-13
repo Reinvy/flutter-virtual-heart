@@ -21,7 +21,8 @@ class MemoryFact {
   // Enum backing field (stored as int index)
   int categoryIndex = 0;
 
-  MemoryCategory get category => MemoryCategory.values[categoryIndex];
+  MemoryCategory get category =>
+      MemoryCategory.values[categoryIndex.clamp(0, MemoryCategory.values.length - 1)];
   set category(MemoryCategory value) => categoryIndex = value.index;
 
   MemoryFact({
