@@ -1,10 +1,9 @@
-// Fitur Memory (FR-12) — layar memori AI (daftar + pencarian + hapus).
+// Fitur Memory (FR-12) — tab memori AI (daftar + pencarian + hapus).
 import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/design/components/app_icon_badge.dart';
 import '../../core/design/components/app_icon_button.dart';
 import '../../core/design/components/app_scaffold.dart';
 import '../../core/design/components/confirm_dialog.dart';
@@ -110,43 +109,39 @@ class _MemoryScreenState extends ConsumerState<MemoryScreen> {
     final scheme = Theme.of(context).colorScheme;
 
     return AppScaffold(
-      appBar: AppBar(
-        actions: [
-          if (allFacts.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(right: AppSizes.spaceXs),
-              child: AppIconButton(
-                icon: Icons.delete_sweep_outlined,
-                tooltip: strings.memoryResetAllTitle,
-                onPressed: () => _confirmResetAll(context, ref),
-              ),
-            ),
-        ],
-      ),
       body: AppContent(
-        maxWidth: 720,
+        maxWidth: AppSizes.contentMaxWidth,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceXs),
+              padding: const EdgeInsets.only(
+                top: AppSizes.spaceSm,
+                bottom: AppSizes.spaceMd,
+              ),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       strings.memoryTitle,
-                      style: AppTextStyles.displaySmall(color: scheme.onSurface),
+                      style: AppTextStyles.displaySmall(
+                        context,
+                        color: scheme.onSurface,
+                      ),
                     ),
                   ),
-                  if (allFacts.isNotEmpty)
+                  if (allFacts.isNotEmpty) ...[
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 3,
+                        horizontal: 8,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: scheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                        color: scheme.surface,
+                        borderRadius: BorderRadius.circular(
+                          AppSizes.radiusBadge,
+                        ),
+                        border: Border.all(color: scheme.outlineVariant),
                       ),
                       child: Text(
                         '${allFacts.length}',
@@ -155,13 +150,20 @@ class _MemoryScreenState extends ConsumerState<MemoryScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(width: AppSizes.spaceXs),
+                    AppIconButton(
+                      icon: Icons.delete_sweep_outlined,
+                      tooltip: strings.memoryResetAllTitle,
+                      bordered: true,
+                      onPressed: () => _confirmResetAll(context, ref),
+                    ),
+                  ],
                 ],
               ),
             ),
-            const SizedBox(height: AppSizes.spaceMd),
             if (allFacts.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.only(bottom: AppSizes.spaceSm),
+                padding: const EdgeInsets.only(bottom: AppSizes.spaceMd),
                 child: TextField(
                   controller: _searchController,
                   onChanged: _onSearchChanged,
@@ -179,16 +181,18 @@ class _MemoryScreenState extends ConsumerState<MemoryScreen> {
                             ),
                           )
                         : null,
+                    filled: true,
+                    fillColor: scheme.surface,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radiusBubble),
-                      borderSide: BorderSide.none,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                      borderSide: BorderSide(color: scheme.outlineVariant),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radiusBubble),
-                      borderSide: BorderSide.none,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                      borderSide: BorderSide(color: scheme.outlineVariant),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radiusBubble),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                       borderSide: BorderSide(color: scheme.primary, width: 1.5),
                     ),
                   ),
@@ -197,7 +201,7 @@ class _MemoryScreenState extends ConsumerState<MemoryScreen> {
             Expanded(
               child: allFacts.isEmpty
                   ? EmptyState(
-                      bloom: true,
+                      mark: true,
                       icon: Icons.psychology_outlined,
                       title: strings.memoryEmptyTitle,
                       body: strings.memoryEmptyBody,
@@ -259,54 +263,37 @@ class _CategorySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSizes.spaceXxs,
-            AppSizes.spaceMd,
-            AppSizes.spaceXxs,
-            10,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSizes.spaceLg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          sectionHeader(
+            context,
+            label,
+            icon,
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(AppSizes.radiusBadge),
+                border: Border.all(color: scheme.outlineVariant),
+              ),
+              child: Text(
+                '${facts.length}',
+                style: AppTextStyles.badge(color: scheme.onSurfaceVariant),
+              ),
+            ),
           ),
-          child: Row(
+          sectionCard(
+            context: context,
             children: [
-              AppIconBadge(icon: icon, color: color),
-              const SizedBox(width: AppSizes.spaceXs),
-              Expanded(
-                child: Text(
-                  label.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.sectionLabel(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSizes.spaceXs),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-                ),
-                child: Text(
-                  '${facts.length}',
-                  style: AppTextStyles.badge(color: scheme.onSurfaceVariant),
-                ),
-              ),
+              for (final fact in facts)
+                _FactTile(fact: fact, accentColor: color, onDelete: onDelete),
             ],
           ),
-        ),
-        sectionCard(
-          context: context,
-          children: [
-            for (final fact in facts)
-              _FactTile(fact: fact, accentColor: color, onDelete: onDelete),
-          ],
-        ),
-        const SizedBox(height: AppSizes.spaceXs),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -337,100 +324,83 @@ class _FactTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.read(appStringsProvider);
     final scheme = Theme.of(context).colorScheme;
-    final radius = BorderRadius.circular(AppSizes.radiusControl);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.spaceXs,
-        vertical: AppSizes.spaceXxs,
+    return Dismissible(
+      key: ValueKey(fact.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceLg),
+        color: scheme.error,
+        child: Icon(Icons.delete_outline_rounded, color: scheme.onError),
       ),
-      child: Dismissible(
-        key: ValueKey(fact.id),
-        direction: DismissDirection.endToStart,
-        background: Container(
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceLg),
-          decoration: BoxDecoration(color: scheme.error, borderRadius: radius),
-          child: const Icon(Icons.delete_outline_rounded, color: Colors.white),
+      confirmDismiss: (_) async {
+        return showConfirmDialog(
+          context,
+          title: strings.memoryDelete,
+          body: '"${fact.key}: ${fact.value}"',
+          confirmLabel: strings.memoryDelete,
+          cancelLabel: strings.commonCancel,
+        );
+      },
+      onDismissed: (_) => onDelete(fact.id),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spaceMd,
+          vertical: AppSizes.spaceSm,
         ),
-        confirmDismiss: (_) async {
-          return showConfirmDialog(
-            context,
-            title: strings.memoryDelete,
-            body: '"${fact.key}: ${fact.value}"',
-            confirmLabel: strings.memoryDelete,
-            cancelLabel: strings.commonCancel,
-          );
-        },
-        onDismissed: (_) => onDelete(fact.id),
-        child: Material(
-          color: scheme.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: radius,
-            side: BorderSide(color: accentColor.withValues(alpha: 0.25)),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.spaceMd,
-              vertical: AppSizes.spaceSm,
+        child: Row(
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: accentColor,
+                borderRadius: BorderRadius.circular(1.5),
+              ),
             ),
-            child: Row(
+            const SizedBox(width: AppSizes.spaceSm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    fact.key,
+                    style: AppTextStyles.bodySmall(
+                      color: scheme.onSurfaceVariant,
+                    ).copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    fact.value,
+                    style: AppTextStyles.bodyLarge(color: scheme.onSurface),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: accentColor,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: AppSizes.spaceSm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        fact.key,
-                        style: AppTextStyles.bodySmall(
-                          color: scheme.onSurfaceVariant,
-                        ).copyWith(fontWeight: FontWeight.w600),
+                if (fact.sourceSnippet != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: AppSizes.spaceXs),
+                    child: Tooltip(
+                      message: fact.sourceSnippet!,
+                      child: Icon(
+                        Icons.info_outline_rounded,
+                        size: AppSizes.iconSm,
+                        color: scheme.onSurfaceVariant,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        fact.value,
-                        style: AppTextStyles.bodyLarge(
-                          color: scheme.onSurface,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (fact.sourceSnippet != null)
-                      Padding(
-                        padding: const EdgeInsets.only(left: AppSizes.spaceXs),
-                        child: Tooltip(
-                          message: fact.sourceSnippet!,
-                          child: Icon(
-                            Icons.info_outline_rounded,
-                            size: AppSizes.iconSm,
-                            color: scheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    AppIconButton(
-                      icon: Icons.delete_outline_rounded,
-                      tooltip: strings.memoryDelete,
-                      onPressed: () => _confirmDelete(context, strings),
                     ),
-                  ],
+                  ),
+                AppIconButton(
+                  icon: Icons.delete_outline_rounded,
+                  tooltip: strings.memoryDelete,
+                  onPressed: () => _confirmDelete(context, strings),
                 ),
               ],
             ),
-          ),
+          ],
         ),
       ),
     );

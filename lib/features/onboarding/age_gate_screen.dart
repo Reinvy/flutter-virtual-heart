@@ -4,10 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/design/components/app_icon_badge.dart';
 import '../../core/design/components/app_scaffold.dart';
-import '../../core/design/components/bloom_mark.dart';
 import '../../core/design/components/confirm_dialog.dart';
 import '../../core/design/components/primary_button.dart';
+import '../../core/design/components/resonance_mark.dart';
 import '../../core/design/components/secondary_button.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_effects.dart';
@@ -32,19 +33,44 @@ class AgeGateScreen extends ConsumerWidget {
           builder: (context, constraints) => SingleChildScrollView(
             padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceLg),
             child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight - AppSizes.spaceXxl),
+              constraints: BoxConstraints(
+                minHeight: (constraints.maxHeight - AppSizes.spaceXxl).clamp(
+                  0,
+                  double.infinity,
+                ),
+              ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Row(
                     children: [
-                      const BloomMark(size: 28, glow: false),
-                      const SizedBox(width: 10),
-                      Text(
-                        strings.appName,
-                        style: AppTextStyles.headingSmall(
-                          color: AppColors.primaryDeepFor(context),
+                      const ResonanceMark(size: 24),
+                      const SizedBox(width: AppSizes.spaceXs),
+                      Expanded(
+                        child: Text(
+                          strings.appName,
+                          style: AppTextStyles.headingSmall(
+                            context,
+                            color: AppColors.primaryDeepFor(context),
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: scheme.surface,
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusBadge,
+                          ),
+                          border: Border.all(color: scheme.outlineVariant),
+                        ),
+                        child: Text(
+                          '13+',
+                          style: AppTextStyles.badge(color: scheme.onSurface),
                         ),
                       ),
                     ],
@@ -52,63 +78,82 @@ class AgeGateScreen extends ConsumerWidget {
                   const SizedBox(height: AppSizes.spaceMd),
                   Container(
                     padding: const EdgeInsets.all(AppSizes.spaceLg),
-                    decoration: BoxDecoration(
-                      color: scheme.surface,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusCard),
-                      border: Border.all(
-                        color: scheme.outlineVariant.withValues(alpha: 0.6),
-                      ),
-                      boxShadow: AppShadows.card(context),
-                    ),
+                    decoration: AppBorders.cardDecoration(context),
                     child: Column(
                       children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [
-                                scheme.primaryContainer,
-                                scheme.secondaryContainer,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.shield_outlined,
-                            size: 36,
-                            color: AppColors.primaryDeepFor(context),
-                          ),
+                        AppIconBadge(
+                          icon: Icons.shield_outlined,
+                          size: 52,
+                          color: AppColors.primaryDeepFor(context),
                         ),
                         const SizedBox(height: AppSizes.spaceMd),
                         Text(
                           strings.ageGateTitle,
                           style: AppTextStyles.displaySmall(
+                            context,
                             color: scheme.onSurface,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: AppSizes.spaceXs),
                         Text(
                           strings.ageGateBody,
-                          style: AppTextStyles.bodyMedium(
+                          style: AppTextStyles.bodyLarge(
                             color: AppColors.textSecondaryFor(context),
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: AppSizes.spaceSm),
-                        TextButton(
-                          onPressed: () => context.push(AppRoutes.privacy),
-                          child: Text(
-                            strings.ageGatePrivacyLink,
-                            style: AppTextStyles.titleSmall(
-                              color: scheme.primary,
+                        const SizedBox(height: AppSizes.spaceMd),
+                        Material(
+                          color: scheme.surfaceContainerLow,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusMd,
+                            ),
+                            side: BorderSide(color: scheme.outlineVariant),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: InkWell(
+                            onTap: () => context.push(AppRoutes.privacy),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minHeight: AppSizes.touchTarget,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSizes.spaceMd,
+                                  vertical: AppSizes.spaceSm,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.privacy_tip_outlined,
+                                      size: 18,
+                                      color: AppColors.primaryDeepFor(context),
+                                    ),
+                                    const SizedBox(width: AppSizes.spaceSm),
+                                    Expanded(
+                                      child: Text(
+                                        strings.ageGatePrivacyLink,
+                                        style: AppTextStyles.titleSmall(
+                                          color: AppColors.primaryDeepFor(
+                                            context,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.arrow_forward_rounded,
+                                      size: 18,
+                                      color: scheme.onSurfaceVariant,
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: AppSizes.spaceXs),
+                        const SizedBox(height: AppSizes.spaceLg),
                         PrimaryButton(
                           label: strings.ageGateConfirm,
                           onPressed: () => _confirm(context, ref),

@@ -109,8 +109,7 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
 - Ref: `lib/services/tts_service.dart`, `lib/features/chat/widgets/chat_bubble.dart`.
 
 ### FR-08 — Typing Indicator — `Implemented`
-
-- Animasi tiga titik saat `ChatState.isTyping` dan belum ada token.
+- Indikator animasi di editorial thread AI saat `ChatState.isTyping` dan belum ada token.
 - Ref: `lib/features/chat/widgets/typing_indicator.dart`.
 
 ### FR-09 — Dynamic Mood Engine — `Implemented`
@@ -121,12 +120,16 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
 - Ref: `lib/services/mood_service.dart`, `lib/features/chat/mood_provider.dart`,
   `lib/features/chat/widgets/mood_indicator.dart`.
 
-### FR-10 — Persona Profile Sheet — `Implemented`
+### FR-10 — Persona Profile Sheet & Companion Hub — `Implemented`
 
-- Bottom sheet dari AppBar chat: avatar besar, nama, gender, panggilan, kartu mood (emoji +
-  intensitas), chip hobi, kartu kepribadian, tombol Edit.
+- Bottom sheet dari AppBar chat maupun Companion Hub (`/hub`): avatar besar, nama, gender,
+  panggilan, kartu mood (emoji + intensitas), chip hobi, kartu kepribadian, tombol Edit.
+- `CompanionHubScreen` (`/hub`) menjadi tab beranda default pasca-setup dengan status pendamping,
+  3 conversation starters (mengisi `pendingChatDraftProvider` lalu membuka `/chat`), serta snapshot
+  Memori dan Mesin Lokal.
 - Edit membuka `PersonaEditSheet` (bukan route), perubahan langsung terlihat.
-- Ref: `lib/features/persona/persona_profile_sheet.dart`,
+- Ref: `lib/features/hub/companion_hub_screen.dart`,
+  `lib/features/persona/persona_profile_sheet.dart`,
   `lib/features/persona/persona_edit_sheet.dart`.
 
 ---
@@ -202,9 +205,10 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
 
 ### FR-18 — Settings — `Implemented`
 
-- Section: Persona (ringkasan + edit + reset), Tampilan (light/dark/system), Bahasa
-  (ID/EN/mixed), **Model AI** (model aktif + Ganti Model), Suara (TTS on/off, auto-play, backend,
-  model), Notifikasi (morning message, jam, check-in + interval, izin), Data & Privasi.
+- Section: Persona (ringkasan + edit + reset), Tampilan (mode kecerahan light/dark/system +
+  4 preset gaya tema Editorial/Romantic/Classic/Botanical), Bahasa (ID/EN/mixed), **Model AI**
+  (model aktif + Ganti Model), Suara (TTS on/off, auto-play, backend, model), Notifikasi
+  (morning message, jam, check-in + interval, izin), Data & Privasi.
 - Izin ditampilkan apa adanya: tile izin tidak memunculkan dialog saat layar dibuka, dan sakelar
   notifikasi menolak aktif tanpa izin OS (SnackBar panduan).
 - Section memakai warna `ColorScheme` (kontras AA di light & dark) dan tidak overflow pada 320 dp.

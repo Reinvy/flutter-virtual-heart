@@ -7,9 +7,9 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 import 'core/design/app_theme.dart';
-import 'core/design/components/app_icon_badge.dart';
 import 'core/design/components/app_scaffold.dart';
 import 'core/design/components/primary_button.dart';
+import 'core/design/components/resonance_mark.dart';
 import 'core/design/tokens/app_sizes.dart';
 import 'core/design/tokens/text_styles.dart';
 
@@ -42,21 +42,23 @@ class BootstrapErrorApp extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(AppSizes.spaceLg),
                     decoration: BoxDecoration(
-                      color: scheme.errorContainer,
+                      color: scheme.surface,
                       borderRadius: BorderRadius.circular(AppSizes.radiusCard),
+                      border: Border.all(color: scheme.error, width: 1),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        AppIconBadge(
-                          icon: Icons.error_outline_rounded,
-                          color: scheme.error,
+                        const ResonanceMark(
+                          size: 64,
+                          icon: Icons.warning_amber_rounded,
                         ),
                         const SizedBox(height: AppSizes.spaceMd),
                         Text(
                           _titleEn,
                           textAlign: TextAlign.center,
-                          style: AppTextStyles.headingMedium(
+                          style: AppTextStyles.headingLarge(
+                            context,
                             color: scheme.onSurface,
                           ),
                         ),
@@ -73,7 +75,7 @@ class BootstrapErrorApp extends StatelessWidget {
                           _bodyEn,
                           textAlign: TextAlign.center,
                           style: AppTextStyles.bodyMedium(
-                            color: scheme.onErrorContainer,
+                            color: scheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: AppSizes.spaceXs),
@@ -81,7 +83,7 @@ class BootstrapErrorApp extends StatelessWidget {
                           _bodyId,
                           textAlign: TextAlign.center,
                           style: AppTextStyles.bodyMedium(
-                            color: scheme.onErrorContainer,
+                            color: scheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: AppSizes.spaceLg),

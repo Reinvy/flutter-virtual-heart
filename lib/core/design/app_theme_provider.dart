@@ -1,4 +1,4 @@
-// Provider tema — menurunkan ThemeMode dari AppSettings (default light).
+// Provider tema — menurunkan ThemeMode dan AppThemeStyle dari AppSettings.
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,7 +7,7 @@ import 'package:virtual_heart/services/settings/settings_service.dart';
 
 /// Menurunkan [ThemeMode] dari [AppSettings.theme] yang tersimpan.
 ///
-/// Default = light (Romantic Light) sesuai docs/DESIGN.md §1.
+/// Default = light sesuai docs/DESIGN.md §1.
 final themeModeProvider = Provider<ThemeMode>((ref) {
   final settings = ref.watch(appSettingsProvider);
   switch (settings.theme) {
@@ -19,3 +19,8 @@ final themeModeProvider = Provider<ThemeMode>((ref) {
       return ThemeMode.system;
   }
 });
+
+/// Menurunkan preset gaya tema [AppThemeStyle] dari [AppSettings.themeStyle].
+final themeStyleProvider = Provider<AppThemeStyle>(
+  (ref) => ref.watch(appSettingsProvider.select((s) => s.themeStyle)),
+);

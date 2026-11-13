@@ -1,8 +1,4 @@
-// Fitur Chat (FR-05) — bubble pesan (docs/DESIGN.md §3.3).
-//
-// - User: align kanan, gradien rose, teks bubbleUserOn.
-// - AI: align kiri, permukaan kertas + hairline, teks onSurface, markdown,
-//   avatar persona kecil di samping.
+// Fitur Chat (FR-05) — pesan user (kapsul solid) & pesan AI (Editorial Thread).
 import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
@@ -12,7 +8,6 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import '../../../core/design/components/speaker_button.dart';
 import '../../../core/design/tokens/app_colors.dart';
 import '../../../core/design/tokens/app_durations.dart';
-import '../../../core/design/tokens/app_effects.dart';
 import '../../../core/design/tokens/app_sizes.dart';
 import '../../../core/design/tokens/text_styles.dart';
 import '../../../core/utils/date_formatter.dart';
@@ -50,6 +45,31 @@ class _ChatBubbleState extends State<ChatBubble> {
   @override
   Widget build(BuildContext context) {
     final isUser = widget.message.role == MessageRole.user;
+
+    final Widget item = isUser
+        ? _buildUserBubble(context)
+        : _buildEditorialThread(context);
+
+    final tapped = GestureDetector(
+      onTap: () => setState(() => _showTimestamp = !_showTimestamp),
+      behavior: HitTestBehavior.opaque,
+      child: item,
+    );
+
+    if (widget.isStreaming) return tapped;
+    if (MediaQuery.disableAnimationsOf(context)) return tapped;
+    return tapped
+        .animate()
+        .fadeIn(duration: AppDurations.durationFast)
+        .slideY(
+          begin: 0.05,
+          end: 0,
+          duration: AppDurations.durationFast,
+          curve: AppDurations.curveStandard,
+        );
+  }
+
+  Widget _buildUserBubble(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final maxWidth = math.min(
       MediaQuery.of(context).size.width * 0.78,
@@ -57,130 +77,174 @@ class _ChatBubbleState extends State<ChatBubble> {
     );
     final radius = AppSizes.radiusBubble;
 
-    final bubble = GestureDetector(
-      onTap: () => setState(() => _showTimestamp = !_showTimestamp),
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSizes.spaceMd,
-          vertical: AppSizes.spaceXxs,
-        ),
-        child: Column(
-          crossAxisAlignment: isUser
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: isUser
-                  ? MainAxisAlignment.end
-                  : MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (!isUser) ...[
-                  personaAvatar(
-                    name: widget.persona?.name,
-                    avatarId: widget.persona?.avatarId,
-                    size: AppSizes.avatarSm,
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.pageGutter,
+        vertical: AppSizes.spaceXxs + 2,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Align(
+            alignment: Alignment.centerRight,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: Container(
+                key: const ValueKey('chat-bubble-user'),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.spaceMd,
+                  vertical: AppSizes.spaceSm,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.userBubbleBgFor(context),
+                  border: Border.all(
+                    color: AppColors.userBubbleBorderFor(context),
+                    width: 1,
                   ),
-                  const SizedBox(width: AppSizes.spaceXs),
-                ],
-                Flexible(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: maxWidth),
-                    child: Container(
-                      key: ValueKey(
-                        isUser ? 'chat-bubble-user' : 'chat-bubble-assistant',
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSizes.spaceMd,
-                        vertical: AppSizes.spaceSm,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isUser ? null : scheme.surface,
-                        gradient: isUser
-                            ? AppGradients.userBubble(context)
-                            : null,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(radius),
-                          topRight: Radius.circular(radius),
-                          bottomLeft: Radius.circular(
-                            isUser ? radius : AppSizes.bubbleTail,
-                          ),
-                          bottomRight: Radius.circular(
-                            isUser ? AppSizes.bubbleTail : radius,
-                          ),
-                        ),
-                        border: isUser
-                            ? null
-                            : Border.all(
-                                color: scheme.outlineVariant.withValues(
-                                  alpha: 0.7,
-                                ),
-                              ),
-                        boxShadow: isUser
-                            ? [
-                                BoxShadow(
-                                  color: scheme.primary.withValues(alpha: 0.18),
-                                  blurRadius: 24,
-                                ),
-                              ]
-                            : AppShadows.card(context),
-                      ),
-                      child: _BubbleContent(
-                        message: widget.message,
-                        isUser: isUser,
-                      ),
-                    ),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(radius),
+                    topRight: Radius.circular(radius),
+                    bottomLeft: Radius.circular(radius),
+                    bottomRight: const Radius.circular(AppSizes.bubbleTail),
                   ),
                 ),
-                if (!isUser && widget.onSpeak != null) ...[
-                  const SizedBox(width: AppSizes.spaceXxs),
-                  SpeakerButton(
-                    isSpeaking: widget.isSpeaking,
-                    onTap: widget.onSpeak,
-                    semanticLabel: widget.speakerLabel,
-                  ),
-                ],
-              ],
+                child: _BubbleContent(
+                  message: widget.message,
+                  isUser: true,
+                ),
+              ),
             ),
-            AnimatedSize(
-              duration: AppDurations.durationFast,
-              curve: AppDurations.curveStandard,
-              child: _showTimestamp
-                  ? Padding(
-                      padding: EdgeInsets.only(
-                        top: AppSizes.spaceXxs,
-                        left: isUser
-                            ? 0
-                            : AppSizes.avatarSm + AppSizes.spaceXs + 4,
-                        right: isUser ? 4 : 0,
-                      ),
-                      child: Text(
-                        DateFormatter.formatTime(widget.message.timestamp),
-                        style: AppTextStyles.timestamp(
-                          color: scheme.onSurfaceVariant,
+          ),
+          _buildTimestamp(
+            context,
+            leftPadding: 0,
+            rightPadding: 4,
+            color: scheme.onSurfaceVariant,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditorialThread(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final maxWidth = math.min(
+      MediaQuery.of(context).size.width - AppSizes.pageGutter * 2,
+      AppSizes.bubbleMaxWidth,
+    );
+    final personaName = widget.persona?.name ?? '';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.pageGutter,
+        vertical: AppSizes.spaceXs,
+      ),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      width: 2,
+                      decoration: BoxDecoration(
+                        color: scheme.secondary.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(
+                          AppSizes.radiusFull,
                         ),
                       ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ],
+                    ),
+                    const SizedBox(width: AppSizes.spaceSm),
+                    Expanded(
+                      child: Container(
+                        key: const ValueKey('chat-bubble-assistant'),
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                personaAvatar(
+                                  context,
+                                  name: widget.persona?.name,
+                                  avatarId: widget.persona?.avatarId,
+                                  size: 24,
+                                ),
+                                if (personaName.isNotEmpty) ...[
+                                  const SizedBox(width: AppSizes.spaceXs),
+                                  Expanded(
+                                    child: Text(
+                                      personaName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTextStyles.titleSmall(
+                                        color: scheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ),
+                                ] else
+                                  const Spacer(),
+                                if (widget.onSpeak != null)
+                                  SpeakerButton(
+                                    isSpeaking: widget.isSpeaking,
+                                    onTap: widget.onSpeak,
+                                    semanticLabel: widget.speakerLabel,
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            _BubbleContent(
+                              message: widget.message,
+                              isUser: false,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _buildTimestamp(
+                context,
+                leftPadding: AppSizes.spaceSm + 2,
+                rightPadding: 0,
+                color: scheme.onSurfaceVariant,
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
 
-    // Bubble streaming tidak dianimasikan ulang pada tiap token.
-    if (widget.isStreaming) return bubble;
-    if (MediaQuery.disableAnimationsOf(context)) return bubble;
-    return bubble
-        .animate()
-        .fadeIn(duration: AppDurations.durationFast)
-        .slideY(
-          begin: 0.06,
-          end: 0,
-          duration: AppDurations.durationFast,
-          curve: AppDurations.curveStandard,
-        );
+  Widget _buildTimestamp(
+    BuildContext context, {
+    required double leftPadding,
+    required double rightPadding,
+    required Color color,
+  }) {
+    return AnimatedSize(
+      duration: AppDurations.durationFast,
+      curve: AppDurations.curveStandard,
+      child: _showTimestamp
+          ? Padding(
+              padding: EdgeInsets.only(
+                top: AppSizes.spaceXxs,
+                left: leftPadding,
+                right: rightPadding,
+              ),
+              child: Text(
+                DateFormatter.formatTime(widget.message.timestamp),
+                style: AppTextStyles.timestamp(color: color),
+              ),
+            )
+          : const SizedBox.shrink(),
+    );
   }
 }
 
@@ -203,9 +267,6 @@ class _BubbleContent extends StatelessWidget {
     if (isUser) {
       return Text(text, style: AppTextStyles.bubbleText(color: textColor));
     }
-    // Privasi: markdown dari model tidak boleh memicu permintaan jaringan.
-    // `![alt](url)` dibuang sebelum render, dan `imageBuilder` menutup jalur
-    // gambar lain (HTML <img>, autolink gambar).
     final sanitized = _markdownImagePattern.hasMatch(text)
         ? text.replaceAll(_markdownImagePattern, '')
         : text;

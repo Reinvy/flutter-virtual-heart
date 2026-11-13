@@ -47,6 +47,7 @@ void main() {
     });
 
     test('usia belum diverifikasi → age gate', () {
+      expect(_resolve(AppRoutes.hub), AppRoutes.ageGate);
       expect(_resolve(AppRoutes.chat), AppRoutes.ageGate);
       expect(_resolve(AppRoutes.memory), AppRoutes.ageGate);
       expect(_resolve(AppRoutes.ageGate), isNull);
@@ -66,6 +67,7 @@ void main() {
 
     test('model belum siap → model download', () {
       final settings = _settings(age: true, onboarding: true, persona: true);
+      expect(_resolve(AppRoutes.hub, settings: settings), AppRoutes.modelDownload);
       expect(_resolve(AppRoutes.chat, settings: settings), AppRoutes.modelDownload);
       expect(_resolve(AppRoutes.memory, settings: settings), AppRoutes.modelDownload);
       expect(_resolve(AppRoutes.settings, settings: settings), AppRoutes.modelDownload);
@@ -80,17 +82,18 @@ void main() {
       );
     });
 
-    test('semua gate lolos → layar setup diarahkan ke chat', () {
+    test('semua gate lolos → layar setup diarahkan ke hub', () {
       final settings = _settings(age: true, onboarding: true, persona: true);
-      expect(_resolve(AppRoutes.ageGate, settings: settings, modelReady: true), AppRoutes.chat);
+      expect(_resolve(AppRoutes.ageGate, settings: settings, modelReady: true), AppRoutes.hub);
       expect(
         _resolve(AppRoutes.onboarding, settings: settings, modelReady: true),
-        AppRoutes.chat,
+        AppRoutes.hub,
       );
       expect(
         _resolve(AppRoutes.personaSetup, settings: settings, modelReady: true),
-        AppRoutes.chat,
+        AppRoutes.hub,
       );
+      expect(_resolve(AppRoutes.hub, settings: settings, modelReady: true), isNull);
       expect(_resolve(AppRoutes.chat, settings: settings, modelReady: true), isNull);
       expect(_resolve(AppRoutes.memory, settings: settings, modelReady: true), isNull);
       expect(_resolve(AppRoutes.settings, settings: settings, modelReady: true), isNull);

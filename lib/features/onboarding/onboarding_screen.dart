@@ -1,14 +1,14 @@
 // Fitur Onboarding (FR-02) — 3 halaman pengenalan.
 //
-// BloomMark berikon per halaman, indikator bar bergradien, skip di kanan atas.
+// ResonanceMark berikon di dalam bingkai hairline, indikator bar rata, skip di kanan atas.
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/design/components/app_scaffold.dart';
-import '../../core/design/components/bloom_mark.dart';
 import '../../core/design/components/primary_button.dart';
+import '../../core/design/components/resonance_mark.dart';
 import '../../core/design/components/secondary_button.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_durations.dart';
@@ -66,20 +66,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     final pages = [
       (
-        icon: Icons.favorite_rounded,
-        color: AppColors.accentFor(context),
+        icon: Icons.favorite_outline_rounded,
         title: strings.onboardingPage1Title,
         body: strings.onboardingPage1Body,
       ),
       (
         icon: Icons.psychology_outlined,
-        color: AppColors.secondaryFor(context),
         title: strings.onboardingPage2Title,
         body: strings.onboardingPage2Body,
       ),
       (
-        icon: Icons.auto_awesome_rounded,
-        color: AppColors.primaryDeepFor(context),
+        icon: Icons.auto_awesome_outlined,
         title: strings.onboardingPage3Title,
         body: strings.onboardingPage3Body,
       ),
@@ -90,25 +87,33 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(
-              AppSizes.spaceLg,
+              AppSizes.pageGutter,
               AppSizes.spaceSm,
               AppSizes.spaceSm,
               0,
             ),
             child: Row(
               children: [
-                const BloomMark(size: 26, glow: false),
+                const ResonanceMark(size: 24),
                 const SizedBox(width: AppSizes.spaceXs),
-                Text(
-                  strings.appName,
-                  style: AppTextStyles.headingSmall(
-                    color: AppColors.primaryDeepFor(context),
+                Flexible(
+                  child: Text(
+                    strings.appName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.headingSmall(
+                      context,
+                      color: AppColors.primaryDeepFor(context),
+                    ),
                   ),
                 ),
+                const SizedBox(width: AppSizes.spaceSm),
+                Text(
+                  strings.onboardingStep(_currentPage + 1, pages.length),
+                  style: AppTextStyles.caption(color: scheme.onSurfaceVariant),
+                ),
                 const Spacer(),
-                if (isLast)
-                  const SizedBox(width: 72)
-                else
+                if (!isLast)
                   GhostButton(
                     label: strings.onboardingSkip,
                     onPressed: _finish,
@@ -124,7 +129,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               itemCount: pages.length,
               itemBuilder: (_, index) => _PageContent(
                 icon: pages[index].icon,
-                color: pages[index].color,
                 title: pages[index].title,
                 body: pages[index].body,
                 isActive: index == _currentPage,
@@ -138,14 +142,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               (i) => AnimatedContainer(
                 duration: AppDurations.durationNormal,
                 curve: AppDurations.curveStandard,
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                width: i == _currentPage ? 28 : 8,
-                height: 4,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: i == _currentPage ? 32 : 12,
+                height: 3,
                 decoration: BoxDecoration(
-                  color: i == _currentPage ? null : scheme.outlineVariant,
-                  gradient: i == _currentPage
-                      ? AppGradients.selectedRing(context)
-                      : null,
+                  color: i == _currentPage
+                      ? scheme.primary
+                      : scheme.outlineVariant,
                   borderRadius: BorderRadius.circular(AppSizes.radiusFull),
                 ),
               ),
@@ -153,12 +156,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: AppSizes.spaceLg),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spaceXl),
-            child: PrimaryButton(
-              label: isLast
-                  ? strings.onboardingGetStarted
-                  : strings.onboardingNext,
-              onPressed: _next,
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.pageGutter),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: PrimaryButton(
+                label: isLast
+                    ? strings.onboardingGetStarted
+                    : strings.onboardingNext,
+                onPressed: _next,
+              ),
             ),
           ),
           const SizedBox(height: AppSizes.spaceXl),
@@ -171,14 +177,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 class _PageContent extends StatelessWidget {
   const _PageContent({
     required this.icon,
-    required this.color,
     required this.title,
     required this.body,
     required this.isActive,
   });
 
   final IconData icon;
-  final Color color;
   final String title;
   final String body;
   final bool isActive;
@@ -191,52 +195,48 @@ class _PageContent extends StatelessWidget {
     final content = LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSizes.spaceXl,
+          horizontal: AppSizes.pageGutter,
           vertical: AppSizes.spaceLg,
         ),
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 260,
-              height: 260,
-              child: Stack(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 220,
+                height: 220,
+                decoration: AppBorders.cardDecoration(
+                  context,
+                  radius: AppSizes.radiusCard,
+                ),
                 alignment: Alignment.center,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          color.withValues(alpha: 0.12),
-                          color.withValues(alpha: 0),
-                        ],
-                      ),
-                    ),
-                  ),
-                  BloomMark(size: 148, icon: icon, animate: motionOk && isActive),
-                ],
+                child: ResonanceMark(
+                  size: 132,
+                  icon: icon,
+                  animate: motionOk && isActive,
+                ),
               ),
-            ),
-            const SizedBox(height: 28),
-            Text(
-              title,
-              style: AppTextStyles.displaySmall(color: scheme.onSurface),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSizes.spaceSm),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 460),
-              child: Text(
-                body,
-                style: AppTextStyles.bodyLarge(
-                  color: AppColors.textSecondaryFor(context),
+              const SizedBox(height: AppSizes.spaceXl),
+              Text(
+                title,
+                style: AppTextStyles.displaySmall(
+                  context,
+                  color: scheme.onSurface,
                 ),
                 textAlign: TextAlign.center,
               ),
-            ),
+              const SizedBox(height: AppSizes.spaceSm),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 460),
+                child: Text(
+                  body,
+                  style: AppTextStyles.bodyLarge(
+                    color: AppColors.textSecondaryFor(context),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             ],
           ),
         ),

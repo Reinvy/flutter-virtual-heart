@@ -1,9 +1,9 @@
-// Fitur Chat (FR-08) — indikator mengetik (3 titik).
+// Fitur Chat (FR-08) — indikator mengetik editorial thread.
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-import '../../../core/design/tokens/app_effects.dart';
 import '../../../core/design/tokens/app_sizes.dart';
+import '../../../core/design/tokens/text_styles.dart';
 import '../../../models/persona_config.dart';
 import '../../persona/avatar_catalog.dart';
 
@@ -17,73 +17,89 @@ class TypingIndicator extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.spaceMd,
-        vertical: AppSizes.spaceXxs,
+        horizontal: AppSizes.pageGutter,
+        vertical: AppSizes.spaceXs,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          personaAvatar(
-            name: persona?.name,
-            avatarId: persona?.avatarId,
-            size: AppSizes.avatarSm,
-          ),
-          const SizedBox(width: AppSizes.spaceXs),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.spaceMd,
-              vertical: AppSizes.spaceSm,
-            ),
-            decoration: BoxDecoration(
-              color: scheme.surface,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(AppSizes.radiusBubble),
-                topRight: Radius.circular(AppSizes.radiusBubble),
-                bottomLeft: Radius.circular(AppSizes.bubbleTail),
-                bottomRight: Radius.circular(AppSizes.radiusBubble),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 2,
+              decoration: BoxDecoration(
+                color: scheme.secondary.withValues(alpha: 0.65),
+                borderRadius: BorderRadius.circular(AppSizes.radiusFull),
               ),
-              border: Border.all(
-                color: scheme.outlineVariant.withValues(alpha: 0.7),
-              ),
-              boxShadow: AppShadows.card(context),
             ),
-            child: Row(
+            const SizedBox(width: AppSizes.spaceSm),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                for (int i = 0; i < 3; i++) ...[
-                  if (i > 0) const SizedBox(width: 5),
-                  _Dot(
-                    delay: Duration(milliseconds: i * 160),
-                    color: scheme.primary,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    personaAvatar(
+                      context,
+                      name: persona?.name,
+                      avatarId: persona?.avatarId,
+                      size: 24,
+                    ),
+                    if (persona?.name.isNotEmpty ?? false) ...[
+                      const SizedBox(width: AppSizes.spaceXs),
+                      Text(
+                        persona!.name,
+                        style: AppTextStyles.titleSmall(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: AppSizes.spaceXs),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (int i = 0; i < 3; i++) ...[
+                        if (i > 0) const SizedBox(width: 6),
+                        _PulseSquare(
+                          delay: Duration(milliseconds: i * 160),
+                          color: scheme.secondary,
+                        ),
+                      ],
+                    ],
                   ),
-                ],
+                ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _Dot extends StatelessWidget {
-  const _Dot({required this.delay, required this.color});
+class _PulseSquare extends StatelessWidget {
+  const _PulseSquare({required this.delay, required this.color});
 
   final Duration delay;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final dot = Container(
-      width: 6,
-      height: 6,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    final mark = Container(
+      width: 5,
+      height: 5,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(1.5),
+      ),
     );
-    // Hormati pengaturan "kurangi animasi": titik tetap diam.
-    if (MediaQuery.disableAnimationsOf(context)) return dot;
-    return dot
+    if (MediaQuery.disableAnimationsOf(context)) return mark;
+    return mark
         .animate(delay: delay, onPlay: (c) => c.repeat(reverse: true))
-        .moveY(begin: 0, end: -6, duration: 380.ms, curve: Curves.easeInOut);
+        .fade(begin: 0.35, end: 1.0, duration: 420.ms, curve: Curves.easeInOut);
   }
 }

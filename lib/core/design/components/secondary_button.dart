@@ -1,10 +1,11 @@
 // Komponen shared — SecondaryButton & GhostButton (docs/DESIGN.md §3.1)
 import 'package:material_ui/material_ui.dart';
 
+import '../tokens/app_colors.dart';
 import '../tokens/app_sizes.dart';
 import '../tokens/text_styles.dart';
 
-/// Tombol sekunder: tonal outline, tinggi 52.
+/// Tombol sekunder: border hairline 1px, radiusControl (12), tinggi 50.
 class SecondaryButton extends StatelessWidget {
   const SecondaryButton({
     super.key,
@@ -22,12 +23,11 @@ class SecondaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final enabled = onPressed != null;
     final contentColor = enabled
-        ? scheme.secondary
+        ? scheme.onSurface
         : scheme.onSurface.withValues(alpha: 0.38);
-    final radius = BorderRadius.circular(AppSizes.radiusFull);
+    final radius = BorderRadius.circular(AppSizes.radiusControl);
 
     Widget labelText = Text(
       label,
@@ -38,24 +38,22 @@ class SecondaryButton extends StatelessWidget {
     );
     if (expand) labelText = Flexible(child: labelText);
 
-    final button = FilledButton(
+    final button = OutlinedButton(
       onPressed: onPressed,
-      style: FilledButton.styleFrom(
-        backgroundColor: enabled
-            ? scheme.secondary.withValues(alpha: isDark ? 0.12 : 0.06)
-            : Colors.transparent,
+      style: OutlinedButton.styleFrom(
+        backgroundColor: enabled ? scheme.surface : Colors.transparent,
         foregroundColor: contentColor,
-        disabledBackgroundColor: Colors.transparent,
         disabledForegroundColor: contentColor,
         side: BorderSide(
-          color: enabled
-              ? scheme.secondary.withValues(alpha: 0.35)
-              : scheme.outlineVariant,
+          color: enabled ? scheme.outline : scheme.outlineVariant,
           width: 1,
         ),
         elevation: 0,
         minimumSize: const Size.fromHeight(AppSizes.controlHeight),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: AppSizes.spaceSm),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: AppSizes.spaceSm,
+        ),
         shape: RoundedRectangleBorder(borderRadius: radius),
         textStyle: AppTextStyles.button(color: contentColor),
       ),
@@ -75,7 +73,7 @@ class SecondaryButton extends StatelessWidget {
   }
 }
 
-/// Tombol tersier: tanpa fill, teks primary.
+/// Tombol tersier: tanpa fill, teks primaryDeep yang kontras.
 class GhostButton extends StatelessWidget {
   const GhostButton({
     super.key,
@@ -93,10 +91,13 @@ class GhostButton extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final effective = onPressed == null
         ? scheme.onSurface.withValues(alpha: 0.38)
-        : (color ?? scheme.primary);
+        : (color ?? AppColors.primaryDeepFor(context));
     return TextButton(
       onPressed: onPressed,
-      style: TextButton.styleFrom(foregroundColor: effective),
+      style: TextButton.styleFrom(
+        foregroundColor: effective,
+        minimumSize: const Size(0, AppSizes.touchTarget),
+      ),
       child: Text(label, style: AppTextStyles.button(color: effective)),
     );
   }

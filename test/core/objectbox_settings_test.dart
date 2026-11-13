@@ -74,6 +74,7 @@ void main() {
       first.box<AppSettings>().put(
         AppSettings(
           theme: AppThemeSetting.system,
+          themeStyle: AppThemeStyle.romantic,
           language: AppLanguage.english,
           ttsEnabled: true,
           ttsAutoPlay: true,
@@ -102,6 +103,8 @@ void main() {
 
       expect(stored.theme, AppThemeSetting.system);
       expect(stored.themeIndex, 2);
+      expect(stored.themeStyle, AppThemeStyle.romantic);
+      expect(stored.themeStyleIndex, 1);
       expect(stored.language, AppLanguage.english);
       expect(stored.languageIndex, 1);
       expect(stored.ttsEnabled, isTrue);
@@ -134,6 +137,7 @@ void main() {
         ..notificationCheckinHours = 0
         ..modelSource = 'sideload'
         ..themeIndex = 99
+        ..themeStyleIndex = 99
         ..languageIndex = -4;
 
       final fixed = legacy.normalized();
@@ -145,9 +149,11 @@ void main() {
       expect(fixed.notificationCheckinHours, 6);
       expect(fixed.modelSource, '');
       expect(fixed.themeIndex, AppThemeSetting.values.length - 1);
+      expect(fixed.themeStyleIndex, AppThemeStyle.values.length - 1);
       expect(fixed.languageIndex, 0);
       // Getter tidak boleh melempar RangeError untuk index rusak.
       expect(legacy.theme, AppThemeSetting.values.last);
+      expect(legacy.themeStyle, AppThemeStyle.values.last);
       expect(legacy.language, AppLanguage.indonesian);
     });
 

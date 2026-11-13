@@ -33,17 +33,10 @@ class PrivacyScreen extends ConsumerWidget {
       body: AppContent(
         maxWidth: 680,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 20),
+          padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceMd + 4),
           child: Container(
             padding: const EdgeInsets.all(AppSizes.spaceLg),
-            decoration: BoxDecoration(
-              color: scheme.surface,
-              borderRadius: BorderRadius.circular(AppSizes.radiusCard),
-              border: Border.all(
-                color: scheme.outlineVariant.withValues(alpha: 0.6),
-              ),
-              boxShadow: AppShadows.card(context),
-            ),
+            decoration: AppBorders.cardDecoration(context),
             child: SelectableText(
               strings.privacyPolicy,
               style: AppTextStyles.bodyLarge(

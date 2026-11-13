@@ -193,13 +193,14 @@ class DataPrivacySection extends ConsumerWidget {
           margin: const EdgeInsets.all(AppSizes.spaceMd),
           padding: const EdgeInsets.all(AppSizes.spaceMd),
           decoration: BoxDecoration(
-            color: scheme.primaryContainer.withValues(alpha: 0.55),
+            color: scheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(AppSizes.radiusControl),
+            border: Border.all(color: scheme.outlineVariant),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppIconBadge(icon: Icons.shield_outlined),
+              const AppIconBadge(icon: Icons.shield_outlined),
               const SizedBox(width: AppSizes.spaceSm),
               Expanded(
                 child: Column(
@@ -208,14 +209,14 @@ class DataPrivacySection extends ConsumerWidget {
                     Text(
                       strings.settingsLocalStorage,
                       style: AppTextStyles.settingsLabel(
-                        color: scheme.onPrimaryContainer,
+                        color: scheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: AppSizes.spaceXxs),
                     Text(
                       strings.settingsLocalStorageBody,
                       style: AppTextStyles.bodySmall(
-                        color: scheme.onPrimaryContainer,
+                        color: scheme.onSurfaceVariant,
                       ),
                     ),
                   ],

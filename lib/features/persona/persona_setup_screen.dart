@@ -5,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/design/components/app_scaffold.dart';
-import '../../core/design/components/bloom_mark.dart';
 import '../../core/design/components/primary_button.dart';
+import '../../core/design/components/resonance_mark.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
@@ -21,10 +21,7 @@ import 'avatar_catalog.dart';
 import 'persona_options.dart';
 import 'persona_controller.dart';
 
-/// Layar setup persona. Mendukung dua mode:
-/// - **Buat baru**: jika belum ada persona (isPersonaSetup=false).
-/// - **Edit**: jika persona sudah ada — form ter-prefill, simpan memutasi
-///   in-place tanpa menghapus data lain.
+/// Layar setup persona. Mendukung mode buat baru dan edit.
 class PersonaSetupScreen extends ConsumerStatefulWidget {
   const PersonaSetupScreen({super.key});
 
@@ -43,7 +40,6 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
   String _selectedAvatarId = 'gf_1';
   bool _isSaving = false;
 
-  /// Apakah sedang mengedit persona yang sudah ada.
   late bool _isEditing;
 
   @override
@@ -86,7 +82,6 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
     setState(() => _isSaving = true);
 
     try {
-      // Buat PersonaConfig baru; controller mempertahankan id saat edit.
       final persona = PersonaConfig(
         gender: _gender,
         name: _nameController.text.trim(),
@@ -102,7 +97,6 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
           .read(appSettingsProvider.notifier)
           .save(settings.copyWith(isPersonaSetup: true));
 
-      // Judul notifikasi memakai nama persona baru.
       try {
         await ref
             .read(notificationProvider.notifier)
@@ -114,7 +108,7 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
       final ready =
           (ref.read(modelServiceProvider).value?.ready ?? false) ||
           ref.read(modelReadyProvider);
-      if (mounted) context.go(ready ? AppRoutes.chat : AppRoutes.modelDownload);
+      if (mounted) context.go(ready ? AppRoutes.hub : AppRoutes.modelDownload);
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -132,8 +126,10 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
         child: Column(
           children: [
             SafeArea(bottom: false, child: _buildHeader(strings)),
+            Divider(height: 1, thickness: 1, color: scheme.outlineVariant),
             Expanded(
               child: SingleChildScrollView(
+                padding: const EdgeInsets.only(top: AppSizes.spaceLg),
                 child: AppContent(
                   maxWidth: 640,
                   child: Column(
@@ -167,13 +163,16 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
                 top: false,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spaceLg,
+                    horizontal: AppSizes.pageGutter,
                     vertical: AppSizes.spaceSm,
                   ),
-                  child: PrimaryButton(
-                    label: strings.personaSave,
-                    loading: _isSaving,
-                    onPressed: _save,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 640),
+                    child: PrimaryButton(
+                      label: strings.personaSave,
+                      loading: _isSaving,
+                      onPressed: _save,
+                    ),
                   ),
                 ),
               ),
@@ -188,14 +187,14 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSizes.spaceLg,
+        AppSizes.pageGutter,
         AppSizes.spaceMd,
-        AppSizes.spaceLg,
+        AppSizes.pageGutter,
         AppSizes.spaceMd,
       ),
       child: Row(
         children: [
-          const BloomMark(size: 36, glow: false),
+          const ResonanceMark(size: 32),
           const SizedBox(width: AppSizes.spaceSm),
           Expanded(
             child: Column(
@@ -205,8 +204,12 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
                   _isEditing
                       ? strings.settingsEditPersona
                       : strings.personaCreateTitle,
-                  style: AppTextStyles.headingLarge(color: scheme.onSurface),
+                  style: AppTextStyles.displaySmall(
+                    context,
+                    color: scheme.onSurface,
+                  ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   strings.personaCreateSubtitle,
                   style: AppTextStyles.bodySmall(
@@ -227,6 +230,7 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
       child: Text(
         label,
         style: AppTextStyles.headingSmall(
+          context,
           color: AppColors.primaryDeepFor(context),
         ),
       ),
@@ -238,26 +242,49 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionLabel(strings.personaGenderQuestion),
-        Row(
-          children: [
-            Expanded(
-              child: GenderOptionCard(
-                label: strings.personaGenderGirlfriend,
-                icon: Icons.female,
-                selected: _gender == PersonaGender.girlfriend,
-                onTap: () => _switchGender(PersonaGender.girlfriend),
-              ),
-            ),
-            const SizedBox(width: AppSizes.spaceSm),
-            Expanded(
-              child: GenderOptionCard(
-                label: strings.personaGenderBoyfriend,
-                icon: Icons.male,
-                selected: _gender == PersonaGender.boyfriend,
-                onTap: () => _switchGender(PersonaGender.boyfriend),
-              ),
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 320) {
+              return Column(
+                children: [
+                  GenderOptionCard(
+                    label: strings.personaGenderGirlfriend,
+                    icon: Icons.female,
+                    selected: _gender == PersonaGender.girlfriend,
+                    onTap: () => _switchGender(PersonaGender.girlfriend),
+                  ),
+                  const SizedBox(height: AppSizes.spaceXs),
+                  GenderOptionCard(
+                    label: strings.personaGenderBoyfriend,
+                    icon: Icons.male,
+                    selected: _gender == PersonaGender.boyfriend,
+                    onTap: () => _switchGender(PersonaGender.boyfriend),
+                  ),
+                ],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(
+                  child: GenderOptionCard(
+                    label: strings.personaGenderGirlfriend,
+                    icon: Icons.female,
+                    selected: _gender == PersonaGender.girlfriend,
+                    onTap: () => _switchGender(PersonaGender.girlfriend),
+                  ),
+                ),
+                const SizedBox(width: AppSizes.spaceSm),
+                Expanded(
+                  child: GenderOptionCard(
+                    label: strings.personaGenderBoyfriend,
+                    icon: Icons.male,
+                    selected: _gender == PersonaGender.boyfriend,
+                    onTap: () => _switchGender(PersonaGender.boyfriend),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ],
     );
@@ -269,7 +296,7 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
       children: [
         _buildSectionLabel(strings.personaChooseAppearance),
         SizedBox(
-          height: 96,
+          height: 88,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
@@ -286,7 +313,7 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
                     HapticFeedback.selectionClick();
                     setState(() => _selectedAvatarId = avatar.id);
                   },
-                  child: avatarCircle(context, avatar, 76, selected: selected),
+                  child: avatarCircle(context, avatar, 72, selected: selected),
                 ),
               );
             },

@@ -4,6 +4,7 @@
 // memory, hapus fact) agar satu bahasa visual & satu perilaku.
 import 'package:material_ui/material_ui.dart';
 
+import '../tokens/app_colors.dart';
 import '../tokens/text_styles.dart';
 
 /// Menampilkan dialog konfirmasi. Kembali `true` bila dikonfirmasi.
@@ -22,9 +23,14 @@ Future<bool> showConfirmDialog(
     context: context,
     builder: (ctx) {
       final scheme = Theme.of(ctx).colorScheme;
-      final confirmColor = destructive ? scheme.error : scheme.primary;
+      final confirmColor = destructive
+          ? scheme.error
+          : AppColors.primaryDeepFor(ctx);
       return AlertDialog(
-        title: Text(title, style: AppTextStyles.headingMedium(color: scheme.onSurface)),
+        title: Text(
+          title,
+          style: AppTextStyles.headingMedium(ctx, color: scheme.onSurface),
+        ),
         content: Text(
           body,
           style: AppTextStyles.bodyMedium(color: scheme.onSurfaceVariant),

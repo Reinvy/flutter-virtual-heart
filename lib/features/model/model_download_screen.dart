@@ -9,8 +9,8 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../core/design/components/app_icon_badge.dart';
 import '../../core/design/components/app_scaffold.dart';
-import '../../core/design/components/bloom_mark.dart';
 import '../../core/design/components/primary_button.dart';
+import '../../core/design/components/resonance_mark.dart';
 import '../../core/design/components/secondary_button.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_durations.dart';
@@ -28,14 +28,14 @@ class ModelDownloadScreen extends ConsumerStatefulWidget {
   const ModelDownloadScreen({super.key});
 
   @override
-  ConsumerState<ModelDownloadScreen> createState() => _ModelDownloadScreenState();
+  ConsumerState<ModelDownloadScreen> createState() =>
+      _ModelDownloadScreenState();
 }
 
 class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
   final _tokenController = TextEditingController();
   ModelOption? _selected;
 
-  /// Aksi yang dijalankan tombol "Coba Lagi" setelah kegagalan terakhir.
   VoidCallback? _retry;
 
   @override
@@ -70,7 +70,9 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
     final String activeFile = settings.modelVariant;
 
     final chosen = _selected ?? _catalogOptionFor(activeFile);
-    final isActive = chosen != null ? (activeReady && activeFile == chosen.fileName) : activeReady;
+    final isActive = chosen != null
+        ? (activeReady && activeFile == chosen.fileName)
+        : activeReady;
     final installTarget = _selected ?? kDefaultModelOption;
 
     return AppScaffold(
@@ -92,10 +94,19 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
               const SizedBox(height: AppSizes.spaceLg),
               _buildTokenField(strings),
               const SizedBox(height: AppSizes.spaceLg),
-              _buildActions(strings, busy: busy, isActive: isActive, target: installTarget),
+              _buildActions(
+                strings,
+                busy: busy,
+                isActive: isActive,
+                target: installTarget,
+              ),
               if (busy) _buildProgress(strings, status?.progress ?? 0),
               if (modelState.hasError && !busy)
-                _buildError(strings, modelState.error!, retryLabel: strings.modelRetry),
+                _buildError(
+                  strings,
+                  modelState.error!,
+                  retryLabel: strings.modelRetry,
+                ),
             ],
           ],
         ),
@@ -106,7 +117,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
   Widget _buildHeader(AppStrings strings) {
     return Row(
       children: [
-        const BloomMark(size: 56, glow: false),
+        const ResonanceMark(size: 44),
         const SizedBox(width: AppSizes.spaceMd),
         Expanded(
           child: Text(
@@ -126,11 +137,14 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
       padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceXl),
       child: Column(
         children: [
-          const BloomMark(size: 88, animate: true),
+          const ResonanceMark(size: 88, animate: true),
           const SizedBox(height: 20),
           Text(
             strings.modelLoadingTitle,
-            style: AppTextStyles.headingSmall(color: scheme.onSurface),
+            style: AppTextStyles.headingSmall(
+              context,
+              color: scheme.onSurface,
+            ),
           ),
           const SizedBox(height: AppSizes.spaceXs),
           Text(
@@ -143,14 +157,18 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
     );
   }
 
-  Widget _buildModelList(AppStrings strings, bool activeReady, String activeFile) {
+  Widget _buildModelList(
+    AppStrings strings,
+    bool activeReady,
+    String activeFile,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           strings.modelAvailable.toUpperCase(),
           style: AppTextStyles.sectionLabel(
-            color: AppColors.primaryDeepFor(context),
+            color: AppColors.textSecondaryFor(context),
           ),
         ),
         const SizedBox(height: 10),
@@ -211,14 +229,10 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
         if (busy)
           Padding(
             padding: const EdgeInsets.only(top: AppSizes.spaceSm),
-            child: TextButton(
+            child: GhostButton(
+              label: strings.modelCancel,
+              color: Theme.of(context).colorScheme.error,
               onPressed: _cancel,
-              child: Text(
-                strings.modelCancel,
-                style: AppTextStyles.button(
-                  color: Theme.of(context).colorScheme.error,
-                ),
-              ),
             ),
           ),
       ],
@@ -232,9 +246,9 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
       padding: const EdgeInsets.only(top: AppSizes.spaceLg),
       child: Container(
         padding: const EdgeInsets.all(AppSizes.spaceMd),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(AppSizes.radiusControl),
+        decoration: AppBorders.cardDecoration(
+          context,
+          radius: AppSizes.radiusMd,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,7 +265,9 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
                 ),
                 Text(
                   '$pct%',
-                  style: AppTextStyles.settingsLabel(color: scheme.onSurface),
+                  style: AppTextStyles.caption(
+                    color: scheme.onSurface,
+                  ).copyWith(fontWeight: FontWeight.w700),
                 ),
               ],
             ),
@@ -260,7 +276,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
               borderRadius: BorderRadius.circular(AppSizes.radiusFull),
               child: LinearProgressIndicator(
                 value: progress.clamp(0, 1),
-                minHeight: 8,
+                minHeight: 4,
               ),
             ),
           ],
@@ -269,7 +285,11 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
     );
   }
 
-  Widget _buildError(AppStrings strings, Object error, {required String retryLabel}) {
+  Widget _buildError(
+    AppStrings strings,
+    Object error, {
+    required String retryLabel,
+  }) {
     final scheme = Theme.of(context).colorScheme;
     final kind = error is ModelException ? error.kind : classifyModelError(error);
     return Padding(
@@ -279,6 +299,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
         decoration: BoxDecoration(
           color: scheme.errorContainer,
           borderRadius: BorderRadius.circular(AppSizes.radiusPanel),
+          border: Border.all(color: scheme.error, width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,6 +315,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
                   child: Text(
                     strings.modelErrorTitle,
                     style: AppTextStyles.headingSmall(
+                      context,
                       color: scheme.onErrorContainer,
                     ),
                   ),
@@ -374,8 +396,6 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
     final modelType = await _askModelType(strings);
     if (!mounted || modelType == null) return;
 
-    // Salin ke penyimpanan aplikasi: engine mendaftarkan path ini dan harus
-    // tetap ada selama model dipakai (path sementara dari picker tidak stabil).
     File? target;
     try {
       final support = await getApplicationSupportDirectory();
@@ -435,7 +455,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
     if (context.canPop()) {
       context.pop();
     } else {
-      context.go(AppRoutes.chat);
+      context.go(AppRoutes.hub);
     }
   }
 
@@ -481,14 +501,8 @@ class _ModelTile extends StatelessWidget {
       child: AnimatedContainer(
         duration: AppDurations.durationFast,
         curve: AppDurations.curveStandard,
-        decoration: BoxDecoration(
-          borderRadius: radius,
-          boxShadow: selected ? AppShadows.card(context) : const [],
-        ),
         child: Material(
-          color: selected
-              ? scheme.primaryContainer.withValues(alpha: 0.45)
-              : scheme.surface,
+          color: selected ? scheme.surfaceContainerLow : scheme.surface,
           shape: RoundedRectangleBorder(
             borderRadius: radius,
             side: BorderSide(
@@ -512,19 +526,20 @@ class _ModelTile extends StatelessWidget {
                         Wrap(
                           crossAxisAlignment: WrapCrossAlignment.center,
                           spacing: AppSizes.spaceXs,
-                          runSpacing: 2,
+                          runSpacing: 4,
                           children: [
                             Text(
                               option.name,
                               style: AppTextStyles.headingSmall(
+                                context,
                                 color: scheme.onSurface,
                               ),
                             ),
                             if (active)
                               _Badge(
                                 label: activeLabel,
-                                background: scheme.tertiaryContainer,
-                                foreground: scheme.onTertiaryContainer,
+                                background: scheme.primaryContainer,
+                                foreground: scheme.onPrimaryContainer,
                               ),
                             if (option.gated)
                               _Badge(
@@ -548,8 +563,11 @@ class _ModelTile extends StatelessWidget {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: scheme.surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                            color: scheme.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusBadge,
+                            ),
+                            border: Border.all(color: scheme.outlineVariant),
                           ),
                           child: Text(
                             option.sizeLabel,
@@ -579,7 +597,11 @@ class _ModelTile extends StatelessWidget {
 }
 
 class _Badge extends StatelessWidget {
-  const _Badge({required this.label, required this.background, required this.foreground});
+  const _Badge({
+    required this.label,
+    required this.background,
+    required this.foreground,
+  });
 
   final String label;
   final Color background;
@@ -587,11 +609,13 @@ class _Badge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+        borderRadius: BorderRadius.circular(AppSizes.radiusBadge),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Text(label, style: AppTextStyles.badge(color: foreground)),
     );

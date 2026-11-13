@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import '../tokens/app_colors.dart';
 import '../tokens/app_sizes.dart';
 import '../tokens/text_styles.dart';
-import 'bloom_mark.dart';
+import 'resonance_mark.dart';
 
 class EmptyState extends StatelessWidget {
   const EmptyState({
@@ -14,7 +14,7 @@ class EmptyState extends StatelessWidget {
     required this.body,
     this.iconColor,
     this.action,
-    this.bloom = false,
+    this.mark = false,
   });
 
   final IconData icon;
@@ -23,8 +23,8 @@ class EmptyState extends StatelessWidget {
   final Color? iconColor;
   final Widget? action;
 
-  /// Tampilkan [BloomMark] sebagai ilustrasi, bukan lingkaran ikon.
-  final bool bloom;
+  /// Tampilkan [ResonanceMark] sebagai ilustrasi, bukan bingkai ikon statis.
+  final bool mark;
 
   @override
   Widget build(BuildContext context) {
@@ -38,22 +38,30 @@ class EmptyState extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (bloom)
-                BloomMark(size: AppSizes.avatarLg, icon: icon, animate: true)
+              if (mark)
+                ResonanceMark(
+                  size: AppSizes.avatarLg,
+                  icon: icon,
+                  animate: true,
+                )
               else
                 Container(
                   width: AppSizes.avatarLg,
                   height: AppSizes.avatarLg,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusCard),
+                    color: scheme.surface,
+                    border: Border.all(color: scheme.outlineVariant, width: 1),
                   ),
-                  child: Icon(icon, size: 44, color: color),
+                  child: Icon(icon, size: 40, color: color),
                 ),
               const SizedBox(height: AppSizes.spaceLg),
               Text(
                 title,
-                style: AppTextStyles.headingLarge(color: scheme.onSurface),
+                style: AppTextStyles.headingLarge(
+                  context,
+                  color: scheme.onSurface,
+                ),
                 textAlign: TextAlign.center,
               ),
               if (body.isNotEmpty) ...[

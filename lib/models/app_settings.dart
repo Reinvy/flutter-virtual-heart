@@ -3,6 +3,8 @@ import 'package:objectbox/objectbox.dart';
 
 enum AppThemeSetting { light, dark, system }
 
+enum AppThemeStyle { editorial, romantic, classic, botanical }
+
 enum AppLanguage { indonesian, english, mixed }
 
 @Entity()
@@ -38,11 +40,15 @@ class AppSettings {
 
   // Enum backing fields (stored as int index)
   int themeIndex = 0;
+  int themeStyleIndex = 0;
   int languageIndex = 0;
 
   // Getter meng-clamp index: baris rusak tidak boleh melempar RangeError.
   AppThemeSetting get theme => _enumAt(AppThemeSetting.values, themeIndex);
   set theme(AppThemeSetting value) => themeIndex = value.index;
+
+  AppThemeStyle get themeStyle => _enumAt(AppThemeStyle.values, themeStyleIndex);
+  set themeStyle(AppThemeStyle value) => themeStyleIndex = value.index;
 
   AppLanguage get language => _enumAt(AppLanguage.values, languageIndex);
   set language(AppLanguage value) => languageIndex = value.index;
@@ -57,7 +63,8 @@ class AppSettings {
 
   AppSettings({
     this.id = 0,
-    AppThemeSetting theme = AppThemeSetting.light, // default: Romantic Light
+    AppThemeSetting theme = AppThemeSetting.light, // default: Atelier Ivory Light
+    AppThemeStyle themeStyle = AppThemeStyle.editorial,
     AppLanguage language = AppLanguage.indonesian,
     this.ttsEnabled = false,
     this.ttsAutoPlay = false,
@@ -79,6 +86,7 @@ class AppSettings {
     this.summaryMessageCount = 0,
   }) {
     themeIndex = theme.index;
+    themeStyleIndex = themeStyle.index;
     languageIndex = language.index;
   }
 
@@ -86,6 +94,7 @@ class AppSettings {
   /// Preserves the ObjectBox [id] so [put()] updates the existing record.
   AppSettings copyWith({
     AppThemeSetting? theme,
+    AppThemeStyle? themeStyle,
     AppLanguage? language,
     bool? ttsEnabled,
     bool? ttsAutoPlay,
@@ -108,6 +117,7 @@ class AppSettings {
   }) {
     return AppSettings(
       theme: theme ?? this.theme,
+      themeStyle: themeStyle ?? this.themeStyle,
       language: language ?? this.language,
       ttsEnabled: ttsEnabled ?? this.ttsEnabled,
       ttsAutoPlay: ttsAutoPlay ?? this.ttsAutoPlay,
@@ -148,6 +158,7 @@ class AppSettings {
           ? notificationCheckinHours
           : 6,
       theme: _enumAt(AppThemeSetting.values, themeIndex),
+      themeStyle: _enumAt(AppThemeStyle.values, themeStyleIndex),
       language: _enumAt(AppLanguage.values, languageIndex),
     );
   }

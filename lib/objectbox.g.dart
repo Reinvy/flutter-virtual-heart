@@ -26,7 +26,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(1, 1350341759699591298),
     name: 'AppSettings',
-    lastPropertyId: const obx_int.IdUid(21, 2675952744523911279),
+    lastPropertyId: const obx_int.IdUid(22, 2639245651235476350),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -152,6 +152,12 @@ final _entities = <obx_int.ModelEntity>[
       obx_int.ModelProperty(
         id: const obx_int.IdUid(21, 2675952744523911279),
         name: 'summaryMessageCount',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(22, 2639245651235476350),
+        name: 'themeStyleIndex',
         type: 6,
         flags: 0,
       ),
@@ -442,7 +448,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final sttModelOffset = fbb.writeString(object.sttModel);
         final modelSourceOffset = fbb.writeString(object.modelSource);
         final modelUrlOffset = fbb.writeString(object.modelUrl);
-        fbb.startTable(22);
+        fbb.startTable(23);
         fbb.addInt64(0, object.id);
         fbb.addBool(1, object.ttsEnabled);
         fbb.addBool(2, object.ttsAutoPlay);
@@ -464,6 +470,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(18, modelUrlOffset);
         fbb.addInt64(19, object.notificationCheckinHours);
         fbb.addInt64(20, object.summaryMessageCount);
+        fbb.addInt64(21, object.themeStyleIndex);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -589,6 +596,12 @@ obx_int.ModelDefinition getObjectBoxModel() {
                 buffer,
                 rootOffset,
                 28,
+                0,
+              )
+              ..themeStyleIndex = const fb.Int64Reader().vTableGet(
+                buffer,
+                rootOffset,
+                46,
                 0,
               );
 
@@ -977,6 +990,11 @@ class AppSettings_ {
   /// See [AppSettings.summaryMessageCount].
   static final summaryMessageCount = obx.QueryIntegerProperty<AppSettings>(
     _entities[0].properties[20],
+  );
+
+  /// See [AppSettings.themeStyleIndex].
+  static final themeStyleIndex = obx.QueryIntegerProperty<AppSettings>(
+    _entities[0].properties[21],
   );
 }
 

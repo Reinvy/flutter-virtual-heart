@@ -1,7 +1,7 @@
 // Design tokens — Spacing, Radius, Ukuran (docs/DESIGN.md §2.3–2.5)
 //
-// Nama baru mengikuti DESIGN.md. Alias lama (`xs`, `sm`, `md`, `radiusMd=12`…)
-// dipertahankan agar kode yang belum dimigrasi tetap kompilasi.
+// Geometri tajam-editorial: radius lebih terukur (8–16dp) dengan sudut
+// penuh (`radiusFull`) hanya untuk elemen bundar murni (avatar, radio).
 abstract final class AppSizes {
   AppSizes._();
 
@@ -15,34 +15,34 @@ abstract final class AppSizes {
   static const double spaceXxl = 48;
 
   // ── Radius ────────────────────────────────────────────────────────────
-  static const double radiusXs = 6;
-  static const double radiusSm = 10;
-  static const double radiusBadge = 12;
-  static const double radiusSegment = 14;
-  static const double radiusMd = 16;
-  static const double radiusControl = 18;
-  static const double radiusPanel = 20;
-  static const double radiusLg = 24;
-  static const double radiusCard = 28;
-  static const double radiusSheet = 32;
-  static const double radiusBubble = 22;
+  static const double radiusXs = 4;
+  static const double radiusSm = 8;
+  static const double radiusBadge = 6;
+  static const double radiusSegment = 10;
+  static const double radiusMd = 12;
+  static const double radiusControl = 12;
+  static const double radiusPanel = 14;
+  static const double radiusLg = 16;
+  static const double radiusCard = 16;
+  static const double radiusSheet = 20;
+  static const double radiusBubble = 16;
   static const double radiusFull = 999;
 
   // ── Layout ────────────────────────────────────────────────────────────
   /// Lebar maksimum kolom konten di layar lebar.
   static const double contentMaxWidth = 720;
 
-  /// Lebar maksimum bubble chat.
+  /// Lebar maksimum bubble / thread chat.
   static const double bubbleMaxWidth = 560;
 
   /// Padding horizontal standar halaman.
-  static const double pageGutter = 24;
+  static const double pageGutter = 20;
 
   /// Tinggi kontrol besar (tombol utama).
-  static const double controlHeight = 52;
+  static const double controlHeight = 50;
 
   /// Tinggi minimum baris settings.
-  static const double rowMinHeight = 60;
+  static const double rowMinHeight = 58;
 
   /// Tinggi maksimum input multi-baris di chat.
   static const double inputMaxHeight = 132;
@@ -50,8 +50,8 @@ abstract final class AppSizes {
   /// Tinggi dasar input bar chat.
   static const double chatInputHeight = 56;
 
-  /// Ekor bubble (radius sudut dekat avatar).
-  static const double bubbleTail = 6;
+  /// Ekor bubble user.
+  static const double bubbleTail = 4;
 
   // ── Ukuran ikon ───────────────────────────────────────────────────────
   static const double iconSm = 16;

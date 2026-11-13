@@ -1,12 +1,11 @@
-// Fitur Settings (FR-18) — layar pengaturan utama.
+// Fitur Settings (FR-18) — tab pengaturan utama.
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/design/components/app_scaffold.dart';
 import '../../core/design/tokens/app_sizes.dart';
+import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
-import '../../core/router/app_router.dart';
 import 'package:virtual_heart/services/settings/settings_service.dart';
 import 'widgets/appearance_section.dart';
 import 'widgets/data_privacy_section.dart';
@@ -23,21 +22,27 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(appStringsProvider);
     final settings = ref.watch(appSettingsProvider);
+    final scheme = Theme.of(context).colorScheme;
 
     return AppScaffold(
-      appBar: AppBar(
-        leading: BackButton(
-          onPressed: () =>
-              context.canPop() ? context.pop() : context.go(AppRoutes.chat),
-        ),
-        title: Text(strings.settingsTitle),
-        centerTitle: false,
-      ),
       body: AppContent(
-        maxWidth: 720,
+        maxWidth: AppSizes.contentMaxWidth,
         child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceXs),
+          padding: const EdgeInsets.only(
+            top: AppSizes.spaceSm,
+            bottom: AppSizes.spaceXl,
+          ),
           children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSizes.spaceLg),
+              child: Text(
+                strings.settingsTitle,
+                style: AppTextStyles.displaySmall(
+                  context,
+                  color: scheme.onSurface,
+                ),
+              ),
+            ),
             PersonaSection(settings: settings),
             const SizedBox(height: AppSizes.spaceLg),
             AppearanceSection(settings: settings),
@@ -51,7 +56,6 @@ class SettingsScreen extends ConsumerWidget {
             NotificationsSection(settings: settings),
             const SizedBox(height: AppSizes.spaceLg),
             const DataPrivacySection(),
-            const SizedBox(height: AppSizes.spaceXl),
           ],
         ),
       ),

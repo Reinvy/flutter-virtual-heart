@@ -1,4 +1,4 @@
-// Fitur Persona (FR-03) — bottom sheet edit persona (dari settings).
+// Fitur Persona (FR-03) — bottom sheet edit persona (dari settings / profil).
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -97,7 +97,6 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
     }
   }
 
-  /// Menutup sheet; perubahan yang belum disimpan dikonfirmasi dulu.
   Future<void> _confirmClose() async {
     final strings = ref.read(appStringsProvider);
     if (!_dirty) {
@@ -136,6 +135,7 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
       child: Text(
         text,
         style: AppTextStyles.headingSmall(
+          context,
           color: AppColors.primaryDeepFor(context),
         ),
       ),
@@ -166,6 +166,9 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
               color: scheme.surface,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(AppSizes.radiusSheet),
+              ),
+              border: Border(
+                top: BorderSide(color: scheme.outlineVariant, width: 1),
               ),
             ),
             child: Form(
@@ -312,7 +315,9 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
                                 onTap: () {
                                   setState(() {
                                     _markDirty();
-                                    if (!_hobbies.remove(hobby)) _hobbies.add(hobby);
+                                    if (!_hobbies.remove(hobby)) {
+                                      _hobbies.add(hobby);
+                                    }
                                   });
                                 },
                               ),
@@ -321,7 +326,7 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
                         const SizedBox(height: AppSizes.spaceLg),
                         _label(context, strings.settingsSheetChooseAvatar),
                         SizedBox(
-                          height: 88,
+                          height: 80,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             padding: const EdgeInsets.symmetric(

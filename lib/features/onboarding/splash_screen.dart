@@ -1,13 +1,13 @@
 // Fitur Onboarding — layar splash (alur awal).
 //
-// BloomMark bernapas di atas latar senja; tiga titik menandakan proses boot.
+// ResonanceMark di atas kanvas editorial; hairline boot bar menandakan boot.
 // Menghormati MediaQuery.disableAnimations.
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/design/components/app_scaffold.dart';
-import '../../core/design/components/bloom_mark.dart';
+import '../../core/design/components/resonance_mark.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
@@ -47,7 +47,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     } else if (!isModelReady) {
       route = AppRoutes.modelDownload;
     } else {
-      route = AppRoutes.chat;
+      route = AppRoutes.hub;
     }
 
     if (mounted) context.go(route);
@@ -73,28 +73,32 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       safeArea: false,
       body: SafeArea(
         child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const BloomMark(size: 132, animate: true),
-              const SizedBox(height: AppSizes.spaceXl),
-              Text(
-                strings.appName,
-                style: AppTextStyles.displayHero(
-                  color: AppColors.primaryDeepFor(context),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.pageGutter),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const ResonanceMark(size: 112, animate: true),
+                const SizedBox(height: AppSizes.spaceXl),
+                Text(
+                  strings.appName,
+                  style: AppTextStyles.displayHero(
+                    context,
+                    color: AppColors.primaryDeepFor(context),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                strings.appTagline,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.caption(
-                  color: AppColors.textSecondaryFor(context),
-                ).copyWith(letterSpacing: 1.2),
-              ),
-              const SizedBox(height: 40),
-              const _BootDots(),
-            ],
+                const SizedBox(height: 10),
+                Text(
+                  strings.appTagline.toUpperCase(),
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.sectionLabel(
+                    color: AppColors.textSecondaryFor(context),
+                  ).copyWith(letterSpacing: 2.0),
+                ),
+                const SizedBox(height: 40),
+                const _BootHairline(),
+              ],
+            ),
           ),
         ),
       ),
@@ -102,17 +106,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 }
 
-class _BootDots extends StatefulWidget {
-  const _BootDots();
+class _BootHairline extends StatefulWidget {
+  const _BootHairline();
 
   @override
-  State<_BootDots> createState() => _BootDotsState();
+  State<_BootHairline> createState() => _BootHairlineState();
 }
 
-class _BootDotsState extends State<_BootDots> with SingleTickerProviderStateMixin {
+class _BootHairlineState extends State<_BootHairline>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1200),
+    duration: const Duration(milliseconds: 1400),
   );
 
   bool _motionOk = false;
@@ -138,29 +143,42 @@ class _BootDotsState extends State<_BootDots> with SingleTickerProviderStateMixi
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary;
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(3, (i) {
-            final phase = (_controller.value + i / 3) % 1;
-            final alpha = _motionOk
-                ? 0.35 + 0.65 * (1 - (2 * phase - 1).abs())
-                : 0.5;
-            return Container(
-              width: 6,
-              height: 6,
-              margin: const EdgeInsets.symmetric(horizontal: 3),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color.withValues(alpha: alpha),
+    final scheme = Theme.of(context).colorScheme;
+    return SizedBox(
+      width: 120,
+      height: 2,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+        child: Stack(
+          children: [
+            ColoredBox(color: scheme.outlineVariant, child: const SizedBox.expand()),
+            if (_motionOk)
+              AnimatedBuilder(
+                animation: _controller,
+                builder: (context, _) {
+                  final x = (_controller.value * 2 - 1) * 0.85;
+                  return Align(
+                    alignment: Alignment(x, 0),
+                    child: Container(
+                      width: 44,
+                      height: 2,
+                      color: scheme.primary,
+                    ),
+                  );
+                },
+              )
+            else
+              Align(
+                alignment: Alignment.center,
+                child: Container(
+                  width: 48,
+                  height: 2,
+                  color: scheme.primary,
+                ),
               ),
-            );
-          }),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }

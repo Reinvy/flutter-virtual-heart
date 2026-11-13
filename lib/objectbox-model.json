@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:1350341759699591298",
-      "lastPropertyId": "21:2675952744523911279",
+      "lastPropertyId": "22:2639245651235476350",
       "name": "AppSettings",
       "properties": [
         {
@@ -112,6 +112,11 @@
         {
           "id": "21:2675952744523911279",
           "name": "summaryMessageCount",
+          "type": 6
+        },
+        {
+          "id": "22:2639245651235476350",
+          "name": "themeStyleIndex",
           "type": 6
         }
       ],

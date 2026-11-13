@@ -1,105 +1,45 @@
-// Design tokens — Efek (docs/DESIGN.md §2.4)
+// Design tokens — Garis & Bingkai (docs/DESIGN.md §2.4)
 //
-// Gradien dan bayangan adalah bagian dari sistem, bukan dekorasi lokal:
-// setiap layar memakai sumber yang sama agar depth dan warna konsisten.
-// Semua fungsi memilih token `*Dark` saat brightness gelap.
+// Sistem Atelier memakai permukaan datar dengan border hairline 1px dan
+// border seleksi tegas — tanpa gradien berat atau drop shadow.
 import 'package:material_ui/material_ui.dart';
 
-import 'app_colors.dart';
+import 'app_sizes.dart';
 
-abstract final class AppGradients {
-  AppGradients._();
+abstract final class AppBorders {
+  AppBorders._();
 
-  static bool _isDark(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark;
-
-  /// Tombol aksi utama dan elemen utama lain.
-  static LinearGradient primaryAction(BuildContext context) => LinearGradient(
-    colors: _isDark(context)
-        ? const [AppColors.actionStartDark, AppColors.actionEndDark]
-        : const [AppColors.actionStart, AppColors.actionEnd],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  /// Bubble pesan pengguna.
-  static LinearGradient userBubble(BuildContext context) => LinearGradient(
-    colors: _isDark(context)
-        ? const [AppColors.bubbleUserStartDark, AppColors.bubbleUserEndDark]
-        : const [AppColors.bubbleUserStart, AppColors.bubbleUserEnd],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  /// Latar aplikasi (kertas + cahaya senja).
-  static LinearGradient background(BuildContext context) => LinearGradient(
-    colors: _isDark(context)
-        ? const [AppColors.bgTopDark, AppColors.bgMidDark, AppColors.bgBottomDark]
-        : const [AppColors.bgTop, AppColors.bgMid, AppColors.bgBottom],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    stops: const [0, 0.55, 1],
-  );
-
-  /// Hero profil persona.
-  static LinearGradient profileHeader(BuildContext context) => LinearGradient(
-    colors: _isDark(context)
-        ? const [AppColors.profileTopDark, AppColors.profileMidDark, AppColors.profileEndDark]
-        : const [AppColors.profileTop, AppColors.profileMid, AppColors.profileEnd],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  /// Ring seleksi avatar / indikator aktif.
-  static LinearGradient selectedRing(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return LinearGradient(
-      colors: [scheme.primary, scheme.secondary],
-      begin: Alignment.centerLeft,
-      end: Alignment.centerRight,
+  /// Border hairline standar 1px memakai `outlineVariant`.
+  static BorderSide hairline(BuildContext context, {double alpha = 1}) {
+    final color = Theme.of(context).colorScheme.outlineVariant;
+    return BorderSide(
+      color: alpha >= 1 ? color : color.withValues(alpha: alpha),
+      width: 1,
     );
   }
 
-  /// Bloom radial untuk latar dekoratif.
-  static RadialGradient bloom(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return RadialGradient(
-      colors: [scheme.primaryContainer, scheme.primary],
-      center: const Alignment(-0.2, -0.3),
+  /// Border aksen aktif (mis. kartu atau preset tema terpilih).
+  static BorderSide accent(BuildContext context, {double width = 1.5}) {
+    return BorderSide(
+      color: Theme.of(context).colorScheme.primary,
+      width: width,
     );
   }
-}
 
-abstract final class AppShadows {
-  AppShadows._();
-
-  static bool _isDark(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark;
-
-  /// Kartu konten (section, tile terpilih).
-  static List<BoxShadow> card(BuildContext context) => _isDark(context)
-      ? const [
-          BoxShadow(color: Color(0x66000000), blurRadius: 28, offset: Offset(0, 12)),
-          BoxShadow(color: Color(0x33000000), blurRadius: 6, offset: Offset(0, 2)),
-        ]
-      : const [
-          BoxShadow(color: Color(0x144A1D33), blurRadius: 24, offset: Offset(0, 10)),
-          BoxShadow(color: Color(0x0A4A1D33), blurRadius: 4, offset: Offset(0, 2)),
-        ];
-
-  /// Elemen melayang (input bar, sheet header).
-  static List<BoxShadow> floating(BuildContext context) => _isDark(context)
-      ? const [
-          BoxShadow(color: Color(0x77000000), blurRadius: 36, offset: Offset(0, 16)),
-          BoxShadow(color: Color(0x3D000000), blurRadius: 8, offset: Offset(0, 4)),
-        ]
-      : const [
-          BoxShadow(color: Color(0x1A4A1D33), blurRadius: 32, offset: Offset(0, 14)),
-          BoxShadow(color: Color(0x0D4A1D33), blurRadius: 6, offset: Offset(0, 3)),
-        ];
-
-  /// Glow berwarna (tombol utama, avatar terpilih).
-  static List<BoxShadow> glow(BuildContext context, Color color) => [
-    BoxShadow(color: color.withValues(alpha: 0.28), blurRadius: 32),
-  ];
+  /// Dekorasi kartu datar dengan border 1px (atau 1.5px saat terpilih).
+  static BoxDecoration cardDecoration(
+    BuildContext context, {
+    double radius = AppSizes.radiusCard,
+    bool selected = false,
+    Color? color,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    return BoxDecoration(
+      color: color ?? scheme.surface,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.fromBorderSide(
+        selected ? accent(context) : hairline(context),
+      ),
+    );
+  }
 }

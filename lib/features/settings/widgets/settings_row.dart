@@ -39,9 +39,7 @@ class SettingsRow extends StatelessWidget {
       button: onTap != null,
       selected: selected,
       child: Material(
-        color: selected
-            ? scheme.primaryContainer.withValues(alpha: 0.35)
-            : Colors.transparent,
+        color: selected ? scheme.surfaceContainerLow : Colors.transparent,
         child: InkWell(
           onTap: onTap,
           child: ConstrainedBox(
@@ -55,7 +53,7 @@ class SettingsRow extends StatelessWidget {
                 children: [
                   AppIconBadge(
                     icon: icon,
-                    color: destructive ? scheme.error : scheme.primary,
+                    color: destructive ? scheme.error : scheme.onSurface,
                   ),
                   const SizedBox(width: 14),
                   Expanded(

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/design/components/app_icon_badge.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_durations.dart';
 import '../../core/design/tokens/app_sizes.dart';
@@ -55,7 +56,7 @@ const kHobbiesList = [
   };
 }
 
-/// Kartu pilihan gender (ikon + label).
+/// Kartu pilihan gender horizontal dengan AppIconBadge + indikator radio.
 class GenderOptionCard extends StatelessWidget {
   const GenderOptionCard({
     super.key,
@@ -73,65 +74,65 @@ class GenderOptionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final radius = BorderRadius.circular(AppSizes.radiusPanel);
+    final radius = BorderRadius.circular(AppSizes.radiusMd);
     return Semantics(
       button: true,
       selected: selected,
       label: label,
       child: Material(
-        color: Colors.transparent,
-        borderRadius: radius,
-        clipBehavior: Clip.antiAlias,
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            color: selected
-                ? scheme.primaryContainer.withValues(alpha: 0.65)
-                : scheme.surface,
-            border: Border.all(
-              color: selected ? scheme.primary : scheme.outlineVariant,
-              width: selected ? 1.5 : 1,
-            ),
+        color: selected ? scheme.surfaceContainerLow : scheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: radius,
+          side: BorderSide(
+            color: selected ? scheme.primary : scheme.outlineVariant,
+            width: selected ? 1.5 : 1,
           ),
-          child: InkWell(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              onTap();
-            },
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: AppSizes.touchTarget),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSizes.spaceSm,
-                vertical: 14,
+                vertical: AppSizes.spaceSm,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: Row(
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? scheme.primary.withValues(alpha: 0.14)
-                          : scheme.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusBadge),
-                    ),
-                    child: Icon(
-                      icon,
-                      size: 26,
-                      color: selected
-                          ? AppColors.primaryDeepFor(context)
-                          : scheme.onSurfaceVariant,
+                  AppIconBadge(
+                    icon: icon,
+                    size: 36,
+                    color: selected
+                        ? AppColors.primaryDeepFor(context)
+                        : scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: AppSizes.spaceSm),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.settingsLabel(
+                        color: selected
+                            ? AppColors.primaryDeepFor(context)
+                            : scheme.onSurface,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: AppSizes.spaceXs),
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.settingsLabel(
-                      color: selected
-                          ? AppColors.primaryDeepFor(context)
-                          : scheme.onSurface,
+                  const SizedBox(width: AppSizes.spaceXs),
+                  Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: selected ? scheme.primary : scheme.outline,
+                        width: selected ? 5 : 1.5,
+                      ),
                     ),
                   ),
                 ],
@@ -144,7 +145,7 @@ class GenderOptionCard extends StatelessWidget {
   }
 }
 
-/// Kartu pilihan kepribadian; [compact] untuk grid dua kolom.
+/// Kartu pilihan kepribadian dengan garis aksen kiri 3px saat aktif.
 class PersonalityOptionCard extends ConsumerWidget {
   const PersonalityOptionCard({
     super.key,
@@ -170,76 +171,84 @@ class PersonalityOptionCard extends ConsumerWidget {
       selected: selected,
       label: data.label,
       child: Material(
-        color: Colors.transparent,
-        borderRadius: radius,
-        clipBehavior: Clip.antiAlias,
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            color: selected
-                ? scheme.primaryContainer.withValues(alpha: 0.55)
-                : scheme.surface,
-            border: Border.all(
-              color: selected ? scheme.primary : scheme.outlineVariant,
-              width: selected ? 1.5 : 1,
-            ),
+        color: selected ? scheme.surfaceContainerLow : scheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: radius,
+          side: BorderSide(
+            color: selected ? scheme.primary : scheme.outlineVariant,
+            width: selected ? 1.5 : 1,
           ),
-          child: InkWell(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              onTap();
-            },
-            child: Padding(
-              padding: EdgeInsets.all(compact ? AppSizes.spaceSm : AppSizes.spaceMd),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: scheme.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusBadge),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AnimatedContainer(
+                  duration: AppDurations.durationFast,
+                  width: 3,
+                  color: selected ? scheme.primary : Colors.transparent,
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.all(
+                      compact ? AppSizes.spaceSm : AppSizes.spaceMd,
                     ),
-                    child: Text(data.emoji, style: const TextStyle(fontSize: 22)),
-                  ),
-                  const SizedBox(width: AppSizes.spaceSm),
-                  Expanded(
-                    child: Column(
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          data.label,
-                          style: AppTextStyles.settingsLabel(
-                            color: selected
-                                ? AppColors.primaryDeepFor(context)
-                                : scheme.onSurface,
+                        Container(
+                          width: 38,
+                          height: 38,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: scheme.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusSm,
+                            ),
+                            border: Border.all(color: scheme.outlineVariant),
+                          ),
+                          child: Text(
+                            data.emoji,
+                            style: const TextStyle(fontSize: 20),
                           ),
                         ),
-                        const SizedBox(height: AppSizes.spaceXxs - 2),
-                        Text(
-                          data.description,
-                          style: AppTextStyles.bodySmall(
-                            color: scheme.onSurfaceVariant,
+                        const SizedBox(width: AppSizes.spaceSm),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                data.label,
+                                style: AppTextStyles.headingSmall(
+                                  context,
+                                  color: selected
+                                      ? AppColors.primaryDeepFor(context)
+                                      : scheme.onSurface,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                data.description,
+                                style: AppTextStyles.bodySmall(
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                                maxLines: compact ? 2 : 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
-                          maxLines: compact ? 2 : 3,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
                   ),
-                  if (selected)
-                    Padding(
-                      padding: const EdgeInsets.only(left: AppSizes.spaceXxs),
-                      child: Icon(
-                        Icons.check_circle_rounded,
-                        size: 18,
-                        color: scheme.primary,
-                      ),
-                    ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -248,7 +257,7 @@ class PersonalityOptionCard extends ConsumerWidget {
   }
 }
 
-/// Chip hobi yang bisa dipilih; target sentuh minimal [AppSizes.touchTarget].
+/// Chip hobi editorial (`radiusSm` 8); fill terbalik saat terpilih.
 class HobbyChip extends StatelessWidget {
   const HobbyChip({
     super.key,
@@ -264,13 +273,14 @@ class HobbyChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final radius = BorderRadius.circular(AppSizes.radiusSm);
     return Semantics(
       button: true,
       selected: isSelected,
       label: label,
       child: Material(
         color: Colors.transparent,
-        shape: const StadiumBorder(),
+        shape: RoundedRectangleBorder(borderRadius: radius),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () {
@@ -285,22 +295,26 @@ class HobbyChip extends StatelessWidget {
               horizontal: AppSizes.spaceMd,
               vertical: 6,
             ),
-            alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: isSelected ? scheme.primaryContainer : scheme.surface,
-              borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+              color: isSelected ? scheme.primary : scheme.surface,
+              borderRadius: radius,
               border: Border.all(
                 color: isSelected ? scheme.primary : scheme.outlineVariant,
-                width: 1.5,
+                width: 1,
               ),
             ),
-            child: Text(
-              label,
-              style: AppTextStyles.settingsLabel(
-                color: isSelected
-                    ? AppColors.primaryDeepFor(context)
-                    : scheme.onSurfaceVariant,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: AppTextStyles.titleSmall(
+                    color: isSelected
+                        ? scheme.onPrimary
+                        : scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ),
         ),

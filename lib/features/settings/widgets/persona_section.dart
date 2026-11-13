@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/components/app_sheet.dart';
 import '../../../core/design/components/confirm_dialog.dart';
-import '../../../core/design/tokens/app_effects.dart';
 import '../../../core/design/tokens/app_sizes.dart';
 import '../../../core/design/tokens/text_styles.dart';
 import '../../../core/l10n/app_strings.dart';
@@ -43,7 +42,6 @@ class PersonaSection extends ConsumerWidget {
     if (!confirmed || !context.mounted) return;
     HapticFeedback.heavyImpact();
 
-    // Hentikan generasi yang sedang berjalan sebelum data dihapus.
     await ref.read(chatProvider.notifier).cancelGeneration();
     if (!context.mounted) return;
 
@@ -53,7 +51,6 @@ class PersonaSection extends ConsumerWidget {
     ref.invalidate(moodProvider);
     ref.invalidate(personaProvider);
 
-    // Nama persona lama harus hilang dari jadwal notifikasi.
     try {
       await ref
           .read(notificationProvider.notifier)
@@ -61,7 +58,6 @@ class PersonaSection extends ConsumerWidget {
     } catch (_) {
       // Notifikasi opsional: abaikan kegagalan sinkronisasi.
     }
-    // Router guard akan redirect ke /persona-setup otomatis.
   }
 
   @override
@@ -73,12 +69,10 @@ class PersonaSection extends ConsumerWidget {
 
     return SettingsSection(
       title: strings.settingsPersona,
-      icon: Icons.favorite_rounded,
+      icon: Icons.favorite_outline_rounded,
       children: [
         Container(
-          decoration: BoxDecoration(
-            gradient: AppGradients.profileHeader(context),
-          ),
+          color: scheme.surfaceContainerLow,
           padding: const EdgeInsets.all(AppSizes.spaceMd),
           child: Row(
             children: [
@@ -92,7 +86,10 @@ class PersonaSection extends ConsumerWidget {
                       persona?.name.isNotEmpty == true
                           ? persona!.name
                           : strings.personaCreateTitle,
-                      style: AppTextStyles.headingLarge(color: scheme.onSurface),
+                      style: AppTextStyles.headingLarge(
+                        context,
+                        color: scheme.onSurface,
+                      ),
                     ),
                     if (persona != null) ...[
                       const SizedBox(height: AppSizes.spaceXxs),
@@ -111,7 +108,7 @@ class PersonaSection extends ConsumerWidget {
                         }),
                         style: AppTextStyles.bodySmall(
                           color: scheme.onSurfaceVariant,
-                        ).copyWith(fontStyle: FontStyle.italic),
+                        ),
                       ),
                     ],
                   ],
@@ -121,7 +118,7 @@ class PersonaSection extends ConsumerWidget {
           ),
         ),
         SettingsRow(
-          icon: Icons.edit_rounded,
+          icon: Icons.edit_outlined,
           title: strings.settingsEditPersona,
           showChevron: true,
           onTap: () => _showEditSheet(context),

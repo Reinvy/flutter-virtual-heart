@@ -2,7 +2,7 @@
 
 | File | Sumber | Lisensi |
 |---|---|---|
-| `sakura.svg` | Digambar tangan untuk VirtualHeart (path SVG original, stroke `currentColor`) | MIT (milik proyek) |
+| `resonance.svg` | Digambar tangan untuk VirtualHeart (marka orbital dual-ring, stroke `currentColor`) | MIT (milik proyek) |
 
-Semua ikon sakura memakai `stroke="currentColor"` agar mengikuti warna tema
+Semua ikon memakai `stroke="currentColor"` agar mengikuti warna tema
 (`SvgPicture` diwarnai via `colorFilter`).

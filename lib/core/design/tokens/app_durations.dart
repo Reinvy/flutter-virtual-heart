@@ -19,8 +19,8 @@ abstract final class AppDurations {
   /// Elemen hero, onboarding.
   static const Duration durationSlow = Duration(milliseconds: 420);
 
-  /// Siklus napas BloomMark.
-  static const Duration durationBreath = Duration(milliseconds: 2600);
+  /// Siklus rotasi halus ResonanceMark.
+  static const Duration durationOrbital = Duration(milliseconds: 3200);
 
   /// Jeda antar item pada animasi berurutan.
   static const Duration stagger = Duration(milliseconds: 60);
@@ -28,7 +28,7 @@ abstract final class AppDurations {
   /// Kurva standar untuk sebagian besar animasi.
   static const Curve curveStandard = Curves.easeOutCubic;
 
-  /// Kurva emotive — napas, transisi lembut dua arah.
+  /// Kurva emotive — transisi lembut dua arah.
   static const Curve curveEmotive = Curves.easeInOutCubic;
 
   /// Kurva pegas untuk state pop (badge, check).

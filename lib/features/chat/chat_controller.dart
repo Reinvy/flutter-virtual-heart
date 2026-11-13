@@ -19,6 +19,8 @@ import 'package:virtual_heart/services/settings/settings_service.dart';
 import 'chat_models.dart';
 import 'mood_provider.dart';
 
+export '../../core/design/active_shell_tab_provider.dart';
+
 class ChatNotifier extends Notifier<ChatState> {
   /// Generasi yang sedang berjalan (ditunggu oleh [cancelGeneration]).
   Future<void>? _inFlight;
@@ -416,3 +418,21 @@ class ChatNotifier extends Notifier<ChatState> {
 }
 
 final chatProvider = NotifierProvider<ChatNotifier, ChatState>(ChatNotifier.new);
+
+class PendingChatDraftNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void setDraft(String? draft) => state = draft;
+
+  String? consume() {
+    final current = state;
+    if (current != null) state = null;
+    return current;
+  }
+}
+
+final pendingChatDraftProvider =
+    NotifierProvider<PendingChatDraftNotifier, String?>(
+      PendingChatDraftNotifier.new,
+    );

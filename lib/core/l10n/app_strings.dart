@@ -13,6 +13,12 @@ abstract class AppStrings {
   // ── Umum ────────────────────────────────────────────────────────────────
   String get appName;
   String get appTagline;
+
+  // ── Navigasi Shell ──────────────────────────────────────────────────────
+  String get navHub;
+  String get navChat;
+  String get navMemory;
+  String get navSettings;
   String get commonCancel;
 
   // ── Age Gate (FR-01) ────────────────────────────────────────────────────
@@ -35,6 +41,7 @@ abstract class AppStrings {
   String get onboardingSkip;
   String get onboardingNext;
   String get onboardingGetStarted;
+  String onboardingStep(int current, int total);
 
   // ── Persona (FR-03) ─────────────────────────────────────────────────────
   String get personaCreateTitle;
@@ -170,6 +177,16 @@ abstract class AppStrings {
   String get settingsThemeLight;
   String get settingsThemeDark;
   String get settingsThemeSystem;
+  String get settingsBrightnessMode;
+  String get settingsThemeStyle;
+  String get settingsThemeEditorial;
+  String get settingsThemeEditorialDesc;
+  String get settingsThemeRomantic;
+  String get settingsThemeRomanticDesc;
+  String get settingsThemeClassic;
+  String get settingsThemeClassicDesc;
+  String get settingsThemeBotanical;
+  String get settingsThemeBotanicalDesc;
   String get settingsAiLanguageDesc;
   String get settingsLanguageIndonesian;
   String get settingsLanguageEnglish;
@@ -264,6 +281,21 @@ abstract class AppStrings {
   // ── Umum (lanjutan) ─────────────────────────────────────────────────────
   String get commonClose;
 
+
+  // ── Companion Hub ───────────────────────────────────────────────────────
+  String get hubSectionStatus;
+  String get hubOpenChat;
+  String get hubViewProfile;
+  String get hubStartersTitle;
+  String get hubStarter1;
+  String get hubStarter2;
+  String get hubStarter3;
+  String get hubMemorySnapshot;
+  String hubMemoryCount(int count);
+  String get hubMemoryEmpty;
+  String get hubViewAll;
+  String get hubEngineTitle;
+  String get hubEngineReady;
   // ── Isi notifikasi (FR-15) ──────────────────────────────────────────────
   List<String> get morningMessages;
   List<String> get checkinMessages;
@@ -276,9 +308,18 @@ class IndonesianStrings extends AppStrings {
   @override
   String get appName => 'VirtualHeart';
   @override
-  String get appTagline => 'a sakura romance';
+  String get appTagline => 'intim · privat · milikmu';
   @override
   String get commonCancel => 'Batal';
+
+  @override
+  String get navHub => 'Beranda';
+  @override
+  String get navChat => 'Obrolan';
+  @override
+  String get navMemory => 'Memori';
+  @override
+  String get navSettings => 'Setelan';
 
   @override
   String get ageGateTitle => 'Verifikasi Usia';
@@ -327,6 +368,10 @@ class IndonesianStrings extends AppStrings {
   String get onboardingNext => 'Lanjut';
   @override
   String get onboardingGetStarted => 'Mulai';
+
+  @override
+  String onboardingStep(int current, int total) =>
+      '${current.toString().padLeft(2, '0')} / ${total.toString().padLeft(2, '0')}';
 
   @override
   String get personaCreateTitle => 'Buat Persona';
@@ -607,6 +652,26 @@ class IndonesianStrings extends AppStrings {
   @override
   String get settingsThemeSystem => 'Sistem';
   @override
+  String get settingsBrightnessMode => 'Mode Kecerahan';
+  @override
+  String get settingsThemeStyle => 'Gaya Tema';
+  @override
+  String get settingsThemeEditorial => 'Editorial';
+  @override
+  String get settingsThemeEditorialDesc => 'Gading & obsidian';
+  @override
+  String get settingsThemeRomantic => 'Romantis';
+  @override
+  String get settingsThemeRomanticDesc => 'Sutra & garnet';
+  @override
+  String get settingsThemeClassic => 'Klasik';
+  @override
+  String get settingsThemeClassicDesc => 'Perkamen & oxford';
+  @override
+  String get settingsThemeBotanical => 'Botanis';
+  @override
+  String get settingsThemeBotanicalDesc => 'Kapur & pinus';
+  @override
   String get settingsAiLanguageDesc => 'Bahasa yang digunakan AI saat menjawab';
   @override
   String get settingsLanguageIndonesian => 'Indonesia';
@@ -802,6 +867,36 @@ class IndonesianStrings extends AppStrings {
   String get commonClose => 'Tutup';
 
   @override
+  String get hubSectionStatus => 'STATUS PENDAMPING';
+  @override
+  String get hubOpenChat => 'Buka Obrolan';
+  @override
+  String get hubViewProfile => 'Lihat Profil';
+  @override
+  String get hubStartersTitle => 'MULAI PERCAKAPAN';
+  @override
+  String get hubStarter1 =>
+      'Ceritakan harimu hari ini, apakah ada hal kecil yang menyenangkan?';
+  @override
+  String get hubStarter2 =>
+      'Apa satu hal tentang diriku yang paling ingin kamu ingat?';
+  @override
+  String get hubStarter3 =>
+      'Beri aku satu pertanyaan refleksi malam yang tenang.';
+  @override
+  String get hubMemorySnapshot => 'MEMORI TERKINI';
+  @override
+  String hubMemoryCount(int count) => '$count kenangan tersimpan';
+  @override
+  String get hubMemoryEmpty => 'Belum ada kenangan yang terekam.';
+  @override
+  String get hubViewAll => 'Lihat Semua';
+  @override
+  String get hubEngineTitle => 'MESIN LOKAL';
+  @override
+  String get hubEngineReady => 'Siap di perangkat';
+
+  @override
   List<String> get morningMessages => const [
     'Selamat pagi, Sayang 🌸 Aku bermimpi tentangmu.',
     'Selamat pagi! Hari ini akan indah karena ada kamu 💖',
@@ -827,9 +922,18 @@ class EnglishStrings extends AppStrings {
   @override
   String get appName => 'VirtualHeart';
   @override
-  String get appTagline => 'a sakura romance';
+  String get appTagline => 'intimate · private · yours';
   @override
   String get commonCancel => 'Cancel';
+
+  @override
+  String get navHub => 'Hub';
+  @override
+  String get navChat => 'Chat';
+  @override
+  String get navMemory => 'Memory';
+  @override
+  String get navSettings => 'Settings';
 
   @override
   String get ageGateTitle => 'Age Verification';
@@ -879,6 +983,10 @@ class EnglishStrings extends AppStrings {
   String get onboardingNext => 'Next';
   @override
   String get onboardingGetStarted => 'Get Started';
+
+  @override
+  String onboardingStep(int current, int total) =>
+      '${current.toString().padLeft(2, '0')} / ${total.toString().padLeft(2, '0')}';
 
   @override
   String get personaCreateTitle => 'Create Persona';
@@ -1158,6 +1266,26 @@ class EnglishStrings extends AppStrings {
   @override
   String get settingsThemeSystem => 'System';
   @override
+  String get settingsBrightnessMode => 'Brightness Mode';
+  @override
+  String get settingsThemeStyle => 'Theme Style';
+  @override
+  String get settingsThemeEditorial => 'Editorial';
+  @override
+  String get settingsThemeEditorialDesc => 'Ivory & obsidian';
+  @override
+  String get settingsThemeRomantic => 'Romantic';
+  @override
+  String get settingsThemeRomanticDesc => 'Silk & garnet';
+  @override
+  String get settingsThemeClassic => 'Classic';
+  @override
+  String get settingsThemeClassicDesc => 'Parchment & oxford';
+  @override
+  String get settingsThemeBotanical => 'Botanical';
+  @override
+  String get settingsThemeBotanicalDesc => 'Limestone & pine';
+  @override
   String get settingsAiLanguageDesc => 'Language used by AI when replying';
   @override
   String get settingsLanguageIndonesian => 'Indonesian';
@@ -1352,6 +1480,35 @@ class EnglishStrings extends AppStrings {
 
   @override
   String get commonClose => 'Close';
+
+  @override
+  String get hubSectionStatus => 'COMPANION STATUS';
+  @override
+  String get hubOpenChat => 'Open Chat';
+  @override
+  String get hubViewProfile => 'View Profile';
+  @override
+  String get hubStartersTitle => 'CONVERSATION STARTERS';
+  @override
+  String get hubStarter1 =>
+      'Tell me about your day—was there a small moment you enjoyed?';
+  @override
+  String get hubStarter2 =>
+      'What is one thing about me you want to make sure you remember?';
+  @override
+  String get hubStarter3 => 'Give me one calm reflection question for tonight.';
+  @override
+  String get hubMemorySnapshot => 'RECENT MEMORY';
+  @override
+  String hubMemoryCount(int count) => '$count saved memories';
+  @override
+  String get hubMemoryEmpty => 'No memories recorded yet.';
+  @override
+  String get hubViewAll => 'View All';
+  @override
+  String get hubEngineTitle => 'ON-DEVICE ENGINE';
+  @override
+  String get hubEngineReady => 'Ready on device';
 
   @override
   List<String> get morningMessages => const [

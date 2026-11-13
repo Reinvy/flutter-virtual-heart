@@ -1,7 +1,7 @@
 // Komponen shared — shell layar (docs/DESIGN.md §3.0)
 //
-// Semua layar memakai `AppScaffold`: latar dekoratif di belakang Scaffold
-// transparan sehingga gradien senja terlihat di seluruh aplikasi.
+// Semua layar memakai `AppScaffold`: latar kanvas di belakang Scaffold
+// transparan sehingga tema aktif terlihat konsisten.
 import 'package:material_ui/material_ui.dart';
 
 import '../tokens/app_sizes.dart';
@@ -12,12 +12,14 @@ class AppScaffold extends StatelessWidget {
     super.key,
     this.appBar,
     required this.body,
+    this.bottomNavigationBar,
     this.safeArea = true,
     this.resizeToAvoidBottomInset = true,
   });
 
   final PreferredSizeWidget? appBar;
   final Widget body;
+  final Widget? bottomNavigationBar;
   final bool safeArea;
   final bool resizeToAvoidBottomInset;
 
@@ -30,9 +32,14 @@ class AppScaffold extends StatelessWidget {
         Scaffold(
           backgroundColor: Colors.transparent,
           appBar: appBar,
+          bottomNavigationBar: bottomNavigationBar,
           resizeToAvoidBottomInset: resizeToAvoidBottomInset,
           body: safeArea
-              ? SafeArea(top: appBar == null, bottom: true, child: body)
+              ? SafeArea(
+                  top: appBar == null,
+                  bottom: bottomNavigationBar == null,
+                  child: body,
+                )
               : body,
         ),
       ],

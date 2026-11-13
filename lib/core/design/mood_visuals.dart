@@ -5,7 +5,7 @@ import '../l10n/app_strings.dart';
 import '../../models/mood_state.dart';
 import 'tokens/app_colors.dart';
 
-/// Emoji yang dipakai indikator mood di AppBar chat & profil persona.
+/// Emoji yang dipakai indikator mood di AppBar chat, Hub & profil persona.
 String moodEmoji(MoodType mood) => switch (mood) {
   MoodType.happy => '😊',
   MoodType.longing => '🥺',
@@ -23,11 +23,11 @@ String moodLabel(AppStrings strings, MoodType mood) => switch (mood) {
   MoodType.excited => strings.moodExcited,
 };
 
-/// Warna mood brightness-aware (aman untuk teks kecil di light & dark).
+/// Warna mood brightness- & theme-aware (aman untuk teks kecil di light & dark).
 Color moodColor(BuildContext context, MoodType mood) => switch (mood) {
   MoodType.happy => Theme.of(context).colorScheme.primary,
   MoodType.longing => AppColors.secondaryFor(context),
   MoodType.playful => AppColors.accentDeepFor(context),
   MoodType.sad => AppColors.secondaryFor(context),
-  MoodType.excited => AppColors.primaryDeepFor(context),
+  MoodType.excited => AppColors.goldTextFor(context),
 };

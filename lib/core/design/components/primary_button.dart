@@ -1,15 +1,14 @@
 // Komponen shared — PrimaryButton (docs/DESIGN.md §3.1)
 //
-// Gradien aksi + glow, radius pill, tinggi 52, label button. State disabled
-// memakai fill netral dan foreground redup; state loading mempertahankan
-// gradien dengan spinner.
+// Fill solid `scheme.primary`, radiusControl (12), tinggi minimal 50,
+// tanpa gradien atau shadow. State disabled memakai fill netral redup;
+// state loading mempertahankan fill aktif dengan spinner.
 import 'package:material_ui/material_ui.dart';
 
-import '../tokens/app_effects.dart';
 import '../tokens/app_sizes.dart';
 import '../tokens/text_styles.dart';
 
-/// Tombol aksi utama: gradien rose, pill, tinggi minimal 52.
+/// Tombol aksi utama: solid editorial, tinggi minimal 50.
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     super.key,
@@ -33,7 +32,7 @@ class PrimaryButton extends StatelessWidget {
     final foreground = active
         ? scheme.onPrimary
         : scheme.onSurface.withValues(alpha: 0.38);
-    final radius = BorderRadius.circular(AppSizes.radiusFull);
+    final radius = BorderRadius.circular(AppSizes.radiusControl);
 
     Widget labelText = Text(
       label,
@@ -68,38 +67,25 @@ class PrimaryButton extends StatelessWidget {
     final button = Semantics(
       button: true,
       enabled: onPressed != null && !loading,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
+      child: Material(
+        color: active
+            ? scheme.primary
+            : scheme.onSurface.withValues(alpha: 0.08),
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
           borderRadius: radius,
-          boxShadow: active
-              ? AppShadows.glow(context, scheme.primary)
-              : const [],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: radius,
-          clipBehavior: Clip.antiAlias,
-          child: Ink(
-            decoration: BoxDecoration(
-              borderRadius: radius,
-              gradient: active ? AppGradients.primaryAction(context) : null,
-              color: active ? null : scheme.onSurface.withValues(alpha: 0.08),
+          onTap: loading ? null : onPressed,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minHeight: AppSizes.controlHeight,
             ),
-            child: InkWell(
-              borderRadius: radius,
-              onTap: loading ? null : onPressed,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  minHeight: AppSizes.controlHeight,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: AppSizes.spaceSm,
-                  ),
-                  child: Center(widthFactor: 1, child: content),
-                ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: AppSizes.spaceSm,
               ),
+              child: Center(widthFactor: 1, child: content),
             ),
           ),
         ),

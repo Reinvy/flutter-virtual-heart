@@ -1,4 +1,4 @@
-// Fitur Chat (FR-09) — indikator mood di app bar (docs/DESIGN.md §3.4).
+// Fitur Chat (FR-09) — indikator mood minimalis hairline (docs/DESIGN.md §3.4).
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,7 +8,7 @@ import '../../../core/design/tokens/text_styles.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../mood_provider.dart';
 
-/// Subtitle AppBar chat: pill berisi emoji + label mood persona.
+/// Pill hairline berisi emoji + label mood persona.
 class MoodIndicator extends ConsumerWidget {
   const MoodIndicator({super.key});
 
@@ -21,11 +21,12 @@ class MoodIndicator extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSizes.spaceXs,
-        vertical: 3,
+        vertical: 2,
       ),
       decoration: BoxDecoration(
-        color: scheme.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppSizes.radiusBadge),
+        border: Border.all(color: scheme.outlineVariant, width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

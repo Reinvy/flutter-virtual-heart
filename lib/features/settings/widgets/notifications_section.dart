@@ -182,18 +182,19 @@ class _ValueChevron extends StatelessWidget {
       children: [
         Container(
           padding: const EdgeInsets.symmetric(
-            horizontal: 10,
+            horizontal: 8,
             vertical: AppSizes.spaceXxs,
           ),
           decoration: BoxDecoration(
-            color: scheme.primaryContainer,
-            borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+            color: scheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(AppSizes.radiusBadge),
+            border: Border.all(color: scheme.outlineVariant),
           ),
           child: Text(
             value,
-            style: AppTextStyles.settingsLabel(
+            style: AppTextStyles.caption(
               color: AppColors.primaryDeepFor(context),
-            ),
+            ).copyWith(fontWeight: FontWeight.w600),
           ),
         ),
         const SizedBox(width: AppSizes.spaceXs),

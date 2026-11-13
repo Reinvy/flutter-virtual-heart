@@ -1,22 +1,18 @@
-// Fitur Chat (FR-05..FR-10) — layar utama chat.
+// Fitur Chat (FR-05..FR-10) — layar percakapan editorial.
 import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/design/components/app_icon_button.dart';
 import '../../core/design/components/app_scaffold.dart';
 import '../../core/design/components/app_sheet.dart';
-import '../../core/design/components/bloom_mark.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
-import '../../core/router/app_router.dart';
 import '../../models/app_settings.dart';
 import '../../models/message.dart';
 import '../../models/mood_state.dart';
@@ -51,17 +47,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   int _speakingMessageId = -1;
   bool _isListening = false;
-  // Teks input tepat setelah dikte; dipakai untuk menandai pesan berikutnya
-  // sebagai pesan suara (FR-06) — batal bila pengguna mengedit teksnya.
   String? _voiceDraft;
-  bool _sparkleShown = false;
-  bool _showSparkle = false;
   bool _didInitialScroll = false;
 
   @override
   void initState() {
     super.initState();
     _inputTextController.addListener(_onInputChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _consumePendingDraft();
+    });
   }
 
   @override
@@ -74,6 +70,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     super.dispose();
   }
 
+  void _consumePendingDraft() {
+    final draft = ref.read(pendingChatDraftProvider.notifier).consume();
+    if (draft == null || draft.isEmpty) return;
+    _inputTextController.value = TextEditingValue(
+      text: draft,
+      selection: TextSelection.collapsed(offset: draft.length),
+    );
+  }
+
   /// Dikte dianggap pesan suara hanya selama teksnya tidak diubah pengguna.
   void _onInputChanged() {
     final draft = _voiceDraft;
@@ -81,8 +86,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (_inputTextController.text != draft) _voiceDraft = null;
   }
 
-  /// Menggulir ke pesan terbaru hanya bila pengguna memang sedang di bawah
-  /// (agar membaca riwayat tidak terlempar tiap token).
   void _scrollToBottom({bool animate = true}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
@@ -100,7 +103,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
   }
 
-  /// Lompat ke pesan terbaru sekali saat riwayat pertama kali dimuat.
   void _scrollToLatestOnOpen() {
     if (_didInitialScroll) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -118,6 +120,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final currentMood = ref.watch(moodProvider).current;
     final settings = ref.watch(appSettingsProvider);
 
+    ref.listen(pendingChatDraftProvider, (prev, next) {
+      if (next != null && next.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _consumePendingDraft();
+        });
+      }
+    });
+
+    ref.listen(activeShellTabProvider, (prev, next) {
+      if (prev == 1 && next != 1) {
+        _ttsService.stop();
+        _sttService.cancel();
+        if (mounted) {
+          setState(() {
+            _isListening = false;
+            _speakingMessageId = -1;
+          });
+        }
+      }
+    });
+
     ref.listen(chatProvider, (prev, next) {
       if (prev?.messages.length != next.messages.length) {
         _scrollToBottom();
@@ -130,20 +153,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           next.messages.isNotEmpty) {
         final last = next.messages.last;
         if (last.role == MessageRole.assistant) {
-          if (!_sparkleShown) {
-            setState(() {
-              _sparkleShown = true;
-              _showSparkle = true;
-            });
-            Future.delayed(const Duration(milliseconds: 1800), () {
-              if (mounted) setState(() => _showSparkle = false);
-            });
-          }
-          final settings = ref.read(appSettingsProvider);
+          final currentSettings = ref.read(appSettingsProvider);
           if (mounted &&
+              ref.read(activeShellTabProvider) == 1 &&
               (ModalRoute.of(context)?.isCurrent ?? false) &&
-              settings.ttsEnabled &&
-              settings.ttsAutoPlay) {
+              currentSettings.ttsEnabled &&
+              currentSettings.ttsAutoPlay) {
             _speakMessage(last, persona);
           }
         }
@@ -155,59 +170,49 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return AppScaffold(
       safeArea: false,
       appBar: _buildAppBar(strings, persona, currentMood),
-      body: Stack(
+      body: Column(
         children: [
-          Column(
-            children: [
-              Expanded(
-                child: _buildMessageList(
-                  strings,
-                  chatState.messages,
-                  chatState.isTyping,
-                  chatState.streamingBuffer,
-                  persona,
-                  settings.ttsEnabled,
-                ),
-              ),
-              if (chatState.error != null)
-                _ChatErrorBanner(
-                  message: _chatErrorText(strings, chatState.error!.kind),
-                  retryLabel: chatState.error!.canRetry
-                      ? strings.chatRetry
-                      : null,
-                  dismissLabel: strings.chatDismiss,
-                  onRetry: () =>
-                      ref.read(chatProvider.notifier).retryLastResponse(),
-                  onDismiss: () => ref.read(chatProvider.notifier).clearError(),
-                ),
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 720),
-                  child: InputBar(
-                    enabled: !chatState.isTyping,
-                    isTyping: chatState.isTyping,
-                    isListening: _isListening,
-                    controller: _inputTextController,
-                    onMicTap: _handleMicTap,
-                    onStop: () =>
-                        ref.read(chatProvider.notifier).cancelGeneration(),
-                    onSend: (text) {
-                      HapticFeedback.lightImpact();
-                      final isVoice = _voiceDraft != null;
-                      _voiceDraft = null;
-                      ref
-                          .read(chatProvider.notifier)
-                          .sendMessage(text, isVoice: isVoice);
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (_showSparkle)
-            const IgnorePointer(
-              child: SizedBox.expand(child: _SparkleOverlay()),
+          Expanded(
+            child: _buildMessageList(
+              strings,
+              chatState.messages,
+              chatState.isTyping,
+              chatState.streamingBuffer,
+              persona,
+              settings.ttsEnabled,
             ),
+          ),
+          if (chatState.error != null)
+            _ChatErrorBanner(
+              message: _chatErrorText(strings, chatState.error!.kind),
+              retryLabel: chatState.error!.canRetry ? strings.chatRetry : null,
+              dismissLabel: strings.chatDismiss,
+              onRetry: () =>
+                  ref.read(chatProvider.notifier).retryLastResponse(),
+              onDismiss: () => ref.read(chatProvider.notifier).clearError(),
+            ),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: InputBar(
+                enabled: !chatState.isTyping,
+                isTyping: chatState.isTyping,
+                isListening: _isListening,
+                controller: _inputTextController,
+                onMicTap: _handleMicTap,
+                onStop: () =>
+                    ref.read(chatProvider.notifier).cancelGeneration(),
+                onSend: (text) {
+                  HapticFeedback.lightImpact();
+                  final isVoice = _voiceDraft != null;
+                  _voiceDraft = null;
+                  ref
+                      .read(chatProvider.notifier)
+                      .sendMessage(text, isVoice: isVoice);
+                },
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -228,11 +233,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   ) {
     final scheme = Theme.of(context).colorScheme;
     return AppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: scheme.surface,
       elevation: 0,
       titleSpacing: 0,
-      leadingWidth: 68,
-      toolbarHeight: 68,
+      leadingWidth: 64,
+      toolbarHeight: 64,
       automaticallyImplyLeading: false,
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
@@ -249,9 +254,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           onTap: () => _openPersonaProfile(persona),
           child: Center(
             child: personaAvatar(
+              context,
               name: persona?.name,
               avatarId: persona?.avatarId,
-              size: AppSizes.avatarNav,
+              size: 40,
             ),
           ),
         ),
@@ -266,25 +272,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               persona?.name ?? strings.appName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.personaName(color: scheme.onSurface),
+              style: AppTextStyles.personaName(
+                context,
+                color: scheme.onSurface,
+              ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
             const MoodIndicator(),
           ],
         ),
       ),
       actions: [
         AppIconButton(
-          icon: Icons.bookmark_outline_rounded,
-          tooltip: strings.memoryTitle,
-          onPressed: () => _leaveChat(AppRoutes.memory),
+          icon: Icons.person_outline_rounded,
+          tooltip: strings.chatOpenProfile,
+          onPressed: () => _openPersonaProfile(persona),
         ),
-        AppIconButton(
-          icon: Icons.settings_outlined,
-          tooltip: strings.settingsTitle,
-          onPressed: () => _leaveChat(AppRoutes.settings),
-        ),
-        const SizedBox(width: AppSizes.spaceXxs),
+        const SizedBox(width: AppSizes.spaceXs),
       ],
     );
   }
@@ -295,14 +299,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (edit == true && mounted) {
       await showAppSheet<void>(context, child: const PersonaEditSheet());
     }
-  }
-
-  /// Meninggalkan chat: hentikan audio yang sedang berjalan lebih dulu.
-  Future<void> _leaveChat(String route) async {
-    await _ttsService.stop();
-    await _sttService.cancel();
-    if (mounted) setState(() => _isListening = false);
-    if (mounted) await context.push(route);
   }
 
   Future<void> _speakMessage(Message message, PersonaConfig? persona) async {
@@ -316,7 +312,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return;
     }
 
-    // Pastikan backend suara siap; jika gagal tampilkan pesan hangat.
     final ready = await _ttsService.ensureReady(
       backend: settings.ttsBackend,
       model: settings.ttsModel,
@@ -363,13 +358,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       setState(() => _isListening = false);
       if (transcript.trim().isNotEmpty) {
         HapticFeedback.lightImpact();
-        // Masukkan transkrip ke posisi kursor (bisa diedit) — FR-06.
         _insertTranscript(transcript.trim());
       }
       return;
     }
 
-    // Hentikan TTS lebih dulu: mikrofon tidak boleh merekam suara AI.
     await _ttsService.stop();
     if (!mounted) return;
     setState(() => _speakingMessageId = -1);
@@ -399,7 +392,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
-  /// Menyisipkan transkrip pada posisi seleksi tanpa menimpa teks yang ada.
   void _insertTranscript(String transcript) {
     final value = _inputTextController.value;
     final text = value.text;
@@ -427,7 +419,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  /// Kode bahasa untuk TTS/STT mengikuti bahasa AI yang dipilih pengguna.
   static String _speechLanguageCode(AppLanguage language) =>
       language == AppLanguage.english ? 'en-US' : 'id-ID';
 
@@ -458,35 +449,35 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceSm),
             itemCount: itemCount,
             itemBuilder: (ctx, i) {
-          if (i == messages.length) {
-            if (streamingBuffer.isNotEmpty) {
-              final streamingMsg = Message(
-                role: MessageRole.assistant,
-                content: streamingBuffer,
-                timestamp: DateTime.now(),
-              );
-              return ChatBubble(
-                key: const ValueKey('streaming'),
-                message: streamingMsg,
-                persona: persona,
-                isStreaming: true,
-              );
-            }
-            return TypingIndicator(persona: persona);
-          }
+              if (i == messages.length) {
+                if (streamingBuffer.isNotEmpty) {
+                  final streamingMsg = Message(
+                    role: MessageRole.assistant,
+                    content: streamingBuffer,
+                    timestamp: DateTime.now(),
+                  );
+                  return ChatBubble(
+                    key: const ValueKey('streaming'),
+                    message: streamingMsg,
+                    persona: persona,
+                    isStreaming: true,
+                  );
+                }
+                return TypingIndicator(persona: persona);
+              }
 
-          return ChatBubble(
-            key: ValueKey(messages[i].id),
-            message: messages[i],
-            persona: persona,
-            speakerLabel: _speakingMessageId == messages[i].id
-                ? strings.chatStopSpeaking
-                : strings.chatSpeak,
-            onSpeak: ttsEnabled && messages[i].role == MessageRole.assistant
-                ? () => _speakMessage(messages[i], persona)
-                : null,
-            isSpeaking: _speakingMessageId == messages[i].id,
-          );
+              return ChatBubble(
+                key: ValueKey(messages[i].id),
+                message: messages[i],
+                persona: persona,
+                speakerLabel: _speakingMessageId == messages[i].id
+                    ? strings.chatStopSpeaking
+                    : strings.chatSpeak,
+                onSpeak: ttsEnabled && messages[i].role == MessageRole.assistant
+                    ? () => _speakMessage(messages[i], persona)
+                    : null,
+                isSpeaking: _speakingMessageId == messages[i].id,
+              );
             },
           ),
         ),
@@ -524,13 +515,13 @@ class _ChatErrorBanner extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(
         AppSizes.spaceSm,
         AppSizes.spaceXs,
-        0,
+        AppSizes.spaceXxs,
         AppSizes.spaceXs,
       ),
       decoration: BoxDecoration(
-        color: scheme.errorContainer.withValues(alpha: 0.65),
-        borderRadius: BorderRadius.circular(AppSizes.radiusControl),
-        border: Border.all(color: scheme.error.withValues(alpha: 0.25)),
+        color: scheme.errorContainer,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        border: Border.all(color: scheme.error, width: 1),
       ),
       child: Row(
         children: [
@@ -591,25 +582,19 @@ class _EmptyChat extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(
-                    width: 132,
-                    height: 132,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        const BloomMark(size: 132, animate: true),
-                        personaAvatar(
-                          name: personaName,
-                          avatarId: persona?.avatarId,
-                          size: 64,
-                        ),
-                      ],
-                    ),
+                  personaAvatar(
+                    context,
+                    name: personaName,
+                    avatarId: persona?.avatarId,
+                    size: 56,
                   ),
                   const SizedBox(height: AppSizes.spaceLg),
                   Text(
                     greeting,
-                    style: AppTextStyles.displaySmall(color: scheme.onSurface),
+                    style: AppTextStyles.displaySmall(
+                      context,
+                      color: scheme.onSurface,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 10),
@@ -621,29 +606,12 @@ class _EmptyChat extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppSizes.spaceLg),
-                  ExcludeSemantics(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 1,
-                          color: scheme.outlineVariant,
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Icon(
-                            Icons.favorite_rounded,
-                            size: 12,
-                            color: scheme.primary.withValues(alpha: 0.6),
-                          ),
-                        ),
-                        Container(
-                          width: 40,
-                          height: 1,
-                          color: scheme.outlineVariant,
-                        ),
-                      ],
+                  SizedBox(
+                    width: 64,
+                    child: Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: scheme.outlineVariant,
                     ),
                   ),
                 ],
@@ -651,80 +619,6 @@ class _EmptyChat extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _SparkleOverlay extends StatelessWidget {
-  const _SparkleOverlay();
-
-  static const List<List<double>> _configs = [
-    [0.10, 0.30, 10, 0],
-    [0.28, 0.38, 7, 80],
-    [0.50, 0.32, 12, 160],
-    [0.68, 0.42, 8, 40],
-    [0.82, 0.28, 9, 220],
-    [0.22, 0.48, 11, 120],
-    [0.73, 0.22, 7, 280],
-    [0.40, 0.52, 13, 60],
-    [0.60, 0.18, 8, 200],
-    [0.14, 0.20, 10, 340],
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    if (MediaQuery.disableAnimationsOf(context)) return const SizedBox.shrink();
-    final size = MediaQuery.of(context).size;
-    return Stack(
-      children: [
-        for (int i = 0; i < _configs.length; i++)
-          _SparkleParticle(index: i, screenSize: size),
-      ],
-    );
-  }
-}
-
-class _SparkleParticle extends StatelessWidget {
-  const _SparkleParticle({required this.index, required this.screenSize});
-
-  final int index;
-  final Size screenSize;
-
-  @override
-  Widget build(BuildContext context) {
-    final cfg = _SparkleOverlay._configs[index];
-    final scheme = Theme.of(context).colorScheme;
-    final color = index % 3 == 0
-        ? AppColors.goldFor(context)
-        : index % 3 == 1
-        ? scheme.primary
-        : AppColors.accentFor(context);
-
-    return Positioned(
-      left: screenSize.width * cfg[0],
-      bottom: screenSize.height * cfg[1],
-      child: IgnorePointer(
-        child: Icon(
-              index.isEven ? Icons.star_rounded : Icons.auto_awesome_rounded,
-              size: cfg[2],
-              color: color,
-            )
-            .animate(delay: Duration(milliseconds: cfg[3].toInt()))
-            .scale(
-              begin: const Offset(0.1, 0.1),
-              end: const Offset(1, 1),
-              duration: 350.ms,
-              curve: Curves.elasticOut,
-            )
-            .then()
-            .moveY(
-              begin: 0,
-              end: -60,
-              duration: 750.ms,
-              curve: Curves.easeOut,
-            )
-            .fadeOut(duration: 600.ms),
       ),
     );
   }

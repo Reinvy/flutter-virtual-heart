@@ -29,14 +29,12 @@ class _VirtualHeartAppState extends ConsumerState<VirtualHeartApp> {
   @override
   void initState() {
     super.initState();
-    // `ref` di initState adalah WidgetRef; observer menerimanya sebagai Ref.
     _lifecycleObserver = AppLifecycleObserver(ref);
     WidgetsBinding.instance.addObserver(_lifecycleObserver!);
 
     final notifications = NotificationService();
     _tapSubscription = notifications.taps.listen(_handleNotificationTap);
 
-    // Cold start dari notifikasi: router belum tentu siap di frame pertama.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _handleNotificationTap(notifications.takePendingTap());
     });
@@ -56,7 +54,8 @@ class _VirtualHeartAppState extends ConsumerState<VirtualHeartApp> {
     if (payload != kNotificationPayloadChat || !mounted) return;
 
     final settings = ref.read(appSettingsProvider);
-    final ready = settings.isAgeVerified &&
+    final ready =
+        settings.isAgeVerified &&
         settings.isOnboardingDone &&
         settings.isPersonaSetup &&
         ref.read(modelReadyProvider);
@@ -73,18 +72,21 @@ class _VirtualHeartAppState extends ConsumerState<VirtualHeartApp> {
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final themeStyle = ref.watch(themeStyleProvider);
     final language = ref.watch(appSettingsProvider).language;
 
     return MaterialApp.router(
       title: 'VirtualHeart',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
+      theme: AppTheme.lightFor(themeStyle),
+      darkTheme: AppTheme.darkFor(themeStyle),
       themeMode: themeMode,
       routerConfig: router,
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       supportedLocales: const [Locale('id'), Locale('en')],
-      locale: language == AppLanguage.english ? const Locale('en') : const Locale('id'),
+      locale: language == AppLanguage.english
+          ? const Locale('en')
+          : const Locale('id'),
     );
   }
 }

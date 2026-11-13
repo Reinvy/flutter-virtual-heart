@@ -1,11 +1,8 @@
-// Fitur Chat (FR-06) — input bar (text + mic + send) (docs/DESIGN.md §3.2).
-//
-// Permukaan melayang dengan pill field; mic & send 48×48 (target sentuh
-// minimum), warna dan gradien dari token tema.
+// Fitur Chat (FR-06) — input bar datar hairline (text + mic + send).
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/design/tokens/app_effects.dart';
+import '../../../core/design/tokens/app_durations.dart';
 import '../../../core/design/tokens/app_sizes.dart';
 import '../../../core/design/tokens/text_styles.dart';
 import '../../../core/l10n/app_strings.dart';
@@ -27,11 +24,7 @@ class InputBar extends ConsumerStatefulWidget {
   final bool isTyping;
   final bool isListening;
   final VoidCallback? onMicTap;
-
-  /// Dipanggil saat tombol stop ditekan (menghentikan generasi).
   final VoidCallback? onStop;
-
-  /// Controller eksternal opsional (mis. untuk mengisi transkrip STT).
   final TextEditingController? controller;
 
   @override
@@ -45,7 +38,6 @@ class _InputBarState extends ConsumerState<InputBar> {
 
   @override
   void dispose() {
-    // Hanya dispose controller yang dibuat internal.
     if (widget.controller == null) _controller.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -79,19 +71,16 @@ class _InputBarState extends ConsumerState<InputBar> {
 
     return Container(
       margin: const EdgeInsets.fromLTRB(
-        AppSizes.spaceSm + 4,
+        AppSizes.spaceMd,
         0,
-        AppSizes.spaceSm + 4,
+        AppSizes.spaceMd,
         AppSizes.spaceXs,
       ),
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(AppSizes.radiusCard),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.7),
-        ),
-        boxShadow: AppShadows.floating(context),
+        border: Border.all(color: scheme.outlineVariant, width: 1),
       ),
       child: SafeArea(
         top: false,
@@ -117,7 +106,7 @@ class _InputBarState extends ConsumerState<InputBar> {
                   focusNode: _focusNode,
                   enabled: widget.enabled,
                   maxLines: null,
-                  maxLength: 2000, // FR-05: batas input pesan
+                  maxLength: 2000,
                   keyboardType: TextInputType.multiline,
                   textInputAction: TextInputAction.newline,
                   style: AppTextStyles.bubbleText(color: scheme.onSurface),
@@ -128,23 +117,13 @@ class _InputBarState extends ConsumerState<InputBar> {
                     ),
                     counterText: null,
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.spaceMd,
+                      horizontal: AppSizes.spaceSm,
                       vertical: AppSizes.spaceSm,
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radiusBubble),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radiusBubble),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radiusBubble),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: scheme.surfaceContainerLow,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    filled: false,
                   ),
                   buildCounter:
                       (_, {
@@ -246,30 +225,39 @@ class _MicButtonState extends State<_MicButton>
     final active = widget.onTap != null;
     final listening = widget.isListening;
     final iconColor = listening
-        ? scheme.onPrimary
+        ? scheme.primary
         : (active
               ? scheme.onSurfaceVariant
               : scheme.onSurfaceVariant.withValues(alpha: 0.4));
+
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+    );
 
     final button = SizedBox(
       width: AppSizes.touchTarget,
       height: AppSizes.touchTarget,
       child: Material(
         color: Colors.transparent,
-        shape: const CircleBorder(),
+        shape: shape,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: widget.onTap,
-          customBorder: const CircleBorder(),
+          customBorder: shape,
           child: Center(
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              width: AppSizes.avatarNav,
-              height: AppSizes.avatarNav,
+              duration: AppDurations.durationFast,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: listening ? null : scheme.surfaceContainerLow,
-                gradient: listening ? AppGradients.primaryAction(context) : null,
+                borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+                color: listening
+                    ? scheme.primaryContainer
+                    : scheme.surfaceContainerLow,
+                border: Border.all(
+                  color: listening ? scheme.primary : scheme.outlineVariant,
+                  width: listening ? 1.5 : 1,
+                ),
               ),
               child: Icon(
                 listening ? Icons.mic_rounded : Icons.mic_none_rounded,
@@ -297,12 +285,12 @@ class _MicButtonState extends State<_MicButton>
             alignment: Alignment.center,
             children: [
               Container(
-                width: AppSizes.avatarNav + 12 * t,
-                height: AppSizes.avatarNav + 12 * t,
+                width: 40 + 8 * t,
+                height: 40 + 8 * t,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusSm + 2),
                   border: Border.all(
-                    color: scheme.primary.withValues(alpha: 0.35 * (1 - t)),
+                    color: scheme.primary.withValues(alpha: 0.4 * (1 - t)),
                     width: 1.5,
                   ),
                 ),
@@ -336,13 +324,14 @@ class _SendButton extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         child: Center(
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            width: AppSizes.avatarNav,
-            height: AppSizes.avatarNav,
+            duration: AppDurations.durationFast,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: active ? null : scheme.onSurface.withValues(alpha: 0.06),
-              gradient: active ? AppGradients.primaryAction(context) : null,
+              borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+              color: active
+                  ? scheme.primary
+                  : scheme.onSurface.withValues(alpha: 0.06),
             ),
             alignment: Alignment.center,
             child: Icon(

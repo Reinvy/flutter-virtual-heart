@@ -10,8 +10,8 @@ Widget appSheetHandle(BuildContext context) {
   final scheme = Theme.of(context).colorScheme;
   return Center(
     child: Container(
-      width: 36,
-      height: 4,
+      width: 32,
+      height: 3,
       decoration: BoxDecoration(
         color: scheme.onSurfaceVariant.withValues(alpha: 0.28),
         borderRadius: BorderRadius.circular(AppSizes.radiusFull),
@@ -37,7 +37,7 @@ Widget appSheetHeader(
         Expanded(
           child: Text(
             title,
-            style: AppTextStyles.headingSmall(),
+            style: AppTextStyles.headingSmall(context),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -46,6 +46,7 @@ Widget appSheetHeader(
           icon: Icons.close_rounded,
           onPressed: onClose,
           tooltip: closeTooltip,
+          bordered: true,
         ),
       ],
     ),

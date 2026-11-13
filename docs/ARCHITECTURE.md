@@ -32,16 +32,16 @@ lib/
 ├── app.dart                     # MaterialApp.router, locale, tap notifikasi
 ├── core/
 │   ├── design/
-│   │   ├── app_theme.dart       # ThemeData light/dark (dibangun sekali)
-│   │   ├── app_theme_provider.dart
-│   │   ├── mood_visuals.dart    # moodEmoji + moodLabel + moodColor bersama
-│   │   ├── components/          # app_scaffold, app_background, bloom_mark,
-│   │   │                        # app_icon_badge, app_sheet, sheet_header,
-│   │   │                        # primary_button, secondary_button, app_icon_button,
-│   │   │                        # section_card, confirm_dialog, empty_state,
-│   │   │                        # speaker_button
-│   │   └── tokens/              # app_colors, app_effects, app_sizes,
-│   │                            # app_durations, text_styles
+│   │   ├── app_theme.dart            # ThemeData lightFor/darkFor per AppThemeStyle
+│   │   ├── app_theme_provider.dart   # themeModeProvider + themeStyleProvider
+│   │   ├── active_shell_tab_provider.dart
+│   │   ├── mood_visuals.dart         # moodEmoji + moodLabel + moodColor bersama
+│   │   ├── components/               # app_scaffold, app_background, main_shell_scaffold,
+│   │   │                             # resonance_mark, app_icon_badge, app_sheet, sheet_header,
+│   │   │                             # primary_button, secondary_button, app_icon_button,
+│   │   │                             # section_card, confirm_dialog, empty_state, speaker_button
+│   │   └── tokens/                   # app_colors (AppPalette/AppPalettes), app_effects (AppBorders),
+│   │                                 # app_sizes, app_durations, text_styles
 │   ├── errors/app_logger.dart   # satu-satunya logger
 │   ├── l10n/app_strings.dart    # AppStrings + IndonesianStrings + EnglishStrings
 │   ├── router/app_router.dart   # GoRouter + resolveRedirect (fungsi murni)
@@ -75,6 +75,7 @@ lib/
 │   ├── stt_service.dart              # backend 'gemma' | 'system'
 │   └── tts_service.dart              # backend 'gemma' | 'system'
 └── features/
+    ├── hub/            # companion_hub_screen (beranda pendamping & starter)
     ├── onboarding/     # splash, age_gate, onboarding
     ├── persona/        # setup, edit sheet, profile sheet, avatar_catalog, persona_options
     ├── model/          # model_download_screen, model_error_text
@@ -86,13 +87,15 @@ lib/
     └── notifications/  # app_lifecycle_observer, notification_controller
 ```
 
-## 3. Provider (15)
+## 3. Provider (18)
 
 | Provider | Tipe | State | File |
 | --- | --- | --- | --- |
 | `objectBoxServiceProvider` | `Provider` (di-override di `main`) | `ObjectBoxService` | `services/database/objectbox_provider.dart` |
 | `appSettingsProvider` | `NotifierProvider` | `AppSettings` | `services/settings/settings_service.dart` |
-| `themeModeProvider` | `NotifierProvider` | `ThemeMode` | `core/design/app_theme_provider.dart` |
+| `themeModeProvider` | `Provider` | `ThemeMode` | `core/design/app_theme_provider.dart` |
+| `themeStyleProvider` | `Provider` | `AppThemeStyle` | `core/design/app_theme_provider.dart` |
+| `activeShellTabProvider` | `NotifierProvider` | `int` | `core/design/active_shell_tab_provider.dart` |
 | `appStringsProvider` | `Provider` | `AppStrings` | `core/l10n/app_strings.dart` |
 | `routerProvider` | `Provider` | `GoRouter` | `core/router/app_router.dart` |
 | `personaProvider` | `NotifierProvider` | `PersonaConfig?` | `features/persona/persona_controller.dart` |
@@ -100,6 +103,7 @@ lib/
 | `modelServiceProvider` | `AsyncNotifierProvider` | `ModelStatus` | `services/ai/model_service.dart` |
 | `memoryExtractorProvider` | `Provider` | `MemoryExtractor` | `services/ai/memory_extractor.dart` |
 | `chatProvider` | `NotifierProvider` | `ChatState` | `features/chat/chat_controller.dart` |
+| `pendingChatDraftProvider` | `NotifierProvider` | `String?` | `features/chat/chat_controller.dart` |
 | `memoryFactsProvider` | `NotifierProvider` | `List<MemoryFact>` | `features/memory/memory_controller.dart` |
 | `moodServiceProvider` | `Provider` | `MoodService` | `services/mood_service.dart` |
 | `moodProvider` | `NotifierProvider` | `MoodState` | `features/chat/mood_provider.dart` |
@@ -109,7 +113,8 @@ lib/
 ## 4. Routing
 
 `AppRoutes`: `/splash`, `/age-gate`, `/privacy`, `/onboarding`, `/persona-setup`,
-`/model-download`, `/chat`, `/memory`, `/settings`.
+`/model-download`, dan shell 4-tab (`StatefulShellRoute.indexedStack` via `MainShellScaffold`):
+`/hub`, `/chat`, `/memory`, `/settings`.
 
 `resolveRedirect({path, settings, isModelReady})` adalah fungsi murni (dites di
 `test/core/router_guard_test.dart`):
@@ -122,9 +127,8 @@ lib/
 | `!isOnboardingDone` | `/onboarding` |
 | `!isPersonaSetup` | `/persona-setup` |
 | `!isModelReady` | `/model-download` |
-| path ∈ {`/age-gate`, `/onboarding`, `/persona-setup`} & semua lolos | `/chat` |
+| path ∈ {`/age-gate`, `/onboarding`, `/persona-setup`} & semua lolos | `/hub` |
 | selain itu | `null` |
-
 `/model-download` **tidak** punya bypass: gate umur/onboarding/persona tetap berlaku, tetapi
 rute ini tetap bisa dibuka saat model sudah siap (untuk mengganti model). Rute tak dikenal
 dirender oleh `errorBuilder` yang terlokalisasi dengan tombol kembali ke `/splash`.

@@ -52,7 +52,7 @@ void main() {
         .clearAccessibilityFeaturesTestValue();
   });
 
-  testWidgets('bubble user: warna primary (DESIGN §3.3)', (tester) async {
+  testWidgets('bubble user: warna solid userBubbleBg tanpa gradien', (tester) async {
     final msg = Message(role: MessageRole.user, content: 'Halo sayang');
     await tester.pumpWidget(wrap(ChatBubble(message: msg)));
     await tester.pumpAndSettle();
@@ -63,20 +63,18 @@ void main() {
       find.byKey(const ValueKey('chat-bubble-user')),
     );
     final decoration = container.decoration as BoxDecoration;
-    final gradient = decoration.gradient;
-    expect(gradient, isA<LinearGradient>());
-    expect(
-      (gradient! as LinearGradient).colors,
-      containsAll(const [AppColors.bubbleUserStart, AppColors.bubbleUserEnd]),
-    );
+    expect(decoration.gradient, isNull);
+    expect(decoration.color, AppColors.userBubbleBg);
   });
 
-  testWidgets('bubble AI: markdown dirender', (tester) async {
+  testWidgets('bubble AI: markdown dan nama persona dirender di editorial thread', (tester) async {
     final msg = Message(role: MessageRole.assistant, content: '**Hai!** Apa kabar?');
     final persona = PersonaConfig(name: 'Luna', avatarId: 'gf_1');
     await tester.pumpWidget(wrap(ChatBubble(message: msg, persona: persona)));
     await tester.pumpAndSettle();
 
+    expect(find.byKey(const ValueKey('chat-bubble-assistant')), findsOneWidget);
+    expect(find.text('Luna'), findsOneWidget);
     expect(find.textContaining('Hai!'), findsOneWidget);
   });
 

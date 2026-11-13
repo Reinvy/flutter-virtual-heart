@@ -11,6 +11,7 @@ class AppIconButton extends StatelessWidget {
     this.tooltip,
     this.color,
     this.size = AppSizes.iconMd,
+    this.bordered = false,
   });
 
   final IconData icon;
@@ -18,6 +19,7 @@ class AppIconButton extends StatelessWidget {
   final String? tooltip;
   final Color? color;
   final double size;
+  final bool bordered;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +35,12 @@ class AppIconButton extends StatelessWidget {
         foregroundColor: color ?? scheme.onSurfaceVariant,
         disabledForegroundColor: scheme.onSurface.withValues(alpha: 0.38),
         minimumSize: const Size.square(AppSizes.touchTarget),
-        shape: const CircleBorder(),
+        side: bordered
+            ? BorderSide(color: scheme.outlineVariant, width: 1)
+            : BorderSide.none,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+        ),
       ),
     );
   }

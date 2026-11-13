@@ -15,7 +15,7 @@ fvm dart run build_runner build --delete-conflicting-outputs
 
 ## 1. Entity
 
-### `AppSettings` (21 field)
+### `AppSettings` (22 field)
 
 | Field | Tipe | Default | Catatan |
 | --- | --- | --- | --- |
@@ -39,13 +39,13 @@ fvm dart run build_runner build --delete-conflicting-outputs
 | `conversationSummary` | String | `''` | FR-13, dipotong 600 karakter |
 | `summaryMessageCount` | int | `0` | jumlah pesan saat ringkasan terakhir dibuat |
 | `themeIndex` | int | `0` | backing field `AppThemeSetting {light, dark, system}` |
+| `themeStyleIndex` | int | `0` | backing field `AppThemeStyle {editorial, romantic, classic, botanical}` |
 | `languageIndex` | int | `0` | backing field `AppLanguage {indonesian, english, mixed}` |
 
-`theme`/`language` diekspos sebagai getter/setter di atas `themeIndex`/`languageIndex`
+`theme`/`themeStyle`/`language` diekspos sebagai getter/setter di atas backing index-nya
 (enum tidak disimpan langsung — ObjectBox melewati properti bertipe enum). Getter meng-clamp
 index sehingga baris rusak tidak melempar `RangeError`, dan `normalized()` memperbaiki nilai
 string/int yang tidak valid saat boot (backend suara, model, jam pagi, interval check-in).
-
 ### `PersonaConfig`
 
 `id`, `name`, `nicknameForUser`, `avatarId`, `createdAt` (`PropertyType.date`),

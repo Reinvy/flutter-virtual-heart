@@ -1,4 +1,4 @@
-// Komponen shared — AppIconBadge (ikon dalam wadah membulat lembut).
+// Komponen shared — AppIconBadge (ikon dalam bingkai persegi-tumpul hairline).
 import 'package:material_ui/material_ui.dart';
 
 import '../tokens/app_sizes.dart';
@@ -19,14 +19,14 @@ class AppIconBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final base = color ?? scheme.primary;
+    final base = color ?? scheme.onSurface;
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: base.withValues(alpha: isDark ? 0.18 : 0.10),
-        borderRadius: BorderRadius.circular(AppSizes.radiusBadge),
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+        border: Border.all(color: scheme.outlineVariant, width: 1),
       ),
       child: Icon(icon, size: size * 0.5, color: base),
     );

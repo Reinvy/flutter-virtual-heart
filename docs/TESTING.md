@@ -34,7 +34,7 @@ diam-diam.
 | --- | --- |
 | `test/core/app_strings_test.dart` | tabel kunci baru ID/EN, copy privasi/age gate, daftar notifikasi, plural Inggris |
 | `test/core/content_safety_test.dart` | gate input/output, `SafetyRedirect`, kategori `personaBreak` |
-| `test/core/design_contrast_test.dart` | kontras token ≥ 4.5:1 (light & dark) |
+| `test/core/design_contrast_test.dart` | kontras token ≥ 4.5:1 di seluruh 8 palet (4 tema × light/dark) |
 | `test/core/memory_fact_merger_test.dart` | `mergeFacts`: key case-insensitive, duplikat batch, batas panjang, hapus tertua |
 | `test/core/model_catalog_test.dart` | katalog LLM, `modelOptionByFileName`, pemetaan tipe engine, katalog speech |
 | `test/core/model_error_test.dart` | `classifyModelError` (404/401/429/cancel/storage/engine/network) |
@@ -42,16 +42,17 @@ diam-diam.
 | `test/core/notification_time_test.dart` | `nextInstanceOf` (hari ini/besok/akhir bulan, `Asia/Jakarta`) |
 | `test/core/objectbox_settings_test.dart` | persistensi **semua** field `AppSettings` + `normalized()` |
 | `test/core/prompt_builder_test.dart` | batas karakter prompt, 12 fakta, sanitasi, pesan blokir, `selectMemoryFacts` |
-| `test/core/router_guard_test.dart` | matriks `resolveRedirect` (gate, `/privacy`, `/model-download`) |
+| `test/core/router_guard_test.dart` | matriks `resolveRedirect` (gate, `/privacy`, `/model-download`, `/hub`) |
 | `test/core/wav_pcm_test.dart` | parser WAV: chunk `LIST`/`JUNK`, padding ganjil, tanpa `data` |
-| `test/features/chat/chat_bubble_test.dart` | bubble user/AI, timestamp, speaker, gambar markdown tidak dirender |
+| `test/features/chat/chat_bubble_test.dart` | kapsul user solid, editorial thread AI, timestamp, speaker, gambar disanitasi |
 | `test/features/chat/input_bar_test.dart` | hint, kirim, batas 2000 karakter, counter, tombol stop |
+| `test/features/hub/companion_hub_screen_test.dart` | status persona, snapshot memori, tap starter → `/chat` + input terisi |
 | `test/features/memory/memory_screen_test.dart` | empty state, grouping kategori, pencarian |
 | `test/features/model/model_error_text_test.dart` | setiap `ModelErrorKind` punya pesan ID/EN |
+| `test/features/navigation/main_shell_test.dart` | 4-tab `MainShellScaffold` tanpa overflow di 320 dp & sinkron `activeShellTabProvider` |
 | `test/features/onboarding/age_gate_test.dart` | teks ID/EN, konfirmasi menyimpan `isAgeVerified`, tautan privasi |
 | `test/features/settings/privacy_screen_test.dart` | judul/kebijakan/tombol kembali (ID + EN) |
-| `test/features/settings/section_overflow_test.dart` | Appearance/Language/Model tidak overflow di 320 dp |
-
+| `test/features/settings/section_overflow_test.dart` | Appearance (termasuk pilih `themeStyle`)/Language/Model tidak overflow di 320 dp |
 **Gap yang diketahui** (lihat `KNOWN_ISSUES.md`): tidak ada test untuk `ChatNotifier`
 end-to-end (butuh engine), `TtsService`/`SttService` (butuh plugin native), widget notifikasi,
 dan `ModelServiceNotifier` (butuh file model).
