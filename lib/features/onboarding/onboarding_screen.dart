@@ -29,6 +29,7 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _controller = PageController();
   int _currentPage = 0;
+  bool _finishing = false;
 
   @override
   void dispose() {
@@ -39,9 +40,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void _onPageChanged(int page) => setState(() => _currentPage = page);
 
   void _next() {
+    if (_finishing) return;
     HapticFeedback.lightImpact();
-    if (_currentPage < 2) {
-      _controller.nextPage(
+    final current = _controller.hasClients
+        ? (_controller.page?.round() ?? _currentPage)
+        : _currentPage;
+    if (current < 2) {
+      _controller.animateToPage(
+        current + 1,
         duration: AppDurations.durationSlow,
         curve: AppDurations.curveEmotive,
       );
@@ -51,13 +57,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _finish() {
+    if (_finishing) return;
+    _finishing = true;
     final settings = ref.read(appSettingsProvider);
     ref
         .read(appSettingsProvider.notifier)
         .save(settings.copyWith(isOnboardingDone: true));
-    context.go(AppRoutes.personaSetup);
+    if (mounted) context.go(AppRoutes.personaSetup);
   }
-
   @override
   Widget build(BuildContext context) {
     final strings = ref.watch(appStringsProvider);

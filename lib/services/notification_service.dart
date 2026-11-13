@@ -118,6 +118,9 @@ class NotificationService {
   /// Payload notifikasi yang di-tap saat app sudah berjalan.
   Stream<String?> get taps => _tapController.stream;
 
+  /// `true` bila ada payload tap notifikasi cold-start yang belum diambil.
+  bool get hasPendingTap => _pendingTap != null;
+
   /// Mengambil (dan menghapus) payload notifikasi yang membuka app ini.
   String? takePendingTap() {
     final payload = _pendingTap;
@@ -125,6 +128,8 @@ class NotificationService {
     return payload;
   }
 
+  /// Menghapus payload tap notifikasi yang tertunda.
+  void clearPendingTap() => _pendingTap = null;
   // ── Permission ───────────────────────────────────────────────────────
 
   /// Apakah izin notifikasi sudah diberikan. Tidak pernah memunculkan dialog.

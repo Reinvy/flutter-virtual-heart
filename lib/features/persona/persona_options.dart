@@ -27,7 +27,22 @@ const kHobbiesList = [
   'Writing',
 ];
 
-/// Data visual satu preset kepribadian: emoji, label, deskripsi.
+/// Validasi nama persona (2..32 karakter).
+String? validatePersonaName(AppStrings strings, String? value) {
+  final text = value?.trim() ?? '';
+  if (text.isEmpty) return strings.personaNameEmpty;
+  if (text.length < 2) return strings.personaNameMin;
+  if (text.length > 32) return strings.personaNameMax;
+  return null;
+}
+
+/// Validasi panggilan untuk pengguna (1..32 karakter).
+String? validatePersonaNickname(AppStrings strings, String? value) {
+  final text = value?.trim() ?? '';
+  if (text.isEmpty) return strings.personaNicknameEmpty;
+  if (text.length > 32) return strings.personaNameMax;
+  return null;
+}
 ({String emoji, String label, String description}) personalityVisual(
   AppStrings strings,
   PersonalityPreset preset,

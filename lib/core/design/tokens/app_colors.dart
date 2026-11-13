@@ -460,8 +460,9 @@ abstract final class AppColors {
 
   static Color successFor(BuildContext context) => paletteOf(context).success;
 
-  static Color errorFor(BuildContext context) => paletteOf(context).error;
+  static Color warningFor(BuildContext context) => paletteOf(context).warning;
 
+  static Color errorFor(BuildContext context) => paletteOf(context).error;
   static Color textSecondaryFor(BuildContext context) =>
       paletteOf(context).textSecondary;
 }

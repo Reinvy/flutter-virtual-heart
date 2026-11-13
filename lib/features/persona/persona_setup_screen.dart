@@ -10,6 +10,7 @@ import '../../core/design/components/resonance_mark.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
+import '../../core/errors/app_logger.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
 import '../../models/persona_config.dart';
@@ -40,13 +41,10 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
   String _selectedAvatarId = 'gf_1';
   bool _isSaving = false;
 
-  late bool _isEditing;
-
   @override
   void initState() {
     super.initState();
     final existing = ref.read(personaProvider);
-    _isEditing = existing != null;
     if (existing != null) {
       _nameController.text = existing.name;
       _nicknameController.text = existing.nicknameForUser;
@@ -56,7 +54,6 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
       _selectedAvatarId = existing.avatarId;
     }
   }
-
   @override
   void dispose() {
     _nameController.dispose();
@@ -77,7 +74,7 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
   }
 
   Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (_isSaving || !(_formKey.currentState?.validate() ?? false)) return;
     HapticFeedback.mediumImpact();
     setState(() => _isSaving = true);
 
@@ -92,23 +89,26 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
       );
       ref.read(personaProvider.notifier).save(persona);
 
+      try {
+        await ref
+            .read(notificationProvider.notifier)
+            .applySettings(ref.read(appSettingsProvider));
+      } catch (e) {
+        AppLogger.debug('Notification sync skipped after persona setup', e);
+      }
+      if (!mounted) return;
+
       final settings = ref.read(appSettingsProvider);
       ref
           .read(appSettingsProvider.notifier)
           .save(settings.copyWith(isPersonaSetup: true));
 
-      try {
-        await ref
-            .read(notificationProvider.notifier)
-            .applySettings(ref.read(appSettingsProvider));
-      } catch (_) {
-        // Notifikasi opsional: jangan blokir alur setup.
-      }
-
       final ready =
           (ref.read(modelServiceProvider).value?.ready ?? false) ||
           ref.read(modelReadyProvider);
-      if (mounted) context.go(ready ? AppRoutes.hub : AppRoutes.modelDownload);
+      if (mounted) {
+        context.go(ready ? AppRoutes.hub : '${AppRoutes.modelDownload}?auto=1');
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -201,9 +201,7 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _isEditing
-                      ? strings.settingsEditPersona
-                      : strings.personaCreateTitle,
+                  strings.personaCreateTitle,
                   style: AppTextStyles.displaySmall(
                     context,
                     color: scheme.onSurface,
@@ -336,12 +334,7 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
             hintText: strings.personaNameHint,
             prefixIcon: const Icon(Icons.badge_outlined, size: AppSizes.iconMd),
           ),
-          validator: (v) {
-            if (v == null || v.trim().isEmpty) return strings.personaNameEmpty;
-            if (v.trim().length < 2) return strings.personaNameMin;
-            if (v.trim().length > 32) return strings.personaNameMax;
-            return null;
-          },
+          validator: (v) => validatePersonaName(strings, v),
         ),
       ],
     );
@@ -360,12 +353,7 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
             hintText: strings.personaNicknameHint,
             prefixIcon: const Icon(Icons.person_outline, size: AppSizes.iconMd),
           ),
-          validator: (v) {
-            if (v == null || v.trim().isEmpty) {
-              return strings.personaNicknameEmpty;
-            }
-            return null;
-          },
+          validator: (v) => validatePersonaNickname(strings, v),
         ),
       ],
     );
@@ -434,7 +422,7 @@ class _PersonaSetupScreenState extends ConsumerState<PersonaSetupScreen> {
           children: [
             for (final hobby in kHobbiesList)
               HobbyChip(
-                label: hobby,
+                label: strings.personaHobbyLabel(hobby),
                 isSelected: _selectedHobbies.contains(hobby),
                 onTap: () {
                   setState(() {

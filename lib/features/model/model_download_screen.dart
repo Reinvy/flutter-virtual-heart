@@ -17,6 +17,7 @@ import '../../core/design/tokens/app_durations.dart';
 import '../../core/design/tokens/app_effects.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
+import '../../core/errors/app_logger.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
 import '../../services/ai/model_catalog.dart';
@@ -35,8 +36,8 @@ class ModelDownloadScreen extends ConsumerStatefulWidget {
 class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
   final _tokenController = TextEditingController();
   ModelOption? _selected;
-
-  VoidCallback? _retry;
+  bool _pickingFile = false;
+  bool _lastRetryWasFile = false;
 
   @override
   void initState() {
@@ -65,7 +66,8 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
     final modelState = ref.watch(modelServiceProvider);
     final status = modelState.value;
     final bool busy = status?.installing ?? false;
-    final bool building = modelState.isLoading && status == null;
+    final bool building =
+        modelState.isLoading && !modelState.hasValue && !busy;
     final bool activeReady = status?.ready ?? false;
     final String activeFile = settings.modelVariant;
 
@@ -75,40 +77,52 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
         : activeReady;
     final installTarget = _selected ?? kDefaultModelOption;
 
-    return AppScaffold(
-      appBar: AppBar(
-        leading: context.canPop() ? const BackButton() : null,
-        title: Text(strings.modelChooseTitle),
-      ),
-      body: AppContent(
-        maxWidth: 720,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceMd),
-          children: [
-            _buildHeader(strings),
-            const SizedBox(height: AppSizes.spaceLg),
-            if (building)
-              _buildLoading(strings)
-            else ...[
-              _buildModelList(strings, activeReady, activeFile),
+    return PopScope(
+      canPop: !busy,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && busy) _cancel();
+      },
+      child: AppScaffold(
+        appBar: AppBar(
+          leading: context.canPop() && !busy ? const BackButton() : null,
+          title: Text(strings.modelChooseTitle),
+        ),
+        body: AppContent(
+          maxWidth: 720,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceMd),
+            children: [
+              _buildHeader(strings),
               const SizedBox(height: AppSizes.spaceLg),
-              _buildTokenField(strings),
-              const SizedBox(height: AppSizes.spaceLg),
-              _buildActions(
-                strings,
-                busy: busy,
-                isActive: isActive,
-                target: installTarget,
-              ),
-              if (busy) _buildProgress(strings, status?.progress ?? 0),
-              if (modelState.hasError && !busy)
-                _buildError(
+              if (building)
+                _buildLoading(strings)
+              else ...[
+                _buildModelList(
                   strings,
-                  modelState.error!,
-                  retryLabel: strings.modelRetry,
+                  activeReady,
+                  activeFile,
+                  busy: busy,
                 ),
+                const SizedBox(height: AppSizes.spaceLg),
+                _buildTokenField(strings, busy: busy),
+                const SizedBox(height: AppSizes.spaceLg),
+                _buildActions(
+                  strings,
+                  busy: busy,
+                  isActive: isActive,
+                  target: installTarget,
+                ),
+                if (busy) _buildProgress(strings, status?.progress ?? 0),
+                if (modelState.hasError && !busy)
+                  _buildError(
+                    strings,
+                    modelState.error!,
+                    retryLabel: strings.modelRetry,
+                    target: installTarget,
+                  ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -160,8 +174,9 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
   Widget _buildModelList(
     AppStrings strings,
     bool activeReady,
-    String activeFile,
-  ) {
+    String activeFile, {
+    required bool busy,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -181,7 +196,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
               active: activeReady && activeFile == opt.fileName,
               activeLabel: strings.modelActive,
               hfTokenBadge: strings.modelHfTokenBadge,
-              onTap: () => setState(() => _selected = opt),
+              onTap: busy ? null : () => setState(() => _selected = opt),
             ),
           ),
         ),
@@ -189,10 +204,11 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
     );
   }
 
-  Widget _buildTokenField(AppStrings strings) {
+  Widget _buildTokenField(AppStrings strings, {required bool busy}) {
     final scheme = Theme.of(context).colorScheme;
     return TextField(
       controller: _tokenController,
+      enabled: !busy,
       obscureText: true,
       decoration: InputDecoration(
         hintText: strings.modelHfTokenHint,
@@ -263,19 +279,20 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
                     ),
                   ),
                 ),
-                Text(
-                  '$pct%',
-                  style: AppTextStyles.caption(
-                    color: scheme.onSurface,
-                  ).copyWith(fontWeight: FontWeight.w700),
-                ),
+                if (progress > 0)
+                  Text(
+                    '$pct%',
+                    style: AppTextStyles.caption(
+                      color: scheme.onSurface,
+                    ).copyWith(fontWeight: FontWeight.w700),
+                  ),
               ],
             ),
             const SizedBox(height: 10),
             ClipRRect(
               borderRadius: BorderRadius.circular(AppSizes.radiusFull),
               child: LinearProgressIndicator(
-                value: progress.clamp(0, 1),
+                value: progress > 0 ? progress.clamp(0, 1) : null,
                 minHeight: 4,
               ),
             ),
@@ -289,6 +306,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
     AppStrings strings,
     Object error, {
     required String retryLabel,
+    required ModelOption target,
   }) {
     final scheme = Theme.of(context).colorScheme;
     final kind = error is ModelException ? error.kind : classifyModelError(error);
@@ -330,7 +348,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: _retry,
+                onPressed: _lastRetryWasFile ? _pickFile : () => _startDownload(target),
                 child: Text(
                   retryLabel,
                   style: AppTextStyles.button(color: scheme.error),
@@ -348,7 +366,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
   // -------------------------------------------------------------------------
 
   Future<void> _startDownload(ModelOption option) async {
-    setState(() => _retry = () => _startDownload(option));
+    _lastRetryWasFile = false;
     final token = _tokenController.text.trim();
     if (token.isNotEmpty) await ModelServiceNotifier.saveHfToken(token);
     if (!mounted) return;
@@ -367,37 +385,38 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
   }
 
   Future<void> _pickFile() async {
-    setState(() => _retry = _pickFile);
+    if (_pickingFile) return;
+    _pickingFile = true;
+    _lastRetryWasFile = true;
     final strings = ref.read(appStringsProvider);
-
-    final picked = await FilePicker.pickFile(
-      type: FileType.custom,
-      allowedExtensions: const ['litertlm', 'task'],
-      dialogTitle: strings.modelUploadFile,
-    );
-    final sourcePath = picked?.path;
-    if (sourcePath == null || !mounted) return;
-
-    final basename = File(sourcePath).uri.pathSegments.last;
-    final lower = basename.toLowerCase();
-    final isLiteRtl = lower.endsWith('.litertlm');
-    if (!isLiteRtl && !lower.endsWith('.task')) {
-      _snack(strings.modelFileInvalid);
-      return;
-    }
-
-    final length = await File(sourcePath).length();
-    if (!mounted) return;
-    if (length == 0) {
-      _snack(strings.modelFileEmpty);
-      return;
-    }
-
-    final modelType = await _askModelType(strings);
-    if (!mounted || modelType == null) return;
-
     File? target;
     try {
+      final picked = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: const ['litertlm', 'task'],
+        dialogTitle: strings.modelUploadFile,
+      );
+      final sourcePath = picked?.path;
+      if (sourcePath == null || !mounted) return;
+
+      final basename = File(sourcePath).uri.pathSegments.last;
+      final lower = basename.toLowerCase();
+      final isLiteRtl = lower.endsWith('.litertlm');
+      if (!isLiteRtl && !lower.endsWith('.task')) {
+        _snack(strings.modelFileInvalid);
+        return;
+      }
+
+      final length = await File(sourcePath).length();
+      if (!mounted) return;
+      if (length == 0) {
+        _snack(strings.modelFileEmpty);
+        return;
+      }
+
+      final modelType = await _askModelType(strings);
+      if (!mounted || modelType == null) return;
+
       final support = await getApplicationSupportDirectory();
       final uploadDir = Directory('${support.path}/model_uploads');
       await uploadDir.create(recursive: true);
@@ -418,17 +437,15 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
           .read(modelServiceProvider.notifier)
           .installFromFile(target.path, option);
       if (!mounted) return;
-      if (ok) {
-        _onInstalled();
-      } else {
-        await _deleteQuietly(target);
-      }
+      if (ok) _onInstalled();
     } catch (e) {
-      if (target != null) await _deleteQuietly(target);
+      AppLogger.debug('Model file upload failed', e);
       if (mounted) _snack(strings.modelErrorUnknown);
+    } finally {
+      if (target != null) await _deleteQuietly(target);
+      _pickingFile = false;
     }
   }
-
   Future<String?> _askModelType(AppStrings strings) {
     const families = <String, String>{
       'qwen': 'Qwen 2.5',
@@ -489,7 +506,7 @@ class _ModelTile extends StatelessWidget {
   final bool active;
   final String activeLabel;
   final String hfTokenBadge;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

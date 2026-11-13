@@ -71,7 +71,7 @@ abstract class AppStrings {
   String get personaPersonalityMatureDesc;
   String get personaPersonalityMysteriousDesc;
   String get personaCallsYou;
-
+  String personaHobbyLabel(String tag);
   // ── Model Install (FR-04) ───────────────────────────────────────────────
   String get modelLoadingTitle;
   String get modelLoadingBody;
@@ -430,7 +430,22 @@ class IndonesianStrings extends AppStrings {
   String get personaPersonalityMysteriousDesc => 'Menarik, penuh teka-teki, dan memikat';
   @override
   String get personaCallsYou => 'Memanggilmu "{nickname}"';
-
+  @override
+  String personaHobbyLabel(String tag) => switch (tag) {
+    'Reading' => 'Membaca',
+    'Music' => 'Musik',
+    'Cooking' => 'Memasak',
+    'Sports' => 'Olahraga',
+    'Watching Movies' => 'Menonton Film',
+    'Gaming' => 'Bermain Game',
+    'Art & Design' => 'Seni & Desain',
+    'Traveling' => 'Jalan-jalan',
+    'Yoga & Meditation' => 'Yoga & Meditasi',
+    'Anime & Manga' => 'Anime & Manga',
+    'Photography' => 'Fotografi',
+    'Writing' => 'Menulis',
+    _ => tag,
+  };
   @override
   String get modelLoadingTitle => 'Memuat AI';
   @override
@@ -1052,7 +1067,8 @@ class EnglishStrings extends AppStrings {
   String get personaPersonalityMysteriousDesc => 'Intriguing, full of puzzles, and captivating';
   @override
   String get personaCallsYou => 'Calls you "{nickname}"';
-
+  @override
+  String personaHobbyLabel(String tag) => tag;
   @override
   String get modelLoadingTitle => 'Loading AI';
   @override

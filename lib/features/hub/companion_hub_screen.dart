@@ -51,12 +51,6 @@ class CompanionHubScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(appStringsProvider);
-    final persona = ref.watch(personaProvider);
-    final mood = ref.watch(moodProvider);
-    final facts = ref.watch(memoryFactsProvider);
-    final settings = ref.watch(appSettingsProvider);
-    final modelReady = ref.watch(modelReadyProvider);
-    final scheme = Theme.of(context).colorScheme;
 
     final starters = [
       strings.hubStarter1,
@@ -73,21 +67,14 @@ class CompanionHubScreen extends ConsumerWidget {
             bottom: AppSizes.spaceXl,
           ),
           children: [
-            _buildTopBar(context, ref, strings, persona),
+            _HubTopBar(onOpenProfile: _openProfile),
             const SizedBox(height: AppSizes.spaceLg),
             sectionHeader(
               context,
               strings.hubSectionStatus,
               Icons.favorite_outline_rounded,
             ),
-            _buildCompanionCard(
-              context,
-              ref,
-              strings,
-              persona,
-              mood.intensity,
-              moodColor(context, mood.current),
-            ),
+            _CompanionStatusCard(onOpenProfile: _openProfile),
             const SizedBox(height: AppSizes.spaceLg),
             sectionHeader(
               context,
@@ -108,53 +95,26 @@ class CompanionHubScreen extends ConsumerWidget {
             const SizedBox(height: AppSizes.spaceLg),
             LayoutBuilder(
               builder: (context, constraints) {
-                final memoryCard = _SnapshotCard(
-                  key: const ValueKey('hub-memory-card'),
-                  title: strings.hubMemorySnapshot,
-                  icon: Icons.bookmark_outline_rounded,
-                  headline: strings.hubMemoryCount(facts.length),
-                  body: facts.isNotEmpty
-                      ? '${facts.first.key}: ${facts.first.value}'
-                      : strings.hubMemoryEmpty,
-                  actionLabel: strings.hubViewAll,
-                  onTap: () => context.go(AppRoutes.memory),
-                );
-                final engineCard = _SnapshotCard(
-                  key: const ValueKey('hub-engine-card'),
-                  title: strings.hubEngineTitle,
-                  icon: Icons.memory_rounded,
-                  headline: currentModelLabel(settings, strings),
-                  body: modelReady
-                      ? strings.hubEngineReady
-                      : strings.modelNotInstalled,
-                  accentDotColor: modelReady
-                      ? AppColors.successFor(context)
-                      : scheme.outline,
-                  actionLabel: modelReady
-                      ? strings.navSettings
-                      : strings.modelChange,
-                  onTap: () => modelReady
-                      ? context.go(AppRoutes.settings)
-                      : context.push(AppRoutes.modelDownload),
-                );
+                const memoryCard = _MemorySnapshotSection();
+                const engineCard = _EngineSnapshotSection();
 
                 if (constraints.maxWidth < 480) {
-                  return Column(
+                  return const Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       memoryCard,
-                      const SizedBox(height: AppSizes.spaceMd),
+                      SizedBox(height: AppSizes.spaceMd),
                       engineCard,
                     ],
                   );
                 }
 
-                return IntrinsicHeight(
+                return const IntrinsicHeight(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Expanded(child: memoryCard),
-                      const SizedBox(width: AppSizes.spaceMd),
+                      SizedBox(width: AppSizes.spaceMd),
                       Expanded(child: engineCard),
                     ],
                   ),
@@ -166,13 +126,24 @@ class CompanionHubScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildTopBar(
-    BuildContext context,
-    WidgetRef ref,
-    AppStrings strings,
-    PersonaConfig? persona,
-  ) {
+typedef _OpenProfileFn =
+    Future<void> Function(
+      BuildContext context,
+      WidgetRef ref,
+      PersonaConfig? persona,
+    );
+
+class _HubTopBar extends ConsumerWidget {
+  const _HubTopBar({required this.onOpenProfile});
+
+  final _OpenProfileFn onOpenProfile;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
+    final persona = ref.watch(personaProvider);
     return Row(
       children: [
         const ResonanceMark(size: 24),
@@ -192,7 +163,7 @@ class CompanionHubScreen extends ConsumerWidget {
           button: true,
           label: strings.chatOpenProfile,
           child: InkWell(
-            onTap: () => _openProfile(context, ref, persona),
+            onTap: () => onOpenProfile(context, ref, persona),
             borderRadius: BorderRadius.circular(AppSizes.radiusFull),
             child: Padding(
               padding: const EdgeInsets.all(6),
@@ -208,19 +179,23 @@ class CompanionHubScreen extends ConsumerWidget {
       ],
     );
   }
+}
 
-  Widget _buildCompanionCard(
-    BuildContext context,
-    WidgetRef ref,
-    AppStrings strings,
-    PersonaConfig? persona,
-    double intensity,
-    Color barColor,
-  ) {
+class _CompanionStatusCard extends ConsumerWidget {
+  const _CompanionStatusCard({required this.onOpenProfile});
+
+  final _OpenProfileFn onOpenProfile;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
+    final persona = ref.watch(personaProvider);
+    final mood = ref.watch(moodProvider);
     final scheme = Theme.of(context).colorScheme;
     final name = persona?.name ?? strings.chatFallbackName;
     final nickname = persona?.nicknameForUser ?? '';
     final opt = avatarOptForId(persona?.avatarId);
+    final barColor = moodColor(context, mood.current);
 
     return Container(
       padding: const EdgeInsets.all(AppSizes.spaceMd + 2),
@@ -270,7 +245,7 @@ class CompanionHubScreen extends ConsumerWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(AppSizes.radiusFull),
             child: LinearProgressIndicator(
-              value: intensity.clamp(0, 1),
+              value: mood.intensity.clamp(0, 1),
               backgroundColor: scheme.surfaceContainerHighest,
               color: barColor,
               minHeight: 4,
@@ -291,7 +266,7 @@ class CompanionHubScreen extends ConsumerWidget {
                     const SizedBox(height: AppSizes.spaceXs),
                     SecondaryButton(
                       label: strings.hubViewProfile,
-                      onPressed: () => _openProfile(context, ref, persona),
+                      onPressed: () => onOpenProfile(context, ref, persona),
                     ),
                   ],
                 );
@@ -309,7 +284,7 @@ class CompanionHubScreen extends ConsumerWidget {
                   Expanded(
                     child: SecondaryButton(
                       label: strings.hubViewProfile,
-                      onPressed: () => _openProfile(context, ref, persona),
+                      onPressed: () => onOpenProfile(context, ref, persona),
                     ),
                   ),
                 ],
@@ -321,6 +296,67 @@ class CompanionHubScreen extends ConsumerWidget {
     );
   }
 }
+
+class _MemorySnapshotSection extends ConsumerWidget {
+  const _MemorySnapshotSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
+    final facts = ref.watch(memoryFactsProvider);
+    return _SnapshotCard(
+      key: const ValueKey('hub-memory-card'),
+      title: strings.hubMemorySnapshot,
+      icon: Icons.bookmark_outline_rounded,
+      headline: strings.hubMemoryCount(facts.length),
+      body: facts.isNotEmpty
+          ? '${facts.first.key}: ${facts.first.value}'
+          : strings.hubMemoryEmpty,
+      actionLabel: strings.hubViewAll,
+      onTap: () => context.go(AppRoutes.memory),
+    );
+  }
+}
+
+class _EngineSnapshotSection extends ConsumerWidget {
+  const _EngineSnapshotSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
+    final settings = ref.watch(appSettingsProvider);
+    final modelReady = ref.watch(modelReadyProvider);
+    final scheme = Theme.of(context).colorScheme;
+
+    final bool hasSelectedModel = settings.modelVariant.isNotEmpty;
+    final String body;
+    final Color dotColor;
+    if (modelReady) {
+      body = strings.hubEngineReady;
+      dotColor = AppColors.successFor(context);
+    } else if (hasSelectedModel) {
+      body = strings.modelLoadingTitle;
+      dotColor = AppColors.warningFor(context);
+    } else {
+      body = strings.modelNotInstalled;
+      dotColor = scheme.outline;
+    }
+
+    return _SnapshotCard(
+      key: const ValueKey('hub-engine-card'),
+      title: strings.hubEngineTitle,
+      icon: Icons.memory_rounded,
+      headline: currentModelLabel(settings, strings),
+      body: body,
+      accentDotColor: dotColor,
+      actionLabel: modelReady ? strings.navSettings : strings.modelChange,
+      onTap: () => modelReady
+          ? context.go(AppRoutes.settings)
+          : context.push(AppRoutes.modelDownload),
+    );
+  }
+}
+
 
 class _StarterRow extends StatelessWidget {
   const _StarterRow({

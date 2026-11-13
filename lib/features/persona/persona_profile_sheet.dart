@@ -14,8 +14,8 @@ import '../../models/mood_state.dart';
 import '../../models/persona_config.dart';
 import '../chat/mood_provider.dart';
 import 'avatar_catalog.dart';
+import 'persona_controller.dart';
 import 'persona_options.dart';
-
 /// Menampilkan bottom sheet profil persona.
 ///
 /// Kembali `true` bila pengguna menekan tombol Edit.
@@ -36,10 +36,10 @@ class PersonaProfileSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final livePersona = ref.watch(personaProvider) ?? persona;
     final mood = ref.watch(moodProvider);
     final strings = ref.watch(appStringsProvider);
     final scheme = Theme.of(context).colorScheme;
-
     return DraggableScrollableSheet(
       initialChildSize: 0.68,
       minChildSize: 0.45,
@@ -72,16 +72,15 @@ class PersonaProfileSheet extends ConsumerWidget {
                   controller: scrollController,
                   padding: const EdgeInsets.all(AppSizes.spaceMd),
                   children: [
-                    _buildHero(context, strings),
+                    _buildHero(context, strings, livePersona),
                     const SizedBox(height: AppSizes.spaceMd),
                     _buildMoodTelemetry(mood, context, strings),
                     const SizedBox(height: AppSizes.spaceLg),
-                    _buildPersonalitySection(context, strings),
-                    if ((persona?.hobbies ?? []).isNotEmpty) ...[
+                    _buildPersonalitySection(context, strings, livePersona),
+                    if ((livePersona?.hobbies ?? []).isNotEmpty) ...[
                       const SizedBox(height: AppSizes.spaceLg),
-                      _buildHobbiesSection(context, strings),
+                      _buildHobbiesSection(context, strings, livePersona),
                     ],
-                    const SizedBox(height: AppSizes.spaceMd),
                   ],
                 ),
               ),
@@ -112,12 +111,16 @@ class PersonaProfileSheet extends ConsumerWidget {
     );
   }
 
-  Widget _buildHero(BuildContext context, AppStrings strings) {
+  Widget _buildHero(
+    BuildContext context,
+    AppStrings strings,
+    PersonaConfig? active,
+  ) {
     final scheme = Theme.of(context).colorScheme;
-    final genderLabel = (persona?.gender == PersonaGender.boyfriend)
+    final genderLabel = (active?.gender == PersonaGender.boyfriend)
         ? strings.personaGenderBoyfriend
         : strings.personaGenderGirlfriend;
-    final nickname = persona?.nicknameForUser ?? '';
+    final nickname = active?.nicknameForUser ?? '';
 
     return Container(
       width: double.infinity,
@@ -130,16 +133,15 @@ class PersonaProfileSheet extends ConsumerWidget {
         children: [
           avatarCircle(
             context,
-            avatarOptForId(persona?.avatarId),
+            avatarOptForId(active?.avatarId),
             AppSizes.avatarProfile,
           ),
           const SizedBox(height: AppSizes.spaceMd),
           Text(
-            persona?.name ?? strings.appName,
+            active?.name ?? strings.appName,
             style: AppTextStyles.displaySmall(context, color: scheme.onSurface),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 6),
           Text(
             genderLabel,
             style: AppTextStyles.bodySmall(color: scheme.onSurfaceVariant),
@@ -236,7 +238,11 @@ class PersonaProfileSheet extends ConsumerWidget {
     );
   }
 
-  Widget _buildHobbiesSection(BuildContext context, AppStrings strings) {
+  Widget _buildHobbiesSection(
+    BuildContext context,
+    AppStrings strings,
+    PersonaConfig? active,
+  ) {
     final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,7 +256,7 @@ class PersonaProfileSheet extends ConsumerWidget {
           spacing: AppSizes.spaceXs,
           runSpacing: AppSizes.spaceXs,
           children: [
-            for (final hobby in persona?.hobbies ?? <String>[])
+            for (final hobby in active?.hobbies ?? <String>[])
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSizes.spaceSm,
@@ -262,7 +268,7 @@ class PersonaProfileSheet extends ConsumerWidget {
                   border: Border.all(color: scheme.outlineVariant),
                 ),
                 child: Text(
-                  hobby,
+                  strings.personaHobbyLabel(hobby),
                   style: AppTextStyles.bodySmall(color: scheme.onSurface),
                 ),
               ),
@@ -272,11 +278,14 @@ class PersonaProfileSheet extends ConsumerWidget {
     );
   }
 
-  Widget _buildPersonalitySection(BuildContext context, AppStrings strings) {
+  Widget _buildPersonalitySection(
+    BuildContext context,
+    AppStrings strings,
+    PersonaConfig? active,
+  ) {
     final scheme = Theme.of(context).colorScheme;
-    final preset = persona?.personalityPreset ?? PersonalityPreset.gentle;
+    final preset = active?.personalityPreset ?? PersonalityPreset.gentle;
     final data = personalityVisual(strings, preset);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -1,7 +1,5 @@
 // Katalog avatar — palet duotone editorial kontras tinggi (id tetap `gf_1..6` & `bf_1..6`).
 import 'package:material_ui/material_ui.dart';
-
-import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_durations.dart';
 import '../../core/design/tokens/text_styles.dart';
 
@@ -109,20 +107,6 @@ AvatarOpt avatarOptForId(String? id) {
     }
   }
   return girlfriendAvatars.first;
-}
-
-/// Warna dasar avatar berdasarkan id; fallback ke primary.
-Color avatarColor(String? id) {
-  for (final opt in [...girlfriendAvatars, ...boyfriendAvatars]) {
-    if (opt.id == id) return opt.base;
-  }
-  return AppColors.primary;
-}
-
-/// Opsi avatar berdasarkan id (dipakai settings/persona section).
-AvatarOpt avatarOptFor(String? id, {bool isGirlfriend = true}) {
-  final list = avatarsFor(isGirlfriend: isGirlfriend);
-  return list.firstWhere((a) => a.id == id, orElse: () => list.first);
 }
 
 /// Lingkaran avatar duotone datar dengan bingkai hairline + ring seleksi tegas.

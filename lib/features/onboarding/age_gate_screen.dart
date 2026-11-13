@@ -18,11 +18,19 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
 import 'package:virtual_heart/services/settings/settings_service.dart';
 
-class AgeGateScreen extends ConsumerWidget {
+class AgeGateScreen extends ConsumerStatefulWidget {
   const AgeGateScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AgeGateScreen> createState() => _AgeGateScreenState();
+}
+
+class _AgeGateScreenState extends ConsumerState<AgeGateScreen> {
+  bool _confirming = false;
+  bool _declining = false;
+
+  @override
+  Widget build(BuildContext context) {
     final strings = ref.watch(appStringsProvider);
     final scheme = Theme.of(context).colorScheme;
 
@@ -156,12 +164,12 @@ class AgeGateScreen extends ConsumerWidget {
                         const SizedBox(height: AppSizes.spaceLg),
                         PrimaryButton(
                           label: strings.ageGateConfirm,
-                          onPressed: () => _confirm(context, ref),
+                          onPressed: _confirming ? null : _confirm,
                         ),
                         const SizedBox(height: 10),
                         SecondaryButton(
                           label: strings.ageGateDecline,
-                          onPressed: () => _decline(context, ref),
+                          onPressed: _declining ? null : _decline,
                         ),
                         const SizedBox(height: AppSizes.spaceMd),
                         Divider(
@@ -189,27 +197,34 @@ class AgeGateScreen extends ConsumerWidget {
     );
   }
 
-  void _confirm(BuildContext context, WidgetRef ref) {
+  void _confirm() {
+    if (_confirming) return;
+    _confirming = true;
     HapticFeedback.lightImpact();
     final settings = ref.read(appSettingsProvider);
     ref
         .read(appSettingsProvider.notifier)
         .save(settings.copyWith(isAgeVerified: true));
-    context.go(AppRoutes.onboarding);
+    if (mounted) context.go(AppRoutes.onboarding);
   }
 
-  void _decline(BuildContext context, WidgetRef ref) {
+  Future<void> _decline() async {
+    if (_declining) return;
+    _declining = true;
     final strings = ref.read(appStringsProvider);
     HapticFeedback.mediumImpact();
-    showConfirmDialog(
-      context,
-      title: strings.ageGateCannotTitle,
-      body: strings.ageGateCannotBody,
-      confirmLabel: strings.ageGateClose,
-      cancelLabel: strings.commonCancel,
-      destructive: false,
-    ).then((confirmed) {
-      if (confirmed && context.mounted) SystemNavigator.pop();
-    });
+    try {
+      final confirmed = await showConfirmDialog(
+        context,
+        title: strings.ageGateCannotTitle,
+        body: strings.ageGateCannotBody,
+        confirmLabel: strings.ageGateClose,
+        cancelLabel: strings.commonCancel,
+        destructive: false,
+      );
+      if (confirmed && mounted) SystemNavigator.pop();
+    } finally {
+      _declining = false;
+    }
   }
 }

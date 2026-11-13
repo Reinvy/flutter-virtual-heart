@@ -14,6 +14,7 @@ import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
 import '../../services/ai/model_service.dart';
+import '../../services/notification_service.dart';
 import 'package:virtual_heart/services/settings/settings_service.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -31,28 +32,38 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _boot() async {
-    final modelReadyFuture = _loadModelReady();
-    await Future<void>.delayed(const Duration(seconds: 2));
-    final isModelReady = await modelReadyFuture;
-
     final settings = ref.read(appSettingsProvider);
     final String route;
 
     if (!settings.isAgeVerified) {
+      await Future<void>.delayed(const Duration(seconds: 2));
       route = AppRoutes.ageGate;
     } else if (!settings.isOnboardingDone) {
+      await Future<void>.delayed(const Duration(seconds: 2));
       route = AppRoutes.onboarding;
     } else if (!settings.isPersonaSetup) {
+      await Future<void>.delayed(const Duration(seconds: 2));
       route = AppRoutes.personaSetup;
-    } else if (!isModelReady) {
-      route = AppRoutes.modelDownload;
     } else {
-      route = AppRoutes.hub;
+      final modelReadyFuture = _loadModelReady();
+      await Future<void>.delayed(const Duration(seconds: 2));
+      final isModelReady = await modelReadyFuture;
+      if (!isModelReady) {
+        route = '${AppRoutes.modelDownload}?auto=1';
+      } else if (NotificationService().hasPendingTap &&
+          NotificationService().takePendingTap() == kNotificationPayloadChat) {
+        route = AppRoutes.chat;
+      } else {
+        route = AppRoutes.hub;
+      }
     }
 
-    if (mounted) context.go(route);
+    if (!mounted) return;
+    final currentPath =
+        GoRouter.of(context).routeInformationProvider.value.uri.path;
+    if (currentPath != AppRoutes.splash) return;
+    context.go(route);
   }
-
   /// Menunggu model selesai dimuat (dibatasi 8 detik agar splash tidak macet).
   Future<bool> _loadModelReady() async {
     try {

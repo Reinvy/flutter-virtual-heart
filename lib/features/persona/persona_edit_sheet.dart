@@ -10,6 +10,7 @@ import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_durations.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
+import '../../core/errors/app_logger.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../models/persona_config.dart';
 import '../notifications/notification_controller.dart';
@@ -36,7 +37,7 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
   final Set<String> _hobbies = {};
   bool _isSaving = false;
   bool _dirty = false;
-
+  bool _confirmingClose = false;
   @override
   void initState() {
     super.initState();
@@ -64,19 +65,21 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
   void _markDirty() => _dirty = true;
 
   Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (_isSaving || !(_formKey.currentState?.validate() ?? false)) return;
     HapticFeedback.mediumImpact();
     setState(() => _isSaving = true);
     try {
       final existing = ref.read(personaProvider);
-      final persona = existing ?? PersonaConfig();
-      persona
-        ..name = _nameCtrl.text.trim()
-        ..nicknameForUser = _nicknameCtrl.text.trim()
-        ..gender = _gender
-        ..personalityPreset = _personality
-        ..avatarId = _avatarId
-        ..hobbies = _hobbies.toList();
+      final persona = PersonaConfig(
+        id: existing?.id ?? 0,
+        createdAt: existing?.createdAt,
+        name: _nameCtrl.text.trim(),
+        nicknameForUser: _nicknameCtrl.text.trim(),
+        gender: _gender,
+        personalityPreset: _personality,
+        avatarId: _avatarId,
+        hobbies: _hobbies.toList(),
+      );
       ref.read(personaProvider.notifier).save(persona);
       await _resyncNotifications();
       _dirty = false;
@@ -92,42 +95,39 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
       await ref
           .read(notificationProvider.notifier)
           .applySettings(ref.read(appSettingsProvider));
-    } catch (_) {
-      // Notifikasi bersifat opsional; kegagalan tidak boleh membatalkan edit.
+    } catch (e) {
+      AppLogger.debug('Notification resync skipped after persona edit', e);
     }
   }
 
   Future<void> _confirmClose() async {
+    if (_confirmingClose) return;
     final strings = ref.read(appStringsProvider);
     if (!_dirty) {
       Navigator.of(context).pop();
       return;
     }
-    final discard = await showConfirmDialog(
-      context,
-      title: strings.settingsDiscardTitle,
-      body: strings.settingsDiscardBody,
-      confirmLabel: strings.settingsDiscard,
-      cancelLabel: strings.commonCancel,
-    );
-    if (!mounted) return;
-    if (discard) Navigator.of(context).pop();
+    _confirmingClose = true;
+    try {
+      final discard = await showConfirmDialog(
+        context,
+        title: strings.settingsDiscardTitle,
+        body: strings.settingsDiscardBody,
+        confirmLabel: strings.settingsDiscard,
+        cancelLabel: strings.commonCancel,
+      );
+      if (!mounted) return;
+      if (discard) Navigator.of(context).pop();
+    } finally {
+      _confirmingClose = false;
+    }
   }
 
-  String? _validateName(String? value) {
-    final strings = ref.read(appStringsProvider);
-    final text = value?.trim() ?? '';
-    if (text.isEmpty) return strings.personaNameEmpty;
-    if (text.length < 2) return strings.personaNameMin;
-    if (text.length > 32) return strings.personaNameMax;
-    return null;
-  }
+  String? _validateName(String? value) =>
+      validatePersonaName(ref.read(appStringsProvider), value);
 
-  String? _validateNickname(String? value) {
-    final strings = ref.read(appStringsProvider);
-    if ((value?.trim() ?? '').isEmpty) return strings.personaNicknameEmpty;
-    return null;
-  }
+  String? _validateNickname(String? value) =>
+      validatePersonaNickname(ref.read(appStringsProvider), value);
 
   Widget _label(BuildContext context, String text) {
     return Padding(
@@ -310,11 +310,10 @@ class _PersonaEditSheetState extends ConsumerState<PersonaEditSheet> {
                           children: [
                             for (final hobby in kHobbiesList)
                               HobbyChip(
-                                label: hobby,
+                                label: strings.personaHobbyLabel(hobby),
                                 isSelected: _hobbies.contains(hobby),
                                 onTap: () {
                                   setState(() {
-                                    _markDirty();
                                     if (!_hobbies.remove(hobby)) {
                                       _hobbies.add(hobby);
                                     }
