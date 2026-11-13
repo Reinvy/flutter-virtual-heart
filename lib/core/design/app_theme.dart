@@ -14,10 +14,16 @@ import 'tokens/text_styles.dart';
 abstract final class AppTheme {
   AppTheme._();
 
+  static final Map<AppThemeStyle, ThemeData> _lightCache = {};
+  static final Map<AppThemeStyle, ThemeData> _darkCache = {};
+
   static final ThemeData light = lightFor(AppThemeStyle.editorial);
   static final ThemeData dark = darkFor(AppThemeStyle.editorial);
 
-  static ThemeData lightFor(AppThemeStyle style) {
+  static ThemeData lightFor(AppThemeStyle style) =>
+      _lightCache.putIfAbsent(style, () => _buildLight(style));
+
+  static ThemeData _buildLight(AppThemeStyle style) {
     final palette = AppPalettes.resolve(style, Brightness.light);
     return _build(
       palette: palette,
@@ -60,7 +66,10 @@ abstract final class AppTheme {
     );
   }
 
-  static ThemeData darkFor(AppThemeStyle style) {
+  static ThemeData darkFor(AppThemeStyle style) =>
+      _darkCache.putIfAbsent(style, () => _buildDark(style));
+
+  static ThemeData _buildDark(AppThemeStyle style) {
     final palette = AppPalettes.resolve(style, Brightness.dark);
     return _build(
       palette: palette,

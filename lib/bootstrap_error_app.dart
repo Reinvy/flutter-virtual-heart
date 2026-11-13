@@ -1,17 +1,13 @@
 // Layar darurat bila bootstrap (engine AI / database) gagal sebelum runApp.
 //
-// Sengaja tidak memakai provider maupun lokalisasi (butuh database): layar ini
-// harus selalu bisa dirender. Tema tetap dipakai supaya warna & tipografi
-// konsisten.
-import 'package:material_ui/material_ui.dart';
+// Sengaja tidak memakai provider, lokalisasi (butuh database), atau GoogleFonts
+// (butuh jaringan/asset): layar ini harus selalu bisa dirender dengan tema
+// bawaan platform dan palet statis.
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
-import 'core/design/app_theme.dart';
-import 'core/design/components/app_scaffold.dart';
-import 'core/design/components/primary_button.dart';
-import 'core/design/components/resonance_mark.dart';
+import 'core/design/tokens/app_colors.dart';
 import 'core/design/tokens/app_sizes.dart';
-import 'core/design/tokens/text_styles.dart';
 
 class BootstrapErrorApp extends StatelessWidget {
   const BootstrapErrorApp({super.key});
@@ -23,75 +19,116 @@ class BootstrapErrorApp extends StatelessWidget {
   static const String _bodyId =
       'Mesin AI atau database lokal tidak bisa dibuka. Silakan mulai ulang aplikasi.';
 
+  static ThemeData _fallbackTheme(AppPalette palette) {
+    final isDark = palette.brightness == Brightness.dark;
+    final scheme = isDark
+        ? ColorScheme.dark(
+            primary: palette.primary,
+            onPrimary: palette.textOnPrimary,
+            surface: palette.surface,
+            onSurface: palette.textPrimary,
+            onSurfaceVariant: palette.textSecondary,
+            error: palette.error,
+            outlineVariant: palette.divider,
+          )
+        : ColorScheme.light(
+            primary: palette.primary,
+            onPrimary: palette.textOnPrimary,
+            surface: palette.surface,
+            onSurface: palette.textPrimary,
+            onSurfaceVariant: palette.textSecondary,
+            error: palette.error,
+            outlineVariant: palette.divider,
+          );
+    return ThemeData(
+      useMaterial3: true,
+      brightness: palette.brightness,
+      colorScheme: scheme,
+      scaffoldBackgroundColor: palette.background,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
+      theme: _fallbackTheme(AppPalettes.editorialLight),
+      darkTheme: _fallbackTheme(AppPalettes.editorialDark),
       themeMode: ThemeMode.system,
       home: Builder(
         builder: (context) {
           final scheme = Theme.of(context).colorScheme;
-          return AppScaffold(
-            body: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppSizes.spaceLg),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 480),
-                  child: Container(
-                    padding: const EdgeInsets.all(AppSizes.spaceLg),
-                    decoration: BoxDecoration(
-                      color: scheme.surface,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusCard),
-                      border: Border.all(color: scheme.error, width: 1),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const ResonanceMark(
-                          size: 64,
-                          icon: Icons.warning_amber_rounded,
-                        ),
-                        const SizedBox(height: AppSizes.spaceMd),
-                        Text(
-                          _titleEn,
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.headingLarge(
-                            context,
-                            color: scheme.onSurface,
+          return Scaffold(
+            body: SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppSizes.spaceLg),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSizes.spaceLg),
+                      decoration: BoxDecoration(
+                        color: scheme.surface,
+                        borderRadius: BorderRadius.circular(AppSizes.radiusCard),
+                        border: Border.all(color: scheme.error, width: 1),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            size: 48,
+                            color: scheme.error,
                           ),
-                        ),
-                        const SizedBox(height: AppSizes.spaceXxs),
-                        Text(
-                          _titleId,
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.titleLarge(
-                            color: scheme.onSurface,
+                          const SizedBox(height: AppSizes.spaceMd),
+                          Text(
+                            _titleEn,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w600,
+                              color: scheme.onSurface,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: AppSizes.spaceMd),
-                        Text(
-                          _bodyEn,
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.bodyMedium(
-                            color: scheme.onSurfaceVariant,
+                          const SizedBox(height: AppSizes.spaceXxs),
+                          Text(
+                            _titleId,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                              color: scheme.onSurface,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: AppSizes.spaceXs),
-                        Text(
-                          _bodyId,
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.bodyMedium(
-                            color: scheme.onSurfaceVariant,
+                          const SizedBox(height: AppSizes.spaceMd),
+                          Text(
+                            _bodyEn,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: scheme.onSurfaceVariant,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: AppSizes.spaceLg),
-                        PrimaryButton(
-                          label: 'Close / Tutup',
-                          onPressed: SystemNavigator.pop,
-                        ),
-                      ],
+                          const SizedBox(height: AppSizes.spaceXs),
+                          Text(
+                            _bodyId,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: AppSizes.spaceLg),
+                          SizedBox(
+                            width: double.infinity,
+                            height: AppSizes.controlHeight,
+                            child: FilledButton(
+                              onPressed: SystemNavigator.pop,
+                              child: const Text('Close / Tutup'),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

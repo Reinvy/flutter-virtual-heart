@@ -25,6 +25,7 @@ class VirtualHeartApp extends ConsumerStatefulWidget {
 class _VirtualHeartAppState extends ConsumerState<VirtualHeartApp> {
   AppLifecycleObserver? _lifecycleObserver;
   StreamSubscription<String?>? _tapSubscription;
+  String? _deferredTapPayload;
 
   @override
   void initState() {
@@ -50,30 +51,47 @@ class _VirtualHeartAppState extends ConsumerState<VirtualHeartApp> {
   }
 
   /// Navigasi ke chat hanya bila seluruh gate sudah terlewati & model siap.
+  /// Pada cold start saat model masih dimuat, payload disimpan sampai siap.
   void _handleNotificationTap(String? payload) {
     if (payload != kNotificationPayloadChat || !mounted) return;
 
     final settings = ref.read(appSettingsProvider);
-    final ready =
+    final setupDone =
         settings.isAgeVerified &&
         settings.isOnboardingDone &&
-        settings.isPersonaSetup &&
-        ref.read(modelReadyProvider);
-
-    if (!ready) {
-      AppLogger.debug('Notification tap ignored: setup/model not ready');
+        settings.isPersonaSetup;
+    if (!setupDone) {
+      _deferredTapPayload = null;
+      AppLogger.debug('Notification tap ignored: setup incomplete');
       return;
     }
 
+    if (!ref.read(modelReadyProvider)) {
+      _deferredTapPayload = payload;
+      AppLogger.debug('Notification tap deferred until model is ready');
+      return;
+    }
+
+    _deferredTapPayload = null;
     ref.read(routerProvider).go(AppRoutes.chat);
+  }
+
+  void _flushDeferredNotificationTap() {
+    final pending = _deferredTapPayload;
+    if (pending == null) return;
+    _handleNotificationTap(pending);
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<bool>(modelReadyProvider, (_, next) {
+      if (next) _flushDeferredNotificationTap();
+    });
+
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
     final themeStyle = ref.watch(themeStyleProvider);
-    final language = ref.watch(appSettingsProvider).language;
+    final language = ref.watch(appSettingsProvider.select((s) => s.language));
 
     return MaterialApp.router(
       title: 'VirtualHeart',

@@ -1,4 +1,5 @@
 // Entry point — init AI engine, notifikasi & database, lalu jalankan app.
+import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_edge_ai/flutter_edge_ai.dart';
 import 'package:flutter_edge_ai_litertlm/flutter_edge_ai_litertlm.dart';
@@ -17,6 +18,14 @@ import 'services/notification_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  FlutterError.onError = (details) {
+    AppLogger.error('Flutter framework error', details.exception, details.stack);
+    if (kDebugMode) FlutterError.presentError(details);
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    AppLogger.error('Unhandled platform error', error, stack);
+    return true;
+  };
   try {
     // Token HuggingFace opsional (untuk model gated) — dari SharedPreferences.
     final prefs = await SharedPreferences.getInstance();

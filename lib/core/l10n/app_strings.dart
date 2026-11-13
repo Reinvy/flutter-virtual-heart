@@ -296,6 +296,9 @@ abstract class AppStrings {
   String get hubViewAll;
   String get hubEngineTitle;
   String get hubEngineReady;
+  String get routeNotFoundTitle;
+  String get routeNotFoundBody;
+  String get routeGoHome;
   // ── Isi notifikasi (FR-15) ──────────────────────────────────────────────
   List<String> get morningMessages;
   List<String> get checkinMessages;
@@ -913,6 +916,13 @@ class IndonesianStrings extends AppStrings {
     'Sibuk? Aku di sini menunggu kamu~ 🌷',
     'Semoga harimu baik. Aku selalu ada kapan pun kamu ingin bicara 💫',
   ];
+
+  @override
+  String get routeNotFoundTitle => 'Halaman tidak ditemukan';
+  @override
+  String get routeNotFoundBody => 'Tautan ini tidak mengarah ke layar yang valid.';
+  @override
+  String get routeGoHome => 'Kembali ke Awal';
 }
 
 /// Implementasi Bahasa Inggris.
@@ -1527,11 +1537,18 @@ class EnglishStrings extends AppStrings {
     'Busy? I\'m here waiting for you~ 🌷',
     'Hope your day is going well. I\'m always here whenever you want to talk 💫',
   ];
+
+  @override
+  String get routeNotFoundTitle => 'Page not found';
+  @override
+  String get routeNotFoundBody => 'This route does not point to a valid screen.';
+  @override
+  String get routeGoHome => 'Go Home';
 }
 
 /// Memilih [AppStrings] sesuai [AppSettings.language].
 final appStringsProvider = Provider<AppStrings>((ref) {
-  final language = ref.watch(appSettingsProvider).language;
+  final language = ref.watch(appSettingsProvider.select((s) => s.language));
   return switch (language) {
     AppLanguage.indonesian => const IndonesianStrings(),
     AppLanguage.english => const EnglishStrings(),

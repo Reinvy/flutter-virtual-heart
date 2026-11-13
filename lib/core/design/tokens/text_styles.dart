@@ -33,7 +33,7 @@ abstract final class AppTextStyles {
       ),
       AppThemeStyle.romantic => GoogleFonts.cormorantGaramond(
         fontSize: fontSize + 2,
-        fontWeight: FontWeight.w600,
+        fontWeight: fontWeight,
         height: height,
         letterSpacing: letterSpacing,
         color: color,

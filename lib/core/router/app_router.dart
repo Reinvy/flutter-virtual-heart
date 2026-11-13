@@ -53,9 +53,11 @@ CustomTransitionPage<void> _buildPage(GoRouterState state, Widget child) {
     key: state.pageKey,
     child: child,
     transitionDuration: AppDurations.durationNormal,
-    reverseTransitionDuration: const Duration(milliseconds: 220),
+    reverseTransitionDuration: AppDurations.durationNormal,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       if (MediaQuery.disableAnimationsOf(context)) return child;
+      final height = MediaQuery.sizeOf(context).height;
+      final dy = height > 0 ? 8 / height : 0.0;
       final curved = CurvedAnimation(
         parent: animation,
         curve: AppDurations.curveStandard,
@@ -64,7 +66,7 @@ CustomTransitionPage<void> _buildPage(GoRouterState state, Widget child) {
         opacity: curved,
         child: SlideTransition(
           position: Tween<Offset>(
-            begin: Offset(0, 8 / MediaQuery.sizeOf(context).height),
+            begin: Offset(0, dy),
             end: Offset.zero,
           ).animate(curved),
           child: child,
@@ -84,6 +86,7 @@ String? resolveRedirect({
   required String path,
   required AppSettings settings,
   required bool isModelReady,
+  Map<String, String> queryParameters = const {},
 }) {
   if (path == AppRoutes.splash) return null;
   if (path == AppRoutes.privacy) return null;
@@ -115,6 +118,9 @@ String? resolveRedirect({
     AppRoutes.personaSetup,
   };
   if (setupRoutes.contains(path)) return AppRoutes.hub;
+  if (path == AppRoutes.modelDownload && queryParameters['auto'] == '1') {
+    return AppRoutes.hub;
+  }
 
   return null;
 }
@@ -131,6 +137,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       path: state.uri.path,
       settings: ref.read(appSettingsProvider),
       isModelReady: ref.read(modelReadyProvider),
+      queryParameters: state.uri.queryParameters,
     ),
     errorBuilder: (context, state) => const _RouterErrorScreen(),
     routes: [
@@ -221,10 +228,10 @@ class _RouterErrorScreen extends ConsumerWidget {
       body: EmptyState(
         mark: true,
         icon: Icons.error_outline_rounded,
-        title: strings.modelErrorUnknown,
-        body: '',
+        title: strings.routeNotFoundTitle,
+        body: strings.routeNotFoundBody,
         action: GhostButton(
-          label: strings.chatRetry,
+          label: strings.routeGoHome,
           onPressed: () => context.go(AppRoutes.splash),
         ),
       ),

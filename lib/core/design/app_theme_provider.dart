@@ -9,8 +9,8 @@ import 'package:virtual_heart/services/settings/settings_service.dart';
 ///
 /// Default = light sesuai docs/DESIGN.md §1.
 final themeModeProvider = Provider<ThemeMode>((ref) {
-  final settings = ref.watch(appSettingsProvider);
-  switch (settings.theme) {
+  final theme = ref.watch(appSettingsProvider.select((s) => s.theme));
+  switch (theme) {
     case AppThemeSetting.dark:
       return ThemeMode.dark;
     case AppThemeSetting.light:

@@ -12,8 +12,7 @@ class AppBackground extends StatelessWidget {
     final palette = AppColors.paletteOf(context);
     final scheme = Theme.of(context).colorScheme;
 
-    return Semantics(
-      label: null,
+    return ExcludeSemantics(
       child: IgnorePointer(
         child: RepaintBoundary(
           child: Stack(
