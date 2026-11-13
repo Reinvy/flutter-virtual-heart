@@ -34,8 +34,11 @@ class SttService {
   bool _localReady = false;
   bool _isListening = false;
   bool _starting = false;
+  bool _cancelRequested = false;
+  bool _hasSystemTranscript = false;
   String? _recordPath;
   String _lastWords = '';
+  Future<bool>? _preparingLocal;
 
   bool get isListening => _isListening;
 
@@ -44,6 +47,15 @@ class SttService {
       model == 'moonshine' && _localReady && FlutterEdgeAi.hasActiveStt();
 
   // ── Public API ───────────────────────────────────────────────────────────
+
+  /// Mengunduh/mempersiapkan model STT tanpa meminta izin mikrofon.
+  Future<bool> prepareModel({
+    String backend = 'system',
+    String model = 'moonshine',
+    void Function(int percent)? onProgress,
+  }) {
+    return _prepare(backend: backend, model: model, onProgress: onProgress);
+  }
 
   /// Memastikan backend siap (izin mikrofon + model/engine).
   ///
@@ -56,8 +68,6 @@ class SttService {
     if (!granted) return false;
     return _prepare(backend: backend, onProgress: onProgress);
   }
-
-  /// Mulai mendengarkan sesuai [backend].
   ///
   /// [languageCode] (mis. `id-ID`/`en-US`) hanya dipakai backend sistem.
   Future<SttStartResult> startListening({
@@ -66,11 +76,15 @@ class SttService {
   }) async {
     if (_isListening || _starting) return SttStartResult.busy;
     _starting = true;
+    _cancelRequested = false;
+    _hasSystemTranscript = false;
     try {
       final granted = await _requestMicrophone();
+      if (_cancelRequested) return SttStartResult.unavailable;
       if (!granted) return SttStartResult.permissionDenied;
 
       final ready = await _prepare(backend: backend);
+      if (_cancelRequested) return SttStartResult.unavailable;
       if (!ready) return SttStartResult.unavailable;
 
       if (backend == 'system') {
@@ -78,6 +92,9 @@ class SttService {
         await _speech.listen(
           onResult: (SpeechRecognitionResult result) {
             _lastWords = result.recognizedWords;
+            if (_lastWords.trim().isNotEmpty) {
+              _hasSystemTranscript = true;
+            }
           },
           listenOptions: SpeechListenOptions(
             listenMode: ListenMode.confirmation,
@@ -86,6 +103,10 @@ class SttService {
             localeId: _systemLocale(languageCode),
           ),
         );
+        if (_cancelRequested) {
+          await _speech.cancel();
+          return SttStartResult.unavailable;
+        }
         _isListening = true;
         return SttStartResult.started;
       }
@@ -101,6 +122,11 @@ class SttService {
         path: path,
       );
       _recordPath = path;
+      if (_cancelRequested) {
+        await _recorder.cancel();
+        await _deleteRecording();
+        return SttStartResult.unavailable;
+      }
       _isListening = true;
       return SttStartResult.started;
     } catch (e) {
@@ -115,19 +141,30 @@ class SttService {
 
   /// Menghentikan dan mengembalikan transkripsi sesuai [backend].
   Future<String> stopListening({String backend = 'system', String? languageCode}) async {
+    if (backend == 'system') {
+      if (!_isListening && !_hasSystemTranscript) return '';
+      _isListening = false;
+      _hasSystemTranscript = false;
+      try {
+        await _speech.stop();
+        final result = _lastWords.trim();
+        _lastWords = '';
+        return result;
+      } catch (e) {
+        AppLogger.debug('System STT stop failed', e);
+        final result = _lastWords.trim();
+        _lastWords = '';
+        return result;
+      }
+    }
+
     if (!_isListening) return '';
     _isListening = false;
 
     try {
-      if (backend == 'system') {
-        await _speech.stop();
-        return _lastWords.trim();
-      }
-
       await _recorder.stop();
 
       final path = _recordPath;
-      _recordPath = null;
       if (path == null) return '';
 
       final file = File(path);
@@ -148,7 +185,10 @@ class SttService {
 
   /// Membatalkan sesi tanpa hasil.
   Future<void> cancel() async {
+    _cancelRequested = true;
     _isListening = false;
+    _hasSystemTranscript = false;
+    _lastWords = '';
     try {
       await _speech.cancel();
     } catch (e) {
@@ -162,7 +202,6 @@ class SttService {
       await _deleteRecording();
     }
   }
-
   // ── Private ─────────────────────────────────────────────────────────────
 
   Future<bool> _requestMicrophone() async {
@@ -177,6 +216,7 @@ class SttService {
 
   Future<bool> _prepare({
     required String backend,
+    String model = 'moonshine',
     void Function(int percent)? onProgress,
   }) async {
     if (backend == 'system') {
@@ -193,23 +233,32 @@ class SttService {
       }
     }
 
+    if (model != 'moonshine') return false;
     if (_localReady && FlutterEdgeAi.hasActiveStt()) return true;
+    final pending = _preparingLocal;
+    if (pending != null) return pending;
 
-    try {
-      if (!FlutterEdgeAi.hasActiveStt()) {
-        await FlutterEdgeAi.installStt()
-            .modelFromNetwork(kSttModelUrl)
-            .tokenizerFromNetwork(kSttTokenizerUrl)
-            .ofType(sttModelById('moonshine').edgeAiSttType!)
-            .withProgress((p) => onProgress?.call(p))
-            .install();
+    final future = () async {
+      try {
+        if (!FlutterEdgeAi.hasActiveStt()) {
+          await FlutterEdgeAi.installStt()
+              .modelFromNetwork(kSttModelUrl)
+              .tokenizerFromNetwork(kSttTokenizerUrl)
+              .ofType(sttModelById(model).edgeAiSttType!)
+              .withProgress((p) => onProgress?.call(p))
+              .install();
+        }
+        _localReady = true;
+        return true;
+      } catch (e) {
+        AppLogger.debug('STT model unavailable', e);
+        return false;
+      } finally {
+        _preparingLocal = null;
       }
-      _localReady = true;
-      return true;
-    } catch (e) {
-      AppLogger.debug('STT model unavailable', e);
-      return false;
-    }
+    }();
+    _preparingLocal = future;
+    return future;
   }
 
   /// Menghapus file rekaman sementara (best-effort, tanpa melempar).

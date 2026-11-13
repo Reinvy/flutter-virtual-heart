@@ -6,10 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/errors/app_logger.dart';
+import '../../core/utils/async_fifo_lock.dart';
 import 'package:virtual_heart/services/ai/model_ready_provider.dart';
 import 'package:virtual_heart/services/settings/settings_service.dart';
 import 'model_catalog.dart';
-
 /// Jenis kegagalan pemasangan/pemuatan model.
 enum ModelErrorKind {
   network,
@@ -136,18 +136,31 @@ class ModelStatus {
 /// dipakai `FlutterEdgeAi.isModelInstalled`), `modelSource` menyimpan asal
 /// pemasangan (`network`/`file`), dan `modelUrl` menyimpan URL asal.
 class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
+  /// Menserialisasikan siklus hidup native model lintas dispose/rebuild
+  /// sehingga instance baru tidak membuka model sebelum instance lama ditutup.
+  static Future<void> _engineTransition = Future<void>.value();
+
   edge_ai.InferenceModel? _model;
   edge_ai.CancelToken? _cancelToken;
 
   /// Chat yang sedang aktif — dipakai [stopGeneration].
   edge_ai.InferenceChat? _activeChat;
+  bool _generationCancelled = false;
+  bool _disposed = false;
 
   /// Selesai saat proses install (sukses/gagal/batal) berakhir.
   Completer<void>? _installDone;
+  bool _installInFlight = false;
 
-  /// Antrean inferensi: chat, ekstraksi memori, dan ringkasan tidak boleh
-  /// berjalan bersamaan pada instance engine yang sama.
-  Completer<void>? _lockHeld;
+  /// Antrean inferensi: chat, ekstraksi memori, ringkasan, dan pergantian
+  /// model tidak boleh berjalan bersamaan pada instance engine yang sama.
+  final AsyncFifoLock _inferenceLock = AsyncFifoLock();
+
+  static Future<void> _enqueueTransition(Future<void> Function() action) {
+    final next = _engineTransition.then((_) => action(), onError: (_) => action());
+    _engineTransition = next.then((_) {}, onError: (Object _) {});
+    return next;
+  }
 
   // -------------------------------------------------------------------------
   // Lifecycle
@@ -155,13 +168,40 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
 
   @override
   Future<ModelStatus> build() async {
+    _disposed = false;
     ref.onDispose(() {
+      _disposed = true;
       _cancelToken?.cancel('provider disposed');
+      _generationCancelled = true;
       final chat = _activeChat;
-      if (chat != null) unawaited(chat.close());
+      _activeChat = null;
       final model = _model;
-      if (model != null) unawaited(model.close());
+      _model = null;
+      _enqueueTransition(() async {
+        if (chat != null) {
+          try {
+            await chat.stopGeneration();
+          } catch (e) {
+            AppLogger.debug('Dispose stopGeneration ignored', e);
+          }
+          try {
+            await chat.close();
+          } catch (e) {
+            AppLogger.debug('Dispose chat close ignored', e);
+          }
+        }
+        if (model != null) {
+          try {
+            await model.close();
+          } catch (e) {
+            AppLogger.debug('Dispose model close ignored', e);
+          }
+        }
+      });
     });
+
+    await _engineTransition;
+    if (_disposed || !ref.mounted) return const ModelStatus();
 
     final settings = ref.read(appSettingsProvider);
 
@@ -199,16 +239,45 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
   }
 
   Future<ModelStatus> _activate(String fileName) async {
-    try {
-      _model = await edge_ai.FlutterEdgeAi.getActiveModel(
-        preferredBackend: edge_ai.PreferredBackend.cpu,
-        maxTokens: 2048,
-      );
-    } catch (e) {
-      throw ModelException(ModelErrorKind.engine, e);
-    }
-    ref.read(modelReadyProvider.notifier).setReady();
-    return ModelStatus(ready: true, modelName: fileName);
+    await stopGeneration();
+    return _inferenceLock.run(() async {
+      await _engineTransition;
+      if (_disposed || !ref.mounted) return const ModelStatus();
+
+      final oldModel = _model;
+      _model = null;
+      if (oldModel != null) {
+        try {
+          await oldModel.close();
+        } catch (e) {
+          AppLogger.debug('Previous model close ignored', e);
+        }
+      }
+
+      late final edge_ai.InferenceModel loaded;
+      try {
+        loaded = await edge_ai.FlutterEdgeAi.getActiveModel(
+          preferredBackend: edge_ai.PreferredBackend.cpu,
+          maxTokens: 2048,
+        );
+      } catch (e) {
+        if (ref.mounted) ref.read(modelReadyProvider.notifier).reset();
+        throw ModelException(ModelErrorKind.engine, e);
+      }
+
+      if (_disposed || !ref.mounted) {
+        try {
+          await loaded.close();
+        } catch (e) {
+          AppLogger.debug('Discarded model close ignored', e);
+        }
+        return const ModelStatus();
+      }
+
+      _model = loaded;
+      ref.read(modelReadyProvider.notifier).setReady();
+      return ModelStatus(ready: true, modelName: fileName);
+    });
   }
 
   // -------------------------------------------------------------------------
@@ -219,8 +288,16 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
   ///
   /// `true` bila model terpasang dan aktif.
   Future<bool> installFromNetwork(ModelOption option, {String? hfToken}) async {
+    if (_installInFlight) return false;
+    _installInFlight = true;
     final previous = state.value;
-    state = const AsyncLoading();
+    state = AsyncData(
+      (previous ?? const ModelStatus()).copyWith(
+        installing: true,
+        progress: 0,
+        modelName: option.name,
+      ),
+    );
     final token = _cancelToken = edge_ai.CancelToken();
     final done = _installDone = Completer<void>();
     try {
@@ -236,9 +313,10 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
       }
       return false;
     } finally {
-      _cancelToken = null;
+      if (identical(_cancelToken, token)) _cancelToken = null;
       if (!done.isCompleted) done.complete();
       if (identical(_installDone, done)) _installDone = null;
+      _installInFlight = false;
     }
   }
 
@@ -246,8 +324,17 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
   ///
   /// `true` bila model terpasang dan aktif.
   Future<bool> installFromFile(String path, ModelOption option) async {
+    if (_installInFlight) return false;
+    _installInFlight = true;
     final previous = state.value;
-    state = const AsyncLoading();
+    state = AsyncData(
+      ModelStatus(
+        ready: previous?.ready ?? false,
+        progress: 0,
+        modelName: option.name,
+        installing: true,
+      ),
+    );
     _cancelToken = null;
     try {
       await edge_ai.FlutterEdgeAi.installModel(
@@ -270,6 +357,8 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
         state = AsyncError(ModelException(kind, e), st);
       }
       return false;
+    } finally {
+      _installInFlight = false;
     }
   }
 
@@ -348,6 +437,7 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
 
   /// Menghentikan generasi yang sedang berjalan. Tidak pernah melempar.
   Future<void> stopGeneration() async {
+    _generationCancelled = true;
     try {
       await _activeChat?.stopGeneration();
     } catch (e) {
@@ -363,13 +453,13 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
     String fullPrompt, {
     bool Function()? isCancelled,
   }) async* {
-    final model = _model;
-    if (model == null) throw StateError('Model not initialized');
-
-    await _acquire();
+    final release = await _inferenceLock.acquire();
     try {
-      if (isCancelled?.call() == true) return;
+      if (_disposed || isCancelled?.call() == true) return;
+      final model = _model;
+      if (model == null) throw StateError('Model not initialized');
 
+      _generationCancelled = false;
       final chat = await model.openChat(
         temperature: 0.9,
         randomSeed: Random().nextInt(1 << 31),
@@ -377,6 +467,14 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
         topP: 0.95,
         maxOutputTokens: 512,
       );
+      if (_disposed || _generationCancelled || isCancelled?.call() == true) {
+        try {
+          await chat.close();
+        } catch (e) {
+          AppLogger.debug('Cancelled chat.close ignored', e);
+        }
+        return;
+      }
       _activeChat = chat;
       try {
         await chat.addQueryChunk(edge_ai.Message.text(text: fullPrompt, isUser: true));
@@ -387,13 +485,17 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
           }
         }
       } finally {
-        _activeChat = null;
-        await chat.close();
+        if (identical(_activeChat, chat)) _activeChat = null;
+        try {
+          await chat.close();
+        } catch (e) {
+          AppLogger.debug('chat.close ignored', e);
+        }
       }
     } on edge_ai.ContextLimitException {
       throw const ContextLimitReachedException();
     } finally {
-      _release();
+      release();
     }
   }
 
@@ -404,23 +506,6 @@ class ModelServiceNotifier extends AsyncNotifier<ModelStatus> {
       buffer.write(token);
     }
     return buffer.toString();
-  }
-
-  // -------------------------------------------------------------------------
-  // Generation lock
-  // -------------------------------------------------------------------------
-
-  Future<void> _acquire() async {
-    final previous = _lockHeld;
-    final completer = Completer<void>();
-    _lockHeld = completer;
-    if (previous != null) await previous.future;
-  }
-
-  void _release() {
-    final held = _lockHeld;
-    _lockHeld = null;
-    if (held != null && !held.isCompleted) held.complete();
   }
 }
 

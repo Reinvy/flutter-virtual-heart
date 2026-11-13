@@ -10,9 +10,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/errors/app_logger.dart';
 import '../../services/mood_service.dart';
+import '../../services/settings/settings_service.dart';
 import '../chat/mood_provider.dart';
 import 'notification_controller.dart';
-
 class AppLifecycleObserver extends WidgetsBindingObserver {
   AppLifecycleObserver(this._ref);
 
@@ -47,6 +47,7 @@ class AppLifecycleObserver extends WidgetsBindingObserver {
 
   void _updateMoodFromIdle() {
     try {
+      if (!_ref.read(appSettingsProvider).isPersonaSetup) return;
       _ref.read(moodServiceProvider).updateMoodFromIdleTime();
       _ref.read(moodProvider.notifier).refresh();
     } catch (e) {

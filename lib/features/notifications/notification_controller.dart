@@ -1,5 +1,4 @@
 // Fitur Notifications (FR-15..FR-17) — controller sinkronisasi jadwal.
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/errors/app_logger.dart';
@@ -15,6 +14,7 @@ import 'package:virtual_heart/services/settings/settings_service.dart';
 /// tidak boleh saling menimpa (mis. persona disimpan lalu sakelar diubah).
 class NotificationNotifier extends AsyncNotifier<void> {
   Future<void> _queue = Future.value();
+  int _applySeq = 0;
 
   @override
   Future<void> build() async {
@@ -24,15 +24,15 @@ class NotificationNotifier extends AsyncNotifier<void> {
 
   /// Menyinkronkan ulang semua jadwal notifikasi dengan [settings].
   Future<void> applySettings(AppSettings settings) async {
+    final seq = ++_applySeq;
     state = const AsyncLoading();
     try {
       await _enqueue(() => _sync(settings));
-      if (ref.mounted) state = const AsyncData(null);
+      if (ref.mounted && seq == _applySeq) state = const AsyncData(null);
     } catch (e, st) {
-      if (ref.mounted) state = AsyncError(e, st);
+      if (ref.mounted && seq == _applySeq) state = AsyncError(e, st);
     }
   }
-
   /// Meminta izin notifikasi OS.
   Future<bool> requestPermission() {
     return ref.read(notificationServiceProvider).requestPermission();
@@ -91,7 +91,8 @@ class NotificationNotifier extends AsyncNotifier<void> {
       final hour = int.tryParse(parts.first) ?? 7;
       final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
       await svc.scheduleMorningMessage(
-        TimeOfDay(hour: hour, minute: minute),
+        hour,
+        minute,
         personaName: persona,
         messages: strings.morningMessages,
       );

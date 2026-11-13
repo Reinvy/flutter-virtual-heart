@@ -34,6 +34,10 @@ class TtsService {
   VoidCallback? _onComplete;
   Timer? _finishTimer;
   int _utterance = 0;
+  int _activeSystemId = 0;
+  bool _systemTtsInitialized = false;
+  Future<bool>? _ensuringFuture;
+  String? _ensuringModel;
 
   // ── Public API ───────────────────────────────────────────────────────────
 
@@ -53,6 +57,30 @@ class TtsService {
     }
     if (_readyModel == model && FlutterEdgeAi.hasActiveTts()) return true;
 
+    while (_ensuringFuture != null) {
+      if (_ensuringModel == model) return _ensuringFuture!;
+      try {
+        await _ensuringFuture;
+      } catch (_) {}
+    }
+
+    final future = _installOnDeviceModel(model, onProgress: onProgress);
+    _ensuringModel = model;
+    _ensuringFuture = future;
+    try {
+      return await future;
+    } finally {
+      if (identical(_ensuringFuture, future)) {
+        _ensuringFuture = null;
+        _ensuringModel = null;
+      }
+    }
+  }
+
+  Future<bool> _installOnDeviceModel(
+    String model, {
+    void Function(int percent)? onProgress,
+  }) async {
     final option = ttsModelById(model);
     try {
       await FlutterEdgeAi.installTts()
@@ -86,8 +114,9 @@ class TtsService {
   }) async {
     if (text.trim().isEmpty) return false;
 
-    await _stopInternal();
     final id = ++_utterance;
+    await _stopInternal();
+    if (id != _utterance) return false;
 
     if (backend == 'system') {
       return _speakSystem(
@@ -113,21 +142,25 @@ class TtsService {
   // ── Backend: system (flutter_tts) ───────────────────────────────────────
 
   Future<bool> _initSystemTts() async {
+    if (_systemTtsInitialized) return true;
     _flutterTts.setStartHandler(() {});
     _flutterTts.setCompletionHandler(() {
+      if (_activeSystemId != _utterance) return;
       final cb = _onComplete;
       _onComplete = null;
       cb?.call();
     });
     _flutterTts.setCancelHandler(() {
+      if (_activeSystemId != _utterance) return;
       _onComplete = null;
     });
     _flutterTts.setErrorHandler((_) {
+      if (_activeSystemId != _utterance) return;
       _onComplete = null;
     });
+    _systemTtsInitialized = true;
     return true;
   }
-
   Future<bool> _speakSystem(
     String text, {
     required int id,
@@ -141,8 +174,10 @@ class TtsService {
       if (id != _utterance) return false;
 
       _onComplete = onDone;
+      _activeSystemId = id;
 
       await _flutterTts.setLanguage(languageCode ?? 'id-ID');
+      if (id != _utterance) return false;
       if (gender == PersonaGender.girlfriend) {
         await _flutterTts.setPitch(1.6);
         await _flutterTts.setSpeechRate(0.4);
@@ -150,6 +185,7 @@ class TtsService {
         await _flutterTts.setPitch(0.88);
         await _flutterTts.setSpeechRate(0.47);
       }
+      if (id != _utterance) return false;
 
       await _flutterTts.speak(text);
       return true;
@@ -183,10 +219,20 @@ class TtsService {
       }
 
       await FlutterPcmSound.setup(sampleRate: synth.sampleRate, channelCount: 1);
-      if (id != _utterance) return false;
+      if (id != _utterance) {
+        try {
+          await FlutterPcmSound.release();
+        } catch (_) {}
+        return false;
+      }
 
       await FlutterPcmSound.feed(PcmArrayInt16(bytes: pcm.buffer.asByteData()));
-      if (id != _utterance) return false;
+      if (id != _utterance) {
+        try {
+          await FlutterPcmSound.release();
+        } catch (_) {}
+        return false;
+      }
 
       FlutterPcmSound.start();
 

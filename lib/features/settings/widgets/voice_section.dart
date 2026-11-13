@@ -186,8 +186,9 @@ List<Widget> _speechModelChildren(
               .read(appSettingsProvider.notifier)
               .save(settings.copyWith(sttModel: opt.id));
         },
-        onDownload: (onProgress) => SttService().initialize(
+        onDownload: (onProgress) => SttService().prepareModel(
           backend: 'gemma',
+          model: opt.id,
           onProgress: onProgress,
         ),
       ),

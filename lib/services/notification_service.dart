@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -61,16 +60,27 @@ class NotificationService {
   final _tapController = StreamController<String?>.broadcast();
 
   bool _initialized = false;
+  Future<void>? _initFuture;
   String? _pendingTap;
 
   // ── Initialization ────────────────────────────────────────────────────
 
   /// Initializes the plugin, timezone database, and notification tap handler.
   ///
-  /// Safe to call multiple times; subsequent calls are no-ops.
-  Future<void> initialize() async {
-    if (_initialized) return;
+  /// Safe to call multiple times; concurrent callers share one initialization.
+  Future<void> initialize() {
+    if (_initialized) return Future.value();
+    final pending = _initFuture;
+    if (pending != null) return pending;
+    final future = _initializeInternal().whenComplete(() {
+      _initFuture = null;
+    });
+    _initFuture = future;
+    return future;
+  }
 
+  Future<void> _initializeInternal() async {
+    if (_initialized) return;
     tz_data.initializeTimeZones();
     try {
       final info = await FlutterTimezone.getLocalTimezone();
@@ -162,8 +172,8 @@ class NotificationService {
       final result = await android?.requestNotificationsPermission();
       return result ?? await hasPermission();
     }
-
-    return false;
+    // Desktop/Linux: tidak ada izin runtime, selaras dengan hasPermission().
+    return true;
   }
 
   /// Membuka pengaturan notifikasi aplikasi di OS.
@@ -178,7 +188,8 @@ class NotificationService {
   /// A random romantic greeting is selected from [_morningMessages].
   /// [personaName] is used as the notification title.
   Future<void> scheduleMorningMessage(
-    TimeOfDay time, {
+    int hour,
+    int minute, {
     String personaName = 'VirtualHeart',
     List<String>? messages,
     String? channelName,
@@ -188,8 +199,7 @@ class NotificationService {
 
     final pool = (messages != null && messages.isNotEmpty) ? messages : _morningMessages;
     final body = pool[_rng.nextInt(pool.length)];
-    final scheduledDate = nextInstanceOf(time, tz.TZDateTime.now(tz.local));
-
+    final scheduledDate = nextInstanceOf(hour, minute, tz.TZDateTime.now(tz.local));
     await _plugin.zonedSchedule(
       id: _kMorningNotifId,
       title: personaName,
