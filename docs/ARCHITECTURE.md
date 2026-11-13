@@ -18,11 +18,11 @@ WidgetsFlutterBinding.ensureInitialized()
   → runApp(ProviderScope(overrides: [objectBoxServiceProvider], child: VirtualHeartApp))
 ```
 
-Seluruh bootstrap dibungkus `try/catch`: bila engine AI atau database gagal dibuka, aplikasi
-merender `BootstrapErrorApp` (layar darurat dua bahasa + tombol Tutup), bukan jendela kosong.
-Kegagalan inisialisasi notifikasi hanya di-log (`AppLogger.error`) — aplikasi tetap jalan tanpa
-notifikasi.
-
+Seluruh bootstrap dibungkus `try/catch` serta dilengkapi global error hook (`FlutterError.onError`
+dan `PlatformDispatcher.instance.onError` → `AppLogger.error`): bila engine AI atau database
+gagal dibuka, aplikasi merender `BootstrapErrorApp` (layar darurat dua bahasa tanpa `GoogleFonts`
+atau `ThemeExtension`, dengan tombol Tutup), bukan jendela kosong. Kegagalan inisialisasi
+notifikasi hanya di-log (`AppLogger.error`) — aplikasi tetap jalan tanpa notifikasi.
 ## 2. Tree `lib/` (current-state)
 
 ```
@@ -32,8 +32,7 @@ lib/
 ├── app.dart                     # MaterialApp.router, locale, tap notifikasi
 ├── core/
 │   ├── design/
-│   │   ├── app_theme.dart            # ThemeData lightFor/darkFor per AppThemeStyle
-│   │   ├── app_theme_provider.dart   # themeModeProvider + themeStyleProvider
+│   │   ├── app_theme.dart            # ThemeData ter-cache lightFor/darkFor per AppThemeStyle
 │   │   ├── active_shell_tab_provider.dart
 │   │   ├── mood_visuals.dart         # moodEmoji + moodLabel + moodColor bersama
 │   │   ├── components/               # app_scaffold, app_background, main_shell_scaffold,
@@ -45,8 +44,7 @@ lib/
 │   ├── errors/app_logger.dart   # satu-satunya logger
 │   ├── l10n/app_strings.dart    # AppStrings + IndonesianStrings + EnglishStrings
 │   ├── router/app_router.dart   # GoRouter + resolveRedirect (fungsi murni)
-│   └── utils/                   # date_formatter, wav_pcm
-├── models/
+│   └── utils/                   # async_fifo_lock, date_formatter, wav_pcm
 │   ├── app_settings.dart        # @Entity AppSettings
 │   ├── message.dart             # @Entity Message (termasuk isBlocked)
 │   ├── memory_fact.dart         # @Entity MemoryFact
@@ -116,7 +114,7 @@ lib/
 `/model-download`, dan shell 4-tab (`StatefulShellRoute.indexedStack` via `MainShellScaffold`):
 `/hub`, `/chat`, `/memory`, `/settings`.
 
-`resolveRedirect({path, settings, isModelReady})` adalah fungsi murni (dites di
+`resolveRedirect({path, settings, isModelReady, queryParameters})` adalah fungsi murni (dites di
 `test/core/router_guard_test.dart`):
 
 | Kondisi | Hasil |
@@ -128,11 +126,14 @@ lib/
 | `!isPersonaSetup` | `/persona-setup` |
 | `!isModelReady` | `/model-download` |
 | path ∈ {`/age-gate`, `/onboarding`, `/persona-setup`} & semua lolos | `/hub` |
+| `path == /model-download` & `queryParameters['auto'] == '1'` & semua lolos | `/hub` |
 | selain itu | `null` |
+
 `/model-download` **tidak** punya bypass: gate umur/onboarding/persona tetap berlaku, tetapi
-rute ini tetap bisa dibuka saat model sudah siap (untuk mengganti model). Rute tak dikenal
-dirender oleh `errorBuilder` yang terlokalisasi dengan tombol kembali ke `/splash`.
-`routerProvider` memakai `refreshListenable` yang mendengarkan `appSettingsProvider` dan
+rute ini tetap bisa dibuka saat model sudah siap (untuk mengganti model). Rute yang datang
+otomatis dari timeout boot membawa `?auto=1` agar otomatis lanjut ke `/hub` bila model selesai
+memuat di latar belakang. Rute tak dikenal dirender oleh `errorBuilder` yang terlokalisasi
+dengan tombol kembali ke `/splash`.
 `modelReadyProvider`, sehingga redirect dievaluasi ulang saat settings/kesiapan model berubah.
 
 ## 5. Alur data chat
@@ -172,8 +173,7 @@ diacak per permintaan dan `maxOutputTokens` dibatasi 512 agar jawaban tidak berj
 | Service | Lifetime | Catatan |
 | --- | --- | --- |
 | `ObjectBoxService` | singleton proses | `close()` tidak dipanggil (proses = lifetime app) |
-| `ModelServiceNotifier` | provider | memegang `InferenceModel` aktif, `InferenceChat` aktif, `CancelToken` download; `ref.onDispose` menutup keduanya |
-| `MoodService` | provider baru per instance | stateless terhadap UI, baca/tulis `Box<MoodState>` |
+| `ModelServiceNotifier` | provider | memegang `InferenceModel` aktif, `InferenceChat` aktif, `CancelToken` download; FIFO `AsyncFifoLock` + serialisasi `_engineTransition` saat switch/dispose |
 | `SttService` | singleton (`factory`) | `AudioRecorder` + `SpeechToText` hidup sepanjang proses |
 | `TtsService` | singleton (`factory`) | `FlutterTts` + `FlutterPcmSound` dilepas di `stop()` |
 | `NotificationService` | singleton (`factory`) | plugin, zona waktu, `StreamController` broadcast tap |

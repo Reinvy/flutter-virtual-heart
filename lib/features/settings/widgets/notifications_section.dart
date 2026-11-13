@@ -22,7 +22,8 @@ class NotificationsSection extends ConsumerWidget {
 
   Future<void> _pickTime(BuildContext context, WidgetRef ref) async {
     final strings = ref.read(appStringsProvider);
-    final parts = settings.notificationMorningTime.split(':');
+    final current = ref.read(appSettingsProvider);
+    final parts = current.notificationMorningTime.split(':');
     final initial = TimeOfDay(
       hour: int.tryParse(parts.first) ?? 7,
       minute: parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0,
@@ -38,7 +39,8 @@ class NotificationsSection extends ConsumerWidget {
 
     final timeStr =
         '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-    final updated = settings.copyWith(notificationMorningTime: timeStr);
+    final latest = ref.read(appSettingsProvider);
+    final updated = latest.copyWith(notificationMorningTime: timeStr);
     await _apply(context, ref, updated);
   }
 
@@ -60,7 +62,7 @@ class NotificationsSection extends ConsumerWidget {
   Future<void> _toggle(
     BuildContext context,
     WidgetRef ref, {
-    required AppSettings Function() build,
+    required AppSettings Function(AppSettings current) build,
     required bool enabled,
   }) async {
     final strings = ref.read(appStringsProvider);
@@ -75,7 +77,7 @@ class NotificationsSection extends ConsumerWidget {
       }
     }
     if (!context.mounted) return;
-    await _apply(context, ref, build());
+    await _apply(context, ref, build(ref.read(appSettingsProvider)));
   }
 
   Future<void> _pickCheckinHours(BuildContext context, WidgetRef ref) async {
@@ -95,9 +97,9 @@ class NotificationsSection extends ConsumerWidget {
     );
     if (selected == null || !context.mounted) return;
 
-    final updated = settings.copyWith(notificationCheckinHours: selected);
+    final latest = ref.read(appSettingsProvider);
+    final updated = latest.copyWith(notificationCheckinHours: selected);
     await _apply(context, ref, updated);
-    await ref.read(notificationProvider.notifier).handleCheckin(schedule: true);
   }
 
   @override
@@ -119,7 +121,7 @@ class NotificationsSection extends ConsumerWidget {
               await _toggle(
                 context,
                 ref,
-                build: () => settings.copyWith(notificationMorningEnabled: v),
+                build: (current) => current.copyWith(notificationMorningEnabled: v),
                 enabled: v,
               );
             },
@@ -145,7 +147,7 @@ class NotificationsSection extends ConsumerWidget {
               await _toggle(
                 context,
                 ref,
-                build: () => settings.copyWith(notificationCheckinEnabled: v),
+                build: (current) => current.copyWith(notificationCheckinEnabled: v),
                 enabled: v,
               );
             },

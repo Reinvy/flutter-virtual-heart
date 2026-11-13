@@ -159,7 +159,7 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
   `summaryMessageCount` baru.
 - Ringkasan (maks. 500 karakter) diinjeksikan ke system prompt sebagai `[CONTEXT SUMMARY]`.
 - Hapus semua percakapan, reset persona, dan reset total menghapus ringkasan + counternya.
-- Ref: `lib/services/ai/prompt_builder.dart`, `lib/features/settings/settings_controller.dart`.
+- Ref: `lib/services/ai/prompt_builder.dart`, `lib/services/settings/settings_service.dart`.
 
 ### FR-14 — Content Safety — `Implemented`
 
@@ -227,15 +227,15 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
 - Kebijakan privasi bisa dibaca di aplikasi (`/privacy`) dari age gate maupun Settings.
 - Ref: `lib/features/settings/widgets/data_privacy_section.dart`,
   `lib/features/settings/widgets/persona_section.dart`,
-  `lib/features/settings/settings_controller.dart`.
+  `lib/services/settings/settings_service.dart`.
 
 ### FR-20 — Bahasa (Indonesia / English / Mixed) — `Implemented`
 
 - `AppSettings.language` mengatur: string UI (`AppStrings`), locale Material
   (`GlobalMaterialLocalizations`), bahasa keluaran AI (instruksi di system prompt), bahasa
   TTS/STT, body notifikasi, deflection safety, error model, header ekspor, dan kebijakan privasi.
-- Katalog hobi tetap berbahasa Inggris sebagai nama tag (bukan kalimat UI) — dicatat di
-  `KNOWN_ISSUES` bila ingin diterjemahkan.
+- Tag hobi disimpan dalam bahasa Inggris di `PersonaConfig.hobbies`, sedangkan label UI
+  dilokalisasi ke ID/EN lewat `AppStrings.personaHobbyLabel`.
 - Ref: `lib/core/l10n/app_strings.dart`, `lib/services/ai/prompt_builder.dart`, `lib/app.dart`.
 
 ---

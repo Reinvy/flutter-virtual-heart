@@ -14,8 +14,8 @@ import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../models/memory_fact.dart';
+import '../chat/chat_controller.dart';
 import 'memory_controller.dart';
-
 class MemoryScreen extends ConsumerStatefulWidget {
   const MemoryScreen({super.key});
 
@@ -95,6 +95,8 @@ class _MemoryScreenState extends ConsumerState<MemoryScreen> {
       cancelLabel: strings.commonCancel,
     );
     if (confirmed) {
+      await ref.read(chatProvider.notifier).cancelGeneration();
+      if (!mounted) return;
       ref.read(memoryFactsProvider.notifier).resetAll();
       _clearSearch();
     }
@@ -102,12 +104,16 @@ class _MemoryScreenState extends ConsumerState<MemoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<List<MemoryFact>>(memoryFactsProvider, (_, next) {
+      if (next.isEmpty && _query.isNotEmpty) {
+        _clearSearch();
+      }
+    });
     final strings = ref.watch(appStringsProvider);
     final allFacts = ref.watch(memoryFactsProvider);
     final facts = _filter(allFacts);
     final grouped = _grouped(facts);
     final scheme = Theme.of(context).colorScheme;
-
     return AppScaffold(
       body: AppContent(
         maxWidth: AppSizes.contentMaxWidth,

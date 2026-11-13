@@ -125,6 +125,20 @@ void main() {
       expect(updated.current, MoodType.happy);
     });
 
+    test('updateMoodFromIdleTime: panggilan berulang di jendela 6–12 jam tidak me-ratchet intensitas', () {
+      final mood = service.getCurrentMood();
+      mood.intensity = 0.50;
+      mood.lastInteractionAt = DateTime.now().subtract(const Duration(hours: 7));
+      mood.lastUpdatedAt = mood.lastInteractionAt;
+      store.moodStateBox.put(mood);
+
+      final first = service.updateMoodFromIdleTime();
+      expect(first.current, MoodType.longing);
+      expect(first.intensity, closeTo(0.60, 0.001));
+
+      final second = service.updateMoodFromIdleTime();
+      expect(second.intensity, closeTo(0.60, 0.001));
+    });
     test('recordInteraction memperbarui lastInteractionAt', () {
       final mood = service.getCurrentMood();
       mood.lastInteractionAt = DateTime.now().subtract(const Duration(days: 1));

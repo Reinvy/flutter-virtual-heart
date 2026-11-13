@@ -55,22 +55,24 @@ installFromFile(path, option) → Future<bool>
 - Batal unduhan: `cancelDownload()` → `CancelToken.cancel(...)` lalu menunggu install berhenti;
   status sebelumnya dipulihkan sehingga tidak ada banner error merah.
 - Upload file menerima `.litertlm`/`.task` saja, menolak file kosong, menanyakan jenis model
-  (Qwen/SmolLM/DeepSeek/Gemma), menyalin file ke `getApplicationSupportDirectory()/model_uploads/`
-  (path picker tidak stabil), dan menghapus salinan bila install gagal.
-- Identitas model yang dipakai `isModelInstalled` adalah **nama file**, bukan `id` katalog;
+  (Qwen/SmolLM/DeepSeek/Gemma), menyalin sementara ke `getApplicationSupportDirectory()/model_uploads/`
+  (path picker tidak stabil), dan selalu menghapus salinan di blok `finally` (sukses maupun gagal).
   upload dengan nama apa pun tetap terdaftar benar (lihat `modelOptionByFileName`).
 - Token HF disimpan di `SharedPreferences` (`hf_token`) dan dibaca saat init engine.
 
 ## 4. Inference
 
-Satu `InferenceChat` per permintaan, ditutup setelah selesai. Semua inferensi melewati satu
-antrean (`_acquire`/`_release`), sehingga chat, ekstraksi memori, dan ringkasan tidak pernah
-berjalan bersamaan pada instance engine yang sama:
+Satu `InferenceChat` per permintaan, ditutup setelah selesai. Semua inferensi dan aktivasi model
+melewati satu antrean FIFO (`AsyncFifoLock` + serialisasi `_engineTransition`), sehingga chat,
+ekstraksi memori, ringkasan, dan pergantian model tidak pernah berjalan bersamaan atau membocorkan
+handle native pada engine yang sama:
 
 ```dart
-await _acquire();
+final release = await _inferenceLock.acquire();
 try {
-  if (isCancelled?.call() == true) return;          // mis. pengguna menekan stop
+  if (_disposed || isCancelled?.call() == true) return; // mis. pengguna menekan stop
+  final model = _model;
+  if (model == null) throw StateError('Model not initialized');
   final chat = await model.openChat(
     temperature: 0.9, randomSeed: Random().nextInt(1 << 31),
     topK: 50, topP: 0.95, maxOutputTokens: 512,
@@ -84,7 +86,7 @@ try {
   } finally { _activeChat = null; await chat.close(); }
 } on edge_ai.ContextLimitException {
   throw const ContextLimitReachedException();       // domain exception untuk fitur
-} finally { _release(); }
+} finally { release(); }
 ```
 
 - `randomSeed` diacak per permintaan (dulu konstan `1`, jawaban jadi deterministik).
@@ -147,29 +149,31 @@ kategori: personal | event | preference | date
 ```
 
 Parser: hanya baris berawalan `FACT:`, minimal 3 segmen `|`, `key`/`value` tidak kosong;
-kategori tak dikenal → `personal`. Kegagalan inferensi → daftar kosong (tidak melempar).
+`MemoryExtractor` memotong input percakapan ke 3000 karakter terlebih dahulu agar tidak melampaui
+context window, serta mencatat kegagalan lewat `AppLogger.debug`. Kategori tak dikenal → `personal`.
 
 Penggabungan ada di fungsi murni `mergeFacts` (`services/ai/memory_fact_merger.dart`, dites di
 `test/core/memory_fact_merger_test.dart`):
 
-- cocokkan `key.toLowerCase()`, timpa `value`/`category`/`sourceSnippet` baris lama;
+- cocokkan `key.toLowerCase()`, timpa `value`/`category`/`sourceSnippet`, dan segarkan
+  `lastReferencedAt` baris lama;
 - duplikat dalam satu batch menghasilkan satu `upsert` (kategori/nilai terakhir menang);
 - batas `key` 80, `value` 300, `snippet` 500 karakter; maksimum **50** fakta tersimpan;
-- fakta tertua (`lastReferencedAt`, lalu `createdAt`) dihapus saat melewati batas.
+- fakta tertua (`lastReferencedAt`, lalu `createdAt`) dihapus saat melewati batas (termasuk
+  dikeluarkan dari `upserts` agar `deleteIds` dan `upserts` selalu disjoint).
 
-`lastReferencedAt` hanya diperbarui untuk fakta yang **benar-benar dipakai** di prompt, dan hanya
-setelah generasi sukses. Post-process berjalan serial (`_postProcessQueue`), memeriksa
-`ref.mounted` sebelum setiap tulis, dan tidak dijalankan untuk deflection keamanan atau jawaban
-yang dihentikan pengguna.
+`lastReferencedAt` juga diperbarui untuk fakta yang **benar-benar dipakai** di prompt setelah
+generasi sukses. Post-process berjalan serial (`_postProcessQueue`), memeriksa
+`_cancelRequested` dan `ref.mounted` sebelum setiap langkah, dan tidak dijalankan untuk
+deflection keamanan atau jawaban yang dihentikan pengguna.
 
 ## 7. Content safety (`services/ai/content_safety.dart`)
 
 Dua gate:
 
 - `filterInput(text)` — **sebelum** pesan dipersist; regex ID+EN.
-- `validateOutput(text)` — selama streaming (holdback 64 karakter) dan sekali lagi di akhir;
-  jika terpicu, jawaban diganti deflection hangat.
-
+- `validateOutput(text)` — selama streaming (holdback 64 karakter pada jendela ekor 256 karakter)
+  dan sekali lagi secara penuh di akhir; jika terpicu, jawaban diganti deflection hangat.
 Kategori: `explicitSexual`, `selfHarm`, `professionalAdvice`, `hateSpeech`,
 `violenceInstruction`, `personaBreak`. Service mengembalikan `SafetyRedirect`
 (`explicitSexual`, `explicitSexualOutput`, `selfHarm`, `professionalAdvice`, `hateSpeech`,

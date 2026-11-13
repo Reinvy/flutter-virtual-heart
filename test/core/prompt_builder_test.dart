@@ -229,5 +229,18 @@ void main() {
       expect(prompt, contains('Respond in English.'));
       expect(prompt.length, lessThanOrEqualTo(PromptBuilder.maxPromptChars));
     });
+
+    test('buildSummarizationPrompt tidak pernah melewati maxPromptChars di batas tepat', () {
+      final messages = List.generate(
+        30,
+        (i) => Message(
+          role: i.isEven ? MessageRole.user : MessageRole.assistant,
+          content: 'x' * 300,
+        ),
+      );
+      final prompt = PromptBuilder.buildSummarizationPrompt(messages);
+      expect(prompt.length, lessThanOrEqualTo(PromptBuilder.maxPromptChars));
+      expect(prompt, endsWith('Summary:'));
+    });
   });
 }

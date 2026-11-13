@@ -10,6 +10,8 @@ import '../../../core/design/tokens/text_styles.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../models/app_settings.dart';
 import '../../../models/persona_config.dart';
+import '../../../services/stt_service.dart';
+import '../../../services/tts_service.dart';
 import '../../chat/chat_controller.dart';
 import '../../chat/mood_provider.dart';
 import '../../memory/memory_controller.dart';
@@ -42,19 +44,22 @@ class PersonaSection extends ConsumerWidget {
     if (!confirmed || !context.mounted) return;
     HapticFeedback.heavyImpact();
 
-    await ref.read(chatProvider.notifier).cancelGeneration();
-    if (!context.mounted) return;
+    final container = ProviderScope.containerOf(context, listen: false);
+    await container.read(chatProvider.notifier).cancelGeneration();
+    await TtsService().stop();
+    await SttService().cancel();
 
-    await ref.read(appSettingsProvider.notifier).resetPersonaData();
-    ref.invalidate(chatProvider);
-    ref.invalidate(memoryFactsProvider);
-    ref.invalidate(moodProvider);
-    ref.invalidate(personaProvider);
+    await container.read(appSettingsProvider.notifier).resetPersonaData();
+    container.invalidate(chatProvider);
+    container.invalidate(pendingChatDraftProvider);
+    container.invalidate(memoryFactsProvider);
+    container.invalidate(moodProvider);
+    container.invalidate(personaProvider);
 
     try {
-      await ref
+      await container
           .read(notificationProvider.notifier)
-          .applySettings(ref.read(appSettingsProvider));
+          .applySettings(container.read(appSettingsProvider));
     } catch (_) {
       // Notifikasi opsional: abaikan kegagalan sinkronisasi.
     }

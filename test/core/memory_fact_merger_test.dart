@@ -84,5 +84,43 @@ void main() {
       expect(result.deleteIds, [1]);
       expect(result.upserts.any((f) => f.key == 'baru'), isTrue);
     });
+
+    test('fakta lama yang diperbarui menyegarkan lastReferencedAt dan tidak bertabrakan antara deleteIds & upserts', () {
+      final old = DateTime(2026, 1, 1);
+      final stamp = DateTime(2026, 1, 10);
+      final existing = [
+        MemoryFact(
+          id: 1,
+          key: 'hobi',
+          value: 'membaca',
+          lastReferencedAt: old,
+          createdAt: old,
+        ),
+        MemoryFact(
+          id: 2,
+          key: 'kota',
+          value: 'Jakarta',
+          lastReferencedAt: old.add(const Duration(days: 1)),
+          createdAt: old.add(const Duration(days: 1)),
+        ),
+      ];
+
+      final result = mergeFacts(
+        existing: existing,
+        incoming: [
+          MemoryFact(key: 'hobi', value: 'melukis'),
+          MemoryFact(key: 'musik', value: 'jazz'),
+        ],
+        sourceSnippet: 'x',
+        maxFacts: 2,
+        now: stamp,
+      );
+
+      // 'hobi' diperbarui jadi terbaru, sehingga 'kota' (id=2) yang terhapus.
+      expect(result.deleteIds, [2]);
+      final hobi = result.upserts.firstWhere((f) => f.key == 'hobi');
+      expect(hobi.lastReferencedAt, stamp);
+      expect(result.upserts.any((f) => result.deleteIds.contains(f.id)), isFalse);
+    });
   });
 }

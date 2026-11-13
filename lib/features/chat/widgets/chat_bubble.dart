@@ -21,14 +21,15 @@ class ChatBubble extends StatefulWidget {
     required this.message,
     this.persona,
     this.isStreaming = false,
+    this.animateEntry = true,
     this.onSpeak,
     this.isSpeaking = false,
     this.speakerLabel,
   });
-
   final Message message;
   final PersonaConfig? persona;
   final bool isStreaming;
+  final bool animateEntry;
   final VoidCallback? onSpeak;
   final bool isSpeaking;
 
@@ -56,11 +57,10 @@ class _ChatBubbleState extends State<ChatBubble> {
       child: item,
     );
 
-    if (widget.isStreaming) return tapped;
+    if (widget.isStreaming || !widget.animateEntry) return tapped;
     if (MediaQuery.disableAnimationsOf(context)) return tapped;
     return tapped
         .animate()
-        .fadeIn(duration: AppDurations.durationFast)
         .slideY(
           begin: 0.05,
           end: 0,

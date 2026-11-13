@@ -19,11 +19,10 @@ import 'package:virtual_heart/services/settings/settings_service.dart';
 import 'chat_models.dart';
 import 'mood_provider.dart';
 
-export '../../core/design/active_shell_tab_provider.dart';
-
 class ChatNotifier extends Notifier<ChatState> {
   /// Generasi yang sedang berjalan (ditunggu oleh [cancelGeneration]).
   Future<void>? _inFlight;
+  bool _cancelling = false;
 
   /// Antrean post-process (memori + ringkasan) agar tidak tumpang tindih.
   Future<void> _postProcessQueue = Future.value();
@@ -48,7 +47,19 @@ class ChatNotifier extends Notifier<ChatState> {
   ///
   /// [isVoice] menandai pesan yang berasal dari transkrip STT (FR-06).
   Future<void> sendMessage(String text, {bool isVoice = false}) {
-    final future = _send(text, isVoice: isVoice);
+    if (!ref.mounted || state.isTyping || _cancelling) return Future.value();
+    final trimmed = text.trim();
+    // FR-05: batas input 2000 karakter tanpa memotong pasangan surrogate.
+    final content = PromptBuilder.truncate(
+      trimmed,
+      PromptBuilder.maxLatestUserChars,
+    );
+    if (content.isEmpty) return Future.value();
+
+    late final Future<void> future;
+    future = _send(content, isVoice: isVoice).whenComplete(() {
+      if (identical(_inFlight, future)) _inFlight = null;
+    });
     _inFlight = future;
     return future;
   }
@@ -57,24 +68,29 @@ class ChatNotifier extends Notifier<ChatState> {
   ///
   /// Dipakai tombol stop dan sebelum aksi destruktif (reset/hapus).
   Future<void> cancelGeneration() async {
+    _cancelling = true;
     _cancelRequested = true;
     try {
-      await ref.read(modelServiceProvider.notifier).stopGeneration();
-    } catch (e) {
-      AppLogger.debug('Stop generation failed', e);
-    }
-    final flight = _inFlight;
-    if (flight != null) {
       try {
-        await flight;
+        await ref.read(modelServiceProvider.notifier).stopGeneration();
       } catch (e) {
-        AppLogger.debug('Cancel await skipped', e);
+        AppLogger.debug('Stop generation failed', e);
       }
-    }
-    try {
-      await _postProcessQueue;
-    } catch (e) {
-      AppLogger.debug('Cancel post-process skipped', e);
+      final flight = _inFlight;
+      if (flight != null) {
+        try {
+          await flight;
+        } catch (e) {
+          AppLogger.debug('Cancel await skipped', e);
+        }
+      }
+      try {
+        await _postProcessQueue;
+      } catch (e) {
+        AppLogger.debug('Cancel post-process skipped', e);
+      }
+    } finally {
+      _cancelling = false;
     }
   }
 
@@ -86,33 +102,48 @@ class ChatNotifier extends Notifier<ChatState> {
 
   /// Mengulang jawaban untuk pesan user terakhir tanpa menyimpan pesan baru.
   Future<void> retryLastResponse() {
-    if (!ref.mounted || state.isTyping) return Future.value();
+    if (!ref.mounted || state.isTyping || _cancelling) return Future.value();
     final messages = state.messages;
     final lastUserIndex = messages.lastIndexWhere((m) => m.role == MessageRole.user);
     if (lastUserIndex < 0) return Future.value();
 
-    final last = messages[lastUserIndex];
-    final history = messages.sublist(0, lastUserIndex).where((m) => !m.isBlocked).toList();
+    final db = ref.read(objectBoxServiceProvider);
+    final trailingIds = <int>[];
+    for (var i = lastUserIndex + 1; i < messages.length; i++) {
+      final id = messages[i].id;
+      if (id != 0) trailingIds.add(id);
+    }
+    if (trailingIds.isNotEmpty) {
+      db.messageBox.removeMany(trailingIds);
+    }
+    final retained = messages.sublist(0, lastUserIndex + 1);
+    if (retained.length != messages.length) {
+      state = state.copyWith(messages: retained, clearError: true);
+    }
+
+    final last = retained[lastUserIndex];
+    final history = retained
+        .sublist(0, lastUserIndex)
+        .where((m) => !m.isBlocked)
+        .toList();
     _cancelRequested = false;
-    final future = _generateReply(
+    late final Future<void> future;
+    future = _generateReply(
       latestUserInput: last.content,
       history: history,
       strings: ref.read(appStringsProvider),
-    );
+    ).whenComplete(() {
+      if (identical(_inFlight, future)) _inFlight = null;
+    });
     _inFlight = future;
     return future;
   }
-
   // -------------------------------------------------------------------------
   // Send / generate
   // -------------------------------------------------------------------------
 
-  Future<void> _send(String text, {required bool isVoice}) async {
-    final trimmed = text.trim();
-    // FR-05: batas input 2000 karakter tanpa memotong pasangan surrogate.
-    final content = PromptBuilder.truncate(trimmed, PromptBuilder.maxLatestUserChars);
-    if (content.isEmpty || state.isTyping) return;
-
+  Future<void> _send(String content, {required bool isVoice}) async {
+    if (!ref.mounted || state.isTyping) return;
     _cancelRequested = false;
     final db = ref.read(objectBoxServiceProvider);
     final strings = ref.read(appStringsProvider);
@@ -207,7 +238,10 @@ class ChatNotifier extends Notifier<ChatState> {
         if (_cancelRequested || !ref.mounted) break;
         buffer.write(token);
         final full = buffer.toString();
-        final check = ContentSafety.validateOutput(full);
+        final tail = full.length > 256
+            ? full.substring(full.length - 256)
+            : full;
+        final check = ContentSafety.validateOutput(tail);
         if (check.isBlocked) {
           blockedRedirect = check.redirect!;
           await model.stopGeneration();
@@ -314,7 +348,7 @@ class ChatNotifier extends Notifier<ChatState> {
 
   /// Pipeline pasca-respons: ekstraksi memori lalu ringkasan percakapan.
   Future<void> _postProcess(String userMessage, String aiResponse) async {
-    if (!ref.mounted) return;
+    if (_cancelRequested || !ref.mounted) return;
     final db = ref.read(objectBoxServiceProvider);
 
     // Ekstraksi fakta memori (FR-11).
@@ -324,7 +358,7 @@ class ChatNotifier extends Notifier<ChatState> {
         conversation,
         (p) => ref.read(modelServiceProvider.notifier).generateResponse(p),
       );
-      if (!ref.mounted) return;
+      if (_cancelRequested || !ref.mounted) return;
       if (facts.isNotEmpty) {
         final result = mergeFacts(
           existing: db.memoryFactBox.getAll(),
@@ -341,7 +375,7 @@ class ChatNotifier extends Notifier<ChatState> {
 
     // Ringkasan percakapan setiap [PromptBuilder.summarizationInterval] pesan
     // baru yang belum diringkas (FR-13).
-    if (!ref.mounted) return;
+    if (_cancelRequested || !ref.mounted) return;
     try {
       final settings = db.getOrCreateSettings();
       final allMessages = db.messageBox.getAll()..sort(compareMessages);
@@ -353,16 +387,17 @@ class ChatNotifier extends Notifier<ChatState> {
           visible,
           language: settings.language,
         );
+        if (_cancelRequested || !ref.mounted) return;
         final summary =
             await ref.read(modelServiceProvider.notifier).generateResponse(prompt);
-        if (!ref.mounted) return;
+        if (_cancelRequested || !ref.mounted) return;
         final cleaned = _cleanSummary(summary);
         if (cleaned.isNotEmpty) {
           final notifier = ref.read(appSettingsProvider.notifier);
           notifier.save(
             ref.read(appSettingsProvider).copyWith(
               conversationSummary: cleaned,
-              summaryMessageCount: allMessages.length,
+              summaryMessageCount: visible.length,
             ),
           );
         }

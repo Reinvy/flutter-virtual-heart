@@ -1,4 +1,6 @@
 // Settings — Bahasa AI (FR-20).
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +9,7 @@ import '../../../core/design/tokens/app_sizes.dart';
 import '../../../core/design/tokens/text_styles.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../models/app_settings.dart';
+import '../../notifications/notification_controller.dart';
 import 'package:virtual_heart/services/settings/settings_service.dart';
 import 'settings_section.dart';
 
@@ -55,9 +58,11 @@ class LanguageSection extends ConsumerWidget {
                   onSelectionChanged: (s) {
                     if (s.isEmpty) return;
                     HapticFeedback.selectionClick();
-                    ref
-                        .read(appSettingsProvider.notifier)
-                        .save(settings.copyWith(language: s.first));
+                    final updated = settings.copyWith(language: s.first);
+                    ref.read(appSettingsProvider.notifier).save(updated);
+                    unawaited(
+                      ref.read(notificationProvider.notifier).applySettings(updated),
+                    );
                   },
                 ),
               ),

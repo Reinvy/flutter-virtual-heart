@@ -44,7 +44,8 @@ fvm dart run build_runner build --delete-conflicting-outputs
 
 `theme`/`themeStyle`/`language` diekspos sebagai getter/setter di atas backing index-nya
 (enum tidak disimpan langsung — ObjectBox melewati properti bertipe enum). Getter meng-clamp
-index sehingga baris rusak tidak melempar `RangeError`, dan `normalized()` memperbaiki nilai
+index pada seluruh entity (`AppSettings`, `Message`, `PersonaConfig`, `MoodState`, `MemoryFact`)
+sehingga baris rusak tidak melempar `RangeError`, dan `normalized()` memperbaiki nilai
 string/int yang tidak valid saat boot (backend suara, model, jam pagi, interval check-in).
 ### `PersonaConfig`
 
@@ -98,8 +99,8 @@ ekstraksi memori, maupun skoring mood.
 `resetAllData` mempertahankan identitas model agar model 1–2 GB yang sudah diunduh tidak perlu
 diunduh ulang. Aksi destruktif menunggu `ChatNotifier.cancelGeneration()` (generasi +
 post-process) dan `ModelServiceNotifier.cancelDownload()` selesai, lalu meng-invalidate provider
-terkait di UI (`chatProvider`, `memoryFactsProvider`, `personaProvider`, `moodProvider`,
-`modelServiceProvider`, `modelReadyProvider`).
+terkait di UI (`chatProvider`, `pendingChatDraftProvider`, `memoryFactsProvider`, `personaProvider`,
+`moodProvider`, `modelServiceProvider`, `modelReadyProvider`, `notificationProvider`).
 
 ## 4. Pemulihan store korup
 

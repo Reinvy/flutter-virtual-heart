@@ -1,5 +1,7 @@
 // Settings — Voice (FR-07): backend (gemma/system), pilihan model speech,
 // status izin mikrofon (FR-18).
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,6 +39,7 @@ class VoiceSection extends ConsumerWidget {
             value: settings.ttsEnabled,
             onChanged: (v) {
               HapticFeedback.selectionClick();
+              if (!v) unawaited(TtsService().stop());
               ref
                   .read(appSettingsProvider.notifier)
                   .save(settings.copyWith(ttsEnabled: v));
@@ -106,6 +109,8 @@ class _BackendSelector extends ConsumerWidget {
                 if (s.isEmpty) return;
                 HapticFeedback.selectionClick();
                 final backend = s.first;
+                unawaited(TtsService().stop());
+                unawaited(SttService().cancel());
                 ref.read(appSettingsProvider.notifier).save(
                   settings.copyWith(ttsBackend: backend, sttBackend: backend),
                 );
@@ -161,6 +166,7 @@ List<Widget> _speechModelChildren(
             settings.ttsModel == opt.id && TtsService().isModelActive(opt.id),
         onSelect: () {
           HapticFeedback.selectionClick();
+          unawaited(TtsService().stop());
           ref
               .read(appSettingsProvider.notifier)
               .save(settings.copyWith(ttsModel: opt.id));
@@ -182,6 +188,7 @@ List<Widget> _speechModelChildren(
             settings.sttModel == opt.id && SttService().isModelActive(opt.id),
         onSelect: () {
           HapticFeedback.selectionClick();
+          unawaited(SttService().cancel());
           ref
               .read(appSettingsProvider.notifier)
               .save(settings.copyWith(sttModel: opt.id));

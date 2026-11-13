@@ -46,8 +46,8 @@ class _InputBarState extends ConsumerState<InputBar> {
   void _handleSend() {
     final text = _controller.text.trim();
     if (text.isEmpty || !widget.enabled) return;
-    _controller.clear();
     widget.onSend(text);
+    _controller.clear();
   }
 
   void _handleMicTap() {
@@ -66,7 +66,7 @@ class _InputBarState extends ConsumerState<InputBar> {
 
   @override
   Widget build(BuildContext context) {
-    final strings = ref.read(appStringsProvider);
+    final strings = ref.watch(appStringsProvider);
     final scheme = Theme.of(context).colorScheme;
 
     return Container(

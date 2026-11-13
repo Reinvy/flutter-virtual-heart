@@ -20,9 +20,13 @@ import '../../../models/message.dart';
 import 'package:virtual_heart/services/database/objectbox_provider.dart';
 import '../../../services/ai/model_service.dart';
 import '../../../services/notification_service.dart';
+import '../../../services/stt_service.dart';
+import '../../../services/tts_service.dart';
 import '../../chat/chat_controller.dart';
+import '../../chat/chat_models.dart';
 import '../../chat/mood_provider.dart';
 import '../../memory/memory_controller.dart';
+import '../../notifications/notification_controller.dart';
 import 'package:virtual_heart/services/ai/model_ready_provider.dart';
 import '../../persona/persona_controller.dart';
 import 'package:virtual_heart/services/settings/settings_service.dart';
@@ -45,12 +49,12 @@ class DataPrivacySection extends ConsumerWidget {
     if (!confirmed || !context.mounted) return;
     HapticFeedback.heavyImpact();
 
+    final container = ProviderScope.containerOf(context, listen: false);
     // Tunggu generasi & tulis post-process selesai sebelum tabel dikosongkan.
-    await ref.read(chatProvider.notifier).cancelGeneration();
-    if (!context.mounted) return;
-
-    ref.read(appSettingsProvider.notifier).deleteAllConversations();
-    ref.invalidate(chatProvider);
+    await container.read(chatProvider.notifier).cancelGeneration();
+    container.read(appSettingsProvider.notifier).deleteAllConversations();
+    container.invalidate(chatProvider);
+    container.invalidate(pendingChatDraftProvider);
     if (!context.mounted) return;
     _snack(context, strings.settingsDeletedSnack);
   }
@@ -70,24 +74,29 @@ class DataPrivacySection extends ConsumerWidget {
     if (!confirmed || !context.mounted) return;
     HapticFeedback.heavyImpact();
 
-    // Hentikan pekerjaan yang masih menulis ke database.
-    await ref.read(chatProvider.notifier).cancelGeneration();
-    await ref.read(modelServiceProvider.notifier).cancelDownload();
-    if (!context.mounted) return;
+    final container = ProviderScope.containerOf(context, listen: false);
+    // Hentikan pekerjaan yang masih menulis ke database & audio aktif.
+    await container.read(chatProvider.notifier).cancelGeneration();
+    await container.read(modelServiceProvider.notifier).cancelDownload();
+    await TtsService().stop();
+    await SttService().cancel();
 
     try {
-      await ref.read(notificationServiceProvider).cancelAll();
+      await container.read(notificationServiceProvider).cancelAll();
     } catch (_) {
       // Notifikasi opsional: hapus data tetap dilanjutkan.
     }
-    await ref.read(appSettingsProvider.notifier).resetAllData();
+    container.read(notificationServiceProvider).clearPendingTap();
+    await container.read(appSettingsProvider.notifier).resetAllData();
 
-    ref.invalidate(chatProvider);
-    ref.invalidate(memoryFactsProvider);
-    ref.invalidate(personaProvider);
-    ref.invalidate(moodProvider);
-    ref.invalidate(modelServiceProvider);
-    ref.invalidate(modelReadyProvider);
+    container.invalidate(chatProvider);
+    container.invalidate(pendingChatDraftProvider);
+    container.invalidate(memoryFactsProvider);
+    container.invalidate(personaProvider);
+    container.invalidate(moodProvider);
+    container.invalidate(modelServiceProvider);
+    container.invalidate(modelReadyProvider);
+    container.invalidate(notificationProvider);
 
     if (!context.mounted) return;
     _snack(context, strings.settingsResetAllDone);
@@ -97,8 +106,7 @@ class DataPrivacySection extends ConsumerWidget {
   Future<void> _exportChat(BuildContext context, WidgetRef ref) async {
     final strings = ref.read(appStringsProvider);
     final db = ref.read(objectBoxServiceProvider);
-    final messages = db.messageBox.getAll()..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-
+    final messages = db.messageBox.getAll()..sort(compareMessages);
     if (messages.isEmpty) {
       if (context.mounted) _snack(context, strings.settingsExportEmptySnack);
       return;

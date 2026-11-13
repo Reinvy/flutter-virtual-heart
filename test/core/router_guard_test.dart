@@ -15,12 +15,17 @@ AppSettings _settings({
   );
 }
 
-String? _resolve(String path, {AppSettings? settings, bool modelReady = false}) =>
-    resolveRedirect(
-      path: path,
-      settings: settings ?? _settings(),
-      isModelReady: modelReady,
-    );
+String? _resolve(
+  String path, {
+  AppSettings? settings,
+  bool modelReady = false,
+  Map<String, String> queryParameters = const {},
+}) => resolveRedirect(
+  path: path,
+  settings: settings ?? _settings(),
+  isModelReady: modelReady,
+  queryParameters: queryParameters,
+);
 
 void main() {
   group('resolveRedirect — urutan gate', () {
@@ -41,9 +46,18 @@ void main() {
       );
     });
 
-    test('/model-download tetap boleh dibuka saat model sudah siap', () {
+    test('/model-download tetap boleh dibuka saat model sudah siap, kecuali auto=1 dari boot', () {
       final settings = _settings(age: true, onboarding: true, persona: true);
       expect(_resolve(AppRoutes.modelDownload, settings: settings, modelReady: true), isNull);
+      expect(
+        _resolve(
+          AppRoutes.modelDownload,
+          settings: settings,
+          modelReady: true,
+          queryParameters: const {'auto': '1'},
+        ),
+        AppRoutes.hub,
+      );
     });
 
     test('usia belum diverifikasi → age gate', () {

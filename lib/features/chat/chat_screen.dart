@@ -6,16 +6,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../core/design/active_shell_tab_provider.dart';
 import '../../core/design/components/app_icon_button.dart';
 import '../../core/design/components/app_scaffold.dart';
 import '../../core/design/components/app_sheet.dart';
 import '../../core/design/tokens/app_colors.dart';
 import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
+import '../../core/errors/app_logger.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../models/app_settings.dart';
 import '../../models/message.dart';
-import '../../models/mood_state.dart';
 import '../../models/persona_config.dart';
 import '../../services/stt_service.dart';
 import '../../services/tts_service.dart';
@@ -26,7 +27,6 @@ import '../persona/persona_profile_sheet.dart';
 import 'package:virtual_heart/services/settings/settings_service.dart';
 import 'chat_controller.dart';
 import 'chat_models.dart';
-import 'mood_provider.dart';
 import 'widgets/chat_bubble.dart';
 import 'widgets/input_bar.dart';
 import 'widgets/mood_indicator.dart';
@@ -46,13 +46,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _inputTextController = TextEditingController();
 
   int _speakingMessageId = -1;
+  int _audioSessionEpoch = 0;
   bool _isListening = false;
   String? _voiceDraft;
   bool _didInitialScroll = false;
+  final Set<int> _seenMessageIds = {};
 
   @override
   void initState() {
     super.initState();
+    _seenMessageIds.addAll(
+      ref.read(chatProvider).messages.map((m) => m.id).where((id) => id != 0),
+    );
     _inputTextController.addListener(_onInputChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -62,11 +67,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   void dispose() {
+    _audioSessionEpoch++;
     _inputTextController.removeListener(_onInputChanged);
     _scrollController.dispose();
     _inputTextController.dispose();
-    _ttsService.stop();
-    _sttService.cancel();
+    unawaited(_ttsService.stop());
+    unawaited(_sttService.cancel());
     super.dispose();
   }
 
@@ -117,7 +123,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final strings = ref.watch(appStringsProvider);
     final persona = ref.watch(personaProvider);
     final chatState = ref.watch(chatProvider);
-    final currentMood = ref.watch(moodProvider).current;
     final settings = ref.watch(appSettingsProvider);
 
     ref.listen(pendingChatDraftProvider, (prev, next) {
@@ -130,17 +135,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     ref.listen(activeShellTabProvider, (prev, next) {
       if (prev == 1 && next != 1) {
-        _ttsService.stop();
-        _sttService.cancel();
-        if (mounted) {
-          setState(() {
-            _isListening = false;
-            _speakingMessageId = -1;
-          });
-        }
+        _invalidateAudioSession();
       }
     });
-
     ref.listen(chatProvider, (prev, next) {
       if (prev?.messages.length != next.messages.length) {
         _scrollToBottom();
@@ -152,6 +149,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           prev?.isTyping == true &&
           next.messages.isNotEmpty) {
         final last = next.messages.last;
+        if ((prev?.streamingBuffer.isNotEmpty ?? false) && last.id != 0) {
+          _seenMessageIds.add(last.id);
+        }
         if (last.role == MessageRole.assistant) {
           final currentSettings = ref.read(appSettingsProvider);
           if (mounted &&
@@ -159,7 +159,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               (ModalRoute.of(context)?.isCurrent ?? false) &&
               currentSettings.ttsEnabled &&
               currentSettings.ttsAutoPlay) {
-            _speakMessage(last, persona);
           }
         }
       }
@@ -169,7 +168,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     return AppScaffold(
       safeArea: false,
-      appBar: _buildAppBar(strings, persona, currentMood),
+      appBar: _buildAppBar(strings, persona),
       body: Column(
         children: [
           Expanded(
@@ -229,7 +228,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   PreferredSizeWidget _buildAppBar(
     AppStrings strings,
     PersonaConfig? persona,
-    MoodType currentMood,
   ) {
     final scheme = Theme.of(context).colorScheme;
     return AppBar(
@@ -294,7 +292,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   /// Membuka profil persona; jika pengguna memilih Edit, buka form edit.
+  void _invalidateAudioSession() {
+    _audioSessionEpoch++;
+    unawaited(_ttsService.stop());
+    unawaited(_sttService.cancel());
+    if (mounted && (_isListening || _speakingMessageId != -1)) {
+      setState(() {
+        _isListening = false;
+        _speakingMessageId = -1;
+      });
+    }
+  }
+
+  /// Membuka profil persona; jika pengguna memilih Edit, buka form edit.
   Future<void> _openPersonaProfile(PersonaConfig? persona) async {
+    _invalidateAudioSession();
     final edit = await showPersonaProfileSheet(context, persona);
     if (edit == true && mounted) {
       await showAppSheet<void>(context, child: const PersonaEditSheet());
@@ -306,17 +318,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (!settings.ttsEnabled) return;
 
     if (_speakingMessageId == message.id) {
+      _audioSessionEpoch++;
       await _ttsService.stop();
       if (!mounted) return;
       setState(() => _speakingMessageId = -1);
       return;
     }
 
+    final epoch = ++_audioSessionEpoch;
     final ready = await _ttsService.ensureReady(
       backend: settings.ttsBackend,
       model: settings.ttsModel,
     );
-    if (!mounted) return;
+    if (!mounted ||
+        epoch != _audioSessionEpoch ||
+        ref.read(activeShellTabProvider) != 1) {
+      return;
+    }
     if (!ready) {
       _showSnack(ref.read(appStringsProvider).chatTtsUnavailable);
       return;
@@ -330,10 +348,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       gender: persona?.gender,
       languageCode: _speechLanguageCode(settings.language),
       onDone: () {
-        if (mounted) setState(() => _speakingMessageId = -1);
+        if (mounted && epoch == _audioSessionEpoch) {
+          setState(() => _speakingMessageId = -1);
+        }
       },
     );
-    if (!mounted) return;
+    if (!mounted ||
+        epoch != _audioSessionEpoch ||
+        ref.read(activeShellTabProvider) != 1) {
+      if (ok) unawaited(_ttsService.stop());
+      return;
+    }
     if (!ok) {
       setState(() => _speakingMessageId = -1);
       _showSnack(ref.read(appStringsProvider).chatTtsUnavailable);
@@ -345,33 +370,49 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final settings = ref.read(appSettingsProvider);
 
     if (_isListening) {
+      final epoch = _audioSessionEpoch;
       String transcript;
+      var stopFailed = false;
       try {
         transcript = await _sttService.stopListening(
           backend: settings.sttBackend,
           languageCode: _speechLanguageCode(settings.language),
         );
-      } catch (_) {
+      } catch (e) {
+        AppLogger.debug('STT stop failed', e);
         transcript = '';
+        stopFailed = true;
       }
-      if (!mounted) return;
+      if (!mounted || epoch != _audioSessionEpoch) return;
       setState(() => _isListening = false);
-      if (transcript.trim().isNotEmpty) {
+      if (stopFailed) {
+        _showSnack(strings.chatSttUnavailable);
+      } else if (transcript.trim().isNotEmpty) {
         HapticFeedback.lightImpact();
         _insertTranscript(transcript.trim());
       }
       return;
     }
 
+    final epoch = ++_audioSessionEpoch;
     await _ttsService.stop();
-    if (!mounted) return;
+    if (!mounted ||
+        epoch != _audioSessionEpoch ||
+        ref.read(activeShellTabProvider) != 1) {
+      return;
+    }
     setState(() => _speakingMessageId = -1);
 
     final result = await _sttService.startListening(
       backend: settings.sttBackend,
       languageCode: _speechLanguageCode(settings.language),
     );
-    if (!mounted) return;
+    if (!mounted ||
+        epoch != _audioSessionEpoch ||
+        ref.read(activeShellTabProvider) != 1) {
+      if (result == SttStartResult.started) unawaited(_sttService.cancel());
+      return;
+    }
 
     switch (result) {
       case SttStartResult.started:
@@ -391,7 +432,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         break;
     }
   }
-
   void _insertTranscript(String transcript) {
     final value = _inputTextController.value;
     final text = value.text;
@@ -466,17 +506,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 return TypingIndicator(persona: persona);
               }
 
+              final msg = messages[i];
+              final animateEntry = msg.id == 0 || _seenMessageIds.add(msg.id);
               return ChatBubble(
-                key: ValueKey(messages[i].id),
-                message: messages[i],
+                key: ValueKey(msg.id),
+                message: msg,
                 persona: persona,
-                speakerLabel: _speakingMessageId == messages[i].id
+                animateEntry: animateEntry,
+                speakerLabel: _speakingMessageId == msg.id
                     ? strings.chatStopSpeaking
                     : strings.chatSpeak,
-                onSpeak: ttsEnabled && messages[i].role == MessageRole.assistant
-                    ? () => _speakMessage(messages[i], persona)
+                onSpeak: ttsEnabled && msg.role == MessageRole.assistant
+                    ? () => _speakMessage(msg, persona)
                     : null,
-                isSpeaking: _speakingMessageId == messages[i].id,
+                isSpeaking: _speakingMessageId == msg.id,
               );
             },
           ),
