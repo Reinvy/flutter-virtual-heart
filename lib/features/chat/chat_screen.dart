@@ -221,6 +221,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       switch (kind) {
         ChatErrorKind.modelUnavailable => strings.chatModelUnavailable,
         ChatErrorKind.contextLimit => strings.chatContextLimit,
+        ChatErrorKind.authError => strings.chatAuthError,
+        ChatErrorKind.rateLimited => strings.chatRateLimited,
+        ChatErrorKind.networkError => strings.chatNetworkError,
+        ChatErrorKind.modelNotFound => strings.chatModelNotFound,
+        ChatErrorKind.timeout => strings.chatTimeout,
         ChatErrorKind.generationFailed => strings.chatGenerationFailed,
         ChatErrorKind.interrupted => strings.chatInterrupted,
       };

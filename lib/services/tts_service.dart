@@ -1,40 +1,53 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_edge_ai/flutter_edge_ai.dart';
 import 'package:flutter_pcm_sound/flutter_pcm_sound.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:genkit/genkit.dart' as gk;
+import 'package:path_provider/path_provider.dart';
 
 import '../core/errors/app_logger.dart';
+import '../models/ai_provider_profile.dart';
+import '../models/cloud_speech_config.dart';
 import '../models/persona_config.dart';
+import 'ai/genkit/genkit_cloud_client.dart';
 import 'ai/speech_model_catalog.dart';
 
-/// Facade Text-to-Speech dengan dua backend:
+/// Facade Text-to-Speech dengan lima backend:
 ///
-/// - **gemma** (`flutter_edge_ai_speech`): synthesize on-device (model terpilih:
-///   Inflect / Matcha / Qwen3) → PCM 16-bit → [FlutterPcmSound].
-/// - **system** (`flutter_tts`): suara sistem, tanpa unduhan model, dukung
-///   banyak bahasa (termasuk Bahasa Indonesia).
+/// - **system** (`flutter_tts`): suara OS, tanpa unduhan model.
+/// - **gemma** (`flutter_edge_ai_speech`): sintesis on-device → PCM 16-bit → [FlutterPcmSound].
+/// - **elevenlabs** / **openai** / **google**: sintesis Cloud BYOK melalui
+///   [GenkitCloudClient] → audio MP3/WAV → [AudioPlayer] (`audioplayers`) dengan
+///   callback selesai playback (`onPlayerComplete`) yang akurat.
 ///
-/// Instance ini singleton sepanjang umur proses; [FlutterPcmSound] dilepas di
-/// [stop] dan tidak perlu `dispose` terpisah.
-///
-/// Setiap utterance diberi nomor urut. `stop()` menaikkan nomor tersebut
-/// sehingga sintesis yang masih berjalan tahu dirinya sudah basi dan tidak
-/// menimpa playback baru.
+/// Setiap utterance diberi nomor urut. `stop()` menaikkan nomor tersebut dan
+/// membatalkan request jaringan cloud yang masih berjalan sehingga tidak pernah
+/// ada playback yang bertumpuk.
 class TtsService {
   TtsService._internal();
   static final TtsService _instance = TtsService._internal();
   factory TtsService() => _instance;
 
+  static const Set<String> cloudBackends = {'elevenlabs', 'openai', 'google'};
+  static bool isCloudBackend(String backend) => cloudBackends.contains(backend);
+
   final FlutterTts _flutterTts = FlutterTts();
+  AudioPlayer? _audioPlayer;
+  StreamSubscription<void>? _playerCompleteSub;
+  String? _tempAudioPath;
 
   /// Model on-device yang sudah terpasang & aktif (null bila belum).
   String? _readyModel;
   VoidCallback? _onComplete;
   Timer? _finishTimer;
+  gk.CancellationController? _activeCloudCancel;
   int _utterance = 0;
   int _activeSystemId = 0;
+  int _activeCloudAudioId = 0;
   bool _systemTtsInitialized = false;
   Future<bool>? _ensuringFuture;
   String? _ensuringModel;
@@ -43,17 +56,25 @@ class TtsService {
 
   /// Memastikan backend siap.
   ///
-  /// - `backend == 'system'`: init flutter_tts.
-  /// - `backend == 'gemma'`: download model [model] bila belum terpasang.
-  ///
-  /// Kembali `false` bila gagal.
+  /// - `system`: init `flutter_tts`.
+  /// - `gemma`: unduh model [model] bila belum terpasang.
+  /// - `elevenlabs` / `openai` / `google`: verifikasi kredensial API key.
   Future<bool> ensureReady({
     String backend = 'system',
     String model = 'inflect',
+    CloudSpeechConfig? cloudConfig,
+    String? apiKey,
     void Function(int percent)? onProgress,
   }) async {
     if (backend == 'system') {
       return _initSystemTts();
+    }
+    if (isCloudBackend(backend)) {
+      return _isCloudReady(
+        backend: backend,
+        cloudConfig: cloudConfig,
+        apiKey: apiKey,
+      );
     }
     if (_readyModel == model && FlutterEdgeAi.hasActiveTts()) return true;
 
@@ -77,6 +98,20 @@ class TtsService {
     }
   }
 
+  bool _isCloudReady({
+    required String backend,
+    CloudSpeechConfig? cloudConfig,
+    String? apiKey,
+  }) {
+    final key = (apiKey ?? '').trim();
+    if (key.isNotEmpty) return true;
+    if (backend == 'openai' &&
+        AiProviderProfile.isLocalNetworkUrl(cloudConfig?.openaiTtsBaseUrl ?? '')) {
+      return true;
+    }
+    return false;
+  }
+
   Future<bool> _installOnDeviceModel(
     String model, {
     void Function(int percent)? onProgress,
@@ -98,18 +133,19 @@ class TtsService {
   }
 
   /// `true` bila model on-device [model] sedang aktif di engine.
-  bool isModelActive(String model) => _readyModel == model && FlutterEdgeAi.hasActiveTts();
+  bool isModelActive(String model) =>
+      _readyModel == model && FlutterEdgeAi.hasActiveTts();
 
   /// Menyintesis [text] dan memutarnya sesuai [backend] & [gender].
-  ///
-  /// [languageCode] (mis. `id-ID`/`en-US`) dipakai backend sistem dan diteruskan
-  /// ke engine on-device.
   Future<bool> speak(
     String text, {
     String backend = 'system',
     String model = 'inflect',
     PersonaGender? gender,
     String? languageCode,
+    CloudSpeechConfig? cloudConfig,
+    String? apiKey,
+    GenkitCloudClient? cloudClient,
     VoidCallback? onDone,
   }) async {
     if (text.trim().isEmpty) return false;
@@ -128,15 +164,122 @@ class TtsService {
       );
     }
 
+    if (isCloudBackend(backend)) {
+      return _speakCloud(
+        text,
+        id: id,
+        backend: backend,
+        cloudConfig: cloudConfig ?? CloudSpeechConfig(),
+        apiKey: apiKey ?? '',
+        cloudClient: cloudClient ?? const GenkitCloudClient(),
+        gender: gender,
+        languageCode: languageCode,
+        onDone: onDone,
+      );
+    }
+
     if (!await ensureReady(backend: backend, model: model)) return false;
     if (id != _utterance) return false;
-    return _speakOnDevice(text, id: id, languageCode: languageCode, onDone: onDone);
+    return _speakOnDevice(
+      text,
+      id: id,
+      languageCode: languageCode,
+      onDone: onDone,
+    );
   }
 
   /// Menghentikan playback dan membatalkan sintesis yang masih berjalan.
   Future<void> stop() async {
     _utterance++;
     await _stopInternal();
+  }
+
+  // ── Backend: cloud (Genkit + audioplayers) ──────────────────────────────
+
+  AudioPlayer _ensureAudioPlayer() {
+    final existing = _audioPlayer;
+    if (existing != null) return existing;
+    final player = AudioPlayer();
+    _playerCompleteSub = player.onPlayerComplete.listen((_) {
+      final activeId = _activeCloudAudioId;
+      if (activeId == _utterance) {
+        unawaited(_deleteTempAudio());
+        _finish(activeId);
+      }
+    });
+    _audioPlayer = player;
+    return player;
+  }
+
+  Future<bool> _speakCloud(
+    String text, {
+    required int id,
+    required String backend,
+    required CloudSpeechConfig cloudConfig,
+    required String apiKey,
+    required GenkitCloudClient cloudClient,
+    PersonaGender? gender,
+    String? languageCode,
+    VoidCallback? onDone,
+  }) async {
+    if (!_isCloudReady(
+      backend: backend,
+      cloudConfig: cloudConfig,
+      apiKey: apiKey,
+    )) {
+      return false;
+    }
+
+    final cancelCtrl = gk.CancellationController();
+    _activeCloudCancel = cancelCtrl;
+    _onComplete = onDone;
+
+    try {
+      final audio = await cloudClient.synthesizeSpeech(
+        backend: backend,
+        config: cloudConfig,
+        apiKey: apiKey,
+        text: text,
+        languageCode: languageCode,
+        gender: gender,
+        cancellation: cancelCtrl,
+      );
+      if (id != _utterance) return false;
+
+      final dir = await getTemporaryDirectory();
+      final path =
+          '${dir.path}/vh_tts_${DateTime.now().microsecondsSinceEpoch}.${audio.fileExtension}';
+      final file = File(path);
+      await file.writeAsBytes(audio.bytes, flush: true);
+      if (id != _utterance) {
+        await _deleteFileQuietly(path);
+        return false;
+      }
+
+      await _deleteTempAudio();
+      _tempAudioPath = path;
+      _activeCloudAudioId = id;
+
+      final player = _ensureAudioPlayer();
+      await player.stop();
+      if (id != _utterance) {
+        await _deleteTempAudio();
+        return false;
+      }
+      await player.play(DeviceFileSource(path));
+      return true;
+    } on gk.CancelledException {
+      return false;
+    } catch (e) {
+      AppLogger.debug('Cloud TTS playback failed ($backend)', e);
+      await _deleteTempAudio();
+      _finish(id);
+      return false;
+    } finally {
+      if (identical(_activeCloudCancel, cancelCtrl)) {
+        _activeCloudCancel = null;
+      }
+    }
   }
 
   // ── Backend: system (flutter_tts) ───────────────────────────────────────
@@ -161,6 +304,7 @@ class TtsService {
     _systemTtsInitialized = true;
     return true;
   }
+
   Future<bool> _speakSystem(
     String text, {
     required int id,
@@ -258,6 +402,17 @@ class TtsService {
     _finishTimer?.cancel();
     _finishTimer = null;
     _onComplete = null;
+    final cloudCancel = _activeCloudCancel;
+    _activeCloudCancel = null;
+    if (cloudCancel != null && !cloudCancel.isCancelled) {
+      cloudCancel.cancel('TTS stopped');
+    }
+    try {
+      await _audioPlayer?.stop();
+    } catch (e) {
+      AppLogger.debug('Cloud audio stop failed', e);
+    }
+    await _deleteTempAudio();
     try {
       await _flutterTts.stop();
     } catch (e) {
@@ -270,6 +425,21 @@ class TtsService {
     }
   }
 
+  Future<void> _deleteTempAudio() async {
+    final path = _tempAudioPath;
+    _tempAudioPath = null;
+    if (path != null) await _deleteFileQuietly(path);
+  }
+
+  static Future<void> _deleteFileQuietly(String path) async {
+    try {
+      final file = File(path);
+      if (await file.exists()) await file.delete();
+    } catch (e) {
+      AppLogger.debug('Temp TTS audio cleanup failed', e);
+    }
+  }
+
   /// Memanggil callback selesai sekali, hanya untuk utterance yang masih aktif.
   void _finish(int id) {
     if (id != _utterance) return;
@@ -278,5 +448,13 @@ class TtsService {
     final cb = _onComplete;
     _onComplete = null;
     cb?.call();
+  }
+
+  @visibleForTesting
+  Future<void> disposePlayerForTest() async {
+    await _playerCompleteSub?.cancel();
+    _playerCompleteSub = null;
+    await _audioPlayer?.dispose();
+    _audioPlayer = null;
   }
 }

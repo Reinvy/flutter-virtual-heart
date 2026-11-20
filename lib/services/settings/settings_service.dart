@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/errors/app_logger.dart';
 import '../../models/app_settings.dart';
+import '../ai/secret_store.dart';
 import 'package:virtual_heart/services/database/objectbox_provider.dart';
 
 /// Mengelola [AppSettings] dan mempersistensikannya ke ObjectBox.
@@ -81,6 +82,8 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       db.moodStateBox.removeAll();
       db.messageBox.removeAll();
       db.appSettingsBox.removeAll();
+      db.aiProviderProfileBox.removeAll();
+      db.cloudSpeechConfigBox.removeAll();
 
       fresh = AppSettings(
         modelVariant: previous.modelVariant,
@@ -91,9 +94,19 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     });
 
     await _clearHfToken();
+    await _clearByokSecrets();
     await _deleteExportFiles();
 
     if (ref.mounted) state = fresh;
+  }
+
+  /// Menghapus seluruh API key BYOK dari penyimpanan terenkripsi.
+  Future<void> _clearByokSecrets() async {
+    try {
+      await ref.read(secretStoreProvider).deleteAllByokSecrets();
+    } catch (e) {
+      AppLogger.debug('BYOK secret cleanup skipped', e);
+    }
   }
 
   /// Menghapus token HuggingFace dari penyimpanan preferensi.

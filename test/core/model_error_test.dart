@@ -1,5 +1,8 @@
-// Unit test — klasifikasi error model (FR-04).
+// Unit test — klasifikasi error model lokal & Cloud BYOK (Genkit).
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:genkit/genkit.dart' as gk;
 import 'package:virtual_heart/services/ai/model_service.dart';
 
 void main() {
@@ -9,6 +12,44 @@ void main() {
         classifyModelError(const ModelException(ModelErrorKind.storage)),
         ModelErrorKind.storage,
       );
+    });
+
+    test('GenkitException & TimeoutException dipetakan ke kind yang tepat', () {
+      expect(
+        classifyModelError(
+          gk.GenkitException('Bad key', status: gk.StatusCode.unauthenticated),
+        ),
+        ModelErrorKind.auth,
+      );
+      expect(
+        classifyModelError(
+          gk.GenkitException('Quota', status: gk.StatusCode.resourceExhausted),
+        ),
+        ModelErrorKind.rateLimited,
+      );
+      expect(
+        classifyModelError(
+          gk.GenkitException('Missing model', status: gk.StatusCode.notFound),
+        ),
+        ModelErrorKind.notFound,
+      );
+      expect(
+        classifyModelError(
+          gk.GenkitException('Bad param', status: gk.StatusCode.invalidArgument),
+        ),
+        ModelErrorKind.invalidConfig,
+      );
+      expect(
+        classifyModelError(
+          gk.GenkitException('Slow', status: gk.StatusCode.deadlineExceeded),
+        ),
+        ModelErrorKind.timeout,
+      );
+      expect(
+        classifyModelError(gk.CancelledException(reason: 'stop')),
+        ModelErrorKind.cancelled,
+      );
+      expect(classifyModelError(TimeoutException('late')), ModelErrorKind.timeout);
     });
 
     test('status HTTP dipetakan ke jenis yang tepat', () {

@@ -13,5 +13,7 @@ String modelErrorMessage(AppStrings strings, ModelErrorKind kind) => switch (kin
   ModelErrorKind.invalidFile => strings.modelErrorInvalidFile,
   ModelErrorKind.engine => strings.modelErrorEngine,
   ModelErrorKind.cancelled => strings.modelCancelledSnack,
+  ModelErrorKind.timeout => strings.modelErrorTimeout,
+  ModelErrorKind.invalidConfig => strings.modelErrorInvalidConfig,
   ModelErrorKind.unknown => strings.modelErrorUnknown,
 };

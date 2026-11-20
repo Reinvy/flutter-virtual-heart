@@ -1,21 +1,29 @@
-// Widget & controller test — regresi alur ChatNotifier + InputBar isVoice.
+// Widget & controller test — regresi alur ChatNotifier (Lokal + Cloud BYOK) + InputBar isVoice.
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:objectbox/objectbox.dart';
 import 'package:virtual_heart/core/l10n/app_strings.dart';
 import 'package:virtual_heart/features/chat/chat_controller.dart';
+import 'package:virtual_heart/features/chat/chat_models.dart';
 import 'package:virtual_heart/features/chat/widgets/input_bar.dart';
+import 'package:virtual_heart/models/ai_provider_profile.dart';
 import 'package:virtual_heart/models/app_settings.dart';
+import 'package:virtual_heart/models/cloud_speech_config.dart';
 import 'package:virtual_heart/models/memory_fact.dart';
 import 'package:virtual_heart/models/message.dart';
 import 'package:virtual_heart/models/mood_state.dart';
 import 'package:virtual_heart/models/persona_config.dart';
+import 'package:virtual_heart/services/ai/genkit/genkit_cloud_client.dart';
 import 'package:virtual_heart/services/ai/memory_extractor.dart';
 import 'package:virtual_heart/services/ai/model_service.dart';
 import 'package:virtual_heart/services/ai/prompt_builder.dart';
+import 'package:virtual_heart/services/ai/secret_store.dart';
 import 'package:virtual_heart/services/database/objectbox_provider.dart';
 import 'package:virtual_heart/services/database/objectbox_service.dart';
 import 'package:virtual_heart/services/settings/settings_service.dart';
@@ -78,6 +86,7 @@ class _FakeObjectBoxService implements ObjectBoxService {
   _FakeObjectBoxService({
     List<Message>? messages,
     AppSettings? settings,
+    List<AiProviderProfile>? profiles,
   }) : messageBox = _FakeBox<Message>(
          (m) => m.id,
          (m, id) => m.id = id,
@@ -87,6 +96,15 @@ class _FakeObjectBoxService implements ObjectBoxService {
          (s) => s.id,
          (s, id) => s.id = id,
          settings == null ? null : [settings],
+       ),
+       aiProviderProfileBox = _FakeBox<AiProviderProfile>(
+         (p) => p.id,
+         (p, id) => p.id = id,
+         profiles,
+       ),
+       cloudSpeechConfigBox = _FakeBox<CloudSpeechConfig>(
+         (c) => c.id,
+         (c, id) => c.id = id,
        );
 
   @override
@@ -115,11 +133,28 @@ class _FakeObjectBoxService implements ObjectBoxService {
   final _FakeBox<AppSettings> appSettingsBox;
 
   @override
+  final _FakeBox<AiProviderProfile> aiProviderProfileBox;
+
+  @override
+  final _FakeBox<CloudSpeechConfig> cloudSpeechConfigBox;
+
+  @override
   AppSettings getOrCreateSettings() {
     final all = appSettingsBox.getAll();
     if (all.isEmpty) {
       final d = AppSettings().normalized();
       appSettingsBox.put(d);
+      return d;
+    }
+    return all.first.normalized();
+  }
+
+  @override
+  CloudSpeechConfig getOrCreateCloudSpeechConfig() {
+    final all = cloudSpeechConfigBox.getAll();
+    if (all.isEmpty) {
+      final d = CloudSpeechConfig().normalized();
+      cloudSpeechConfigBox.put(d);
       return d;
     }
     return all.first.normalized();
@@ -330,5 +365,133 @@ void main() {
 
     expect(model.stopped, isTrue);
     expect(model.summaryCalls, 0);
+  });
+
+  test('mode Cloud BYOK memakai GenkitCloudClient multi-turn & menghormati enableBackgroundTasks=false', () async {
+    var httpCalls = 0;
+    final profile = AiProviderProfile(
+      id: 1,
+      profileKey: 'openai_1',
+      name: 'OpenRouter',
+      providerType: LlmProviderType.openai,
+      baseUrl: 'https://openrouter.ai/api/v1',
+      modelId: 'openai/gpt-4o-mini',
+      maxInputChars: 5000,
+      enforceShortReply: false,
+      enableBackgroundTasks: false,
+    );
+    final db = _FakeObjectBoxService(
+      settings: AppSettings(
+        id: 1,
+        isAgeVerified: true,
+        isOnboardingDone: true,
+        isPersonaSetup: true,
+        aiMode: AiMode.cloud,
+        activeCloudProfileId: 1,
+      ),
+      profiles: [profile],
+    );
+    final secrets = InMemorySecretStore({
+      SecretKeys.forLlmProfile('openai_1'): 'sk-or-test',
+    });
+    final cloudClient = GenkitCloudClient(
+      httpClientFactory: () => MockClient.streaming((req, bodyStream) async {
+        httpCalls++;
+        await bodyStream.drain<void>();
+        final sse = [
+          'data: ${jsonEncode({
+            'id': 'c1',
+            'object': 'chat.completion.chunk',
+            'created': 1700000000,
+            'model': 'openai/gpt-4o-mini',
+            'choices': [
+              {'index': 0, 'delta': {'role': 'assistant', 'content': 'Halo dari Cloud!'}, 'finish_reason': 'stop'},
+            ],
+          })}\n\n',
+          'data: [DONE]\n\n',
+        ];
+        return http.StreamedResponse(
+          Stream.fromIterable(sse.map(utf8.encode)),
+          200,
+          headers: {'content-type': 'text/event-stream'},
+        );
+      }),
+    );
+
+    final container = ProviderContainer(
+      overrides: [
+        objectBoxServiceProvider.overrideWithValue(db),
+        secretStoreProvider.overrideWithValue(secrets),
+        genkitCloudClientProvider.overrideWithValue(cloudClient),
+        appStringsProvider.overrideWith((ref) => const IndonesianStrings()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final status = await container.read(modelServiceProvider.future);
+    expect(status.ready, isTrue);
+    expect(status.mode, AiMode.cloud);
+
+    // Kirim input > 2000 karakter (diizinkan oleh maxInputChars=5000 di Cloud).
+    final longMessage = 'Cerita panjang ' * 160; // ~2400 char
+    await container.read(chatProvider.notifier).sendMessage(longMessage);
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+
+    final state = container.read(chatProvider);
+    expect(state.error, isNull);
+    expect(state.messages.length, 2);
+    expect(state.messages.first.content.length, greaterThan(2000));
+    expect(state.messages.last.content, 'Halo dari Cloud!');
+    // enableBackgroundTasks == false → hanya 1 panggilan HTTP (chat utama), tidak ada ekstraksi memori.
+    expect(httpCalls, 1);
+  });
+
+  test('mode Cloud BYOK memetakan HTTP 401 menjadi ChatErrorKind.authError', () async {
+    final profile = AiProviderProfile(
+      id: 1,
+      profileKey: 'openai_auth',
+      name: 'OpenAI',
+      providerType: LlmProviderType.openai,
+      modelId: 'gpt-4o-mini',
+    );
+    final db = _FakeObjectBoxService(
+      settings: AppSettings(
+        id: 1,
+        isAgeVerified: true,
+        isOnboardingDone: true,
+        isPersonaSetup: true,
+        aiMode: AiMode.cloud,
+        activeCloudProfileId: 1,
+      ),
+      profiles: [profile],
+    );
+    final secrets = InMemorySecretStore({
+      SecretKeys.forLlmProfile('openai_auth'): 'bad-key',
+    });
+    final cloudClient = GenkitCloudClient(
+      httpClientFactory: () => MockClient(
+        (_) async => http.Response(
+          jsonEncode({'error': {'message': 'Incorrect API key'}}),
+          401,
+        ),
+      ),
+    );
+
+    final container = ProviderContainer(
+      overrides: [
+        objectBoxServiceProvider.overrideWithValue(db),
+        secretStoreProvider.overrideWithValue(secrets),
+        genkitCloudClientProvider.overrideWithValue(cloudClient),
+        appStringsProvider.overrideWith((ref) => const IndonesianStrings()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(modelServiceProvider.future);
+    await container.read(chatProvider.notifier).sendMessage('Halo');
+
+    final state = container.read(chatProvider);
+    expect(state.error?.kind, ChatErrorKind.authError);
+    expect(state.error?.canRetry, isTrue);
   });
 }

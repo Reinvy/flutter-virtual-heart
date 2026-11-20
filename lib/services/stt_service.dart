@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_edge_ai/flutter_edge_ai.dart';
+import 'package:genkit/genkit.dart' as gk;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
@@ -10,23 +11,29 @@ import 'package:speech_to_text/speech_to_text.dart';
 
 import '../core/errors/app_logger.dart';
 import '../core/utils/wav_pcm.dart';
+import '../models/ai_provider_profile.dart';
+import '../models/cloud_speech_config.dart';
+import 'ai/genkit/genkit_cloud_client.dart';
 import 'ai/speech_model_catalog.dart';
 
 /// Hasil memulai sesi dikte.
 enum SttStartResult { started, permissionDenied, unavailable, busy }
 
-/// Facade Speech-to-Text dengan dua backend:
+/// Facade Speech-to-Text dengan lima backend:
 ///
-/// - **gemma** (`flutter_edge_ai_speech`): rekam PCM 16 kHz mono 16-bit via
-///   [record] ke file WAV sementara, lalu transkrip dengan moonshine-tiny
-///   melalui LiteRT C API. Rekaman ke file dipakai karena aliran byte
-///   (`startStream`) tidak tersedia di semua platform desktop.
-/// - **system** (`speech_to_text`): dikte sistem, tanpa unduhan model, dukung
-///   banyak bahasa (termasuk Bahasa Indonesia).
+/// - **system** (`speech_to_text`): dikte OS, tanpa unduhan model.
+/// - **gemma** (`flutter_edge_ai_speech`): rekam WAV 16 kHz mono via [record] →
+///   transkrip on-device dengan moonshine-tiny.
+/// - **elevenlabs** / **openai** / **google**: rekam WAV 16 kHz mono via [record]
+///   → transkrip Cloud BYOK melalui [GenkitCloudClient] (ElevenLabs Scribe /
+///   OpenAI & Groq Whisper / Google Gemini Audio).
 class SttService {
   SttService._internal();
   static final SttService _instance = SttService._internal();
   factory SttService() => _instance;
+
+  static const Set<String> cloudBackends = {'elevenlabs', 'openai', 'google'};
+  static bool isCloudBackend(String backend) => cloudBackends.contains(backend);
 
   final AudioRecorder _recorder = AudioRecorder();
   final SpeechToText _speech = SpeechToText();
@@ -39,6 +46,7 @@ class SttService {
   String? _recordPath;
   String _lastWords = '';
   Future<bool>? _preparingLocal;
+  gk.CancellationController? _activeCloudCancel;
 
   bool get isListening => _isListening;
 
@@ -58,8 +66,6 @@ class SttService {
   }
 
   /// Memastikan backend siap (izin mikrofon + model/engine).
-  ///
-  /// [onProgress] menerima persen 0..100 saat model diunduh.
   Future<bool> initialize({
     String backend = 'system',
     void Function(int percent)? onProgress,
@@ -68,11 +74,13 @@ class SttService {
     if (!granted) return false;
     return _prepare(backend: backend, onProgress: onProgress);
   }
-  ///
-  /// [languageCode] (mis. `id-ID`/`en-US`) hanya dipakai backend sistem.
+
+  /// Memulai rekaman / dikte.
   Future<SttStartResult> startListening({
     String backend = 'system',
     String? languageCode,
+    CloudSpeechConfig? cloudConfig,
+    String? apiKey,
   }) async {
     if (_isListening || _starting) return SttStartResult.busy;
     _starting = true;
@@ -83,9 +91,18 @@ class SttService {
       if (_cancelRequested) return SttStartResult.unavailable;
       if (!granted) return SttStartResult.permissionDenied;
 
-      final ready = await _prepare(backend: backend);
-      if (_cancelRequested) return SttStartResult.unavailable;
-      if (!ready) return SttStartResult.unavailable;
+      if (isCloudBackend(backend)) {
+        final ready = _isCloudReady(
+          backend: backend,
+          cloudConfig: cloudConfig,
+          apiKey: apiKey,
+        );
+        if (!ready) return SttStartResult.unavailable;
+      } else {
+        final ready = await _prepare(backend: backend);
+        if (_cancelRequested) return SttStartResult.unavailable;
+        if (!ready) return SttStartResult.unavailable;
+      }
 
       if (backend == 'system') {
         _lastWords = '';
@@ -112,7 +129,8 @@ class SttService {
       }
 
       final dir = await getTemporaryDirectory();
-      final path = '${dir.path}/vh_stt_${DateTime.now().millisecondsSinceEpoch}.wav';
+      final path =
+          '${dir.path}/vh_stt_${DateTime.now().millisecondsSinceEpoch}.wav';
       await _recorder.start(
         const RecordConfig(
           encoder: AudioEncoder.wav,
@@ -139,8 +157,14 @@ class SttService {
     }
   }
 
-  /// Menghentikan dan mengembalikan transkripsi sesuai [backend].
-  Future<String> stopListening({String backend = 'system', String? languageCode}) async {
+  /// Menghentikan rekaman dan mengembalikan transkripsi sesuai [backend].
+  Future<String> stopListening({
+    String backend = 'system',
+    String? languageCode,
+    CloudSpeechConfig? cloudConfig,
+    String? apiKey,
+    GenkitCloudClient? cloudClient,
+  }) async {
     if (backend == 'system') {
       if (!_isListening && !_hasSystemTranscript) return '';
       _isListening = false;
@@ -161,6 +185,7 @@ class SttService {
     if (!_isListening) return '';
     _isListening = false;
 
+    gk.CancellationController? cancelCtrl;
     try {
       await _recorder.stop();
 
@@ -169,6 +194,21 @@ class SttService {
 
       final file = File(path);
       final bytes = await file.readAsBytes();
+      if (bytes.isEmpty) return '';
+
+      if (isCloudBackend(backend)) {
+        cancelCtrl = gk.CancellationController();
+        _activeCloudCancel = cancelCtrl;
+        final client = cloudClient ?? const GenkitCloudClient();
+        return (await client.transcribeAudio(
+          backend: backend,
+          config: cloudConfig ?? CloudSpeechConfig(),
+          apiKey: apiKey ?? '',
+          wavBytes: bytes,
+          languageCode: languageCode,
+          cancellation: cancelCtrl,
+        )).trim();
+      }
 
       final pcm = pcmFromWav(bytes);
       if (pcm.isEmpty) return '';
@@ -176,9 +216,12 @@ class SttService {
       final recognizer = await FlutterEdgeAi.getActiveStt();
       return (await recognizer.transcribe(pcm)).trim();
     } catch (e) {
-      AppLogger.debug('STT transcription failed', e);
+      AppLogger.debug('STT transcription failed ($backend)', e);
       return '';
     } finally {
+      if (cancelCtrl != null && identical(_activeCloudCancel, cancelCtrl)) {
+        _activeCloudCancel = null;
+      }
       await _deleteRecording();
     }
   }
@@ -189,6 +232,11 @@ class SttService {
     _isListening = false;
     _hasSystemTranscript = false;
     _lastWords = '';
+    final cloudCancel = _activeCloudCancel;
+    _activeCloudCancel = null;
+    if (cloudCancel != null && !cloudCancel.isCancelled) {
+      cloudCancel.cancel('STT cancelled');
+    }
     try {
       await _speech.cancel();
     } catch (e) {
@@ -202,7 +250,22 @@ class SttService {
       await _deleteRecording();
     }
   }
+
   // ── Private ─────────────────────────────────────────────────────────────
+
+  bool _isCloudReady({
+    required String backend,
+    CloudSpeechConfig? cloudConfig,
+    String? apiKey,
+  }) {
+    final key = (apiKey ?? '').trim();
+    if (key.isNotEmpty) return true;
+    if (backend == 'openai' &&
+        AiProviderProfile.isLocalNetworkUrl(cloudConfig?.openaiSttBaseUrl ?? '')) {
+      return true;
+    }
+    return false;
+  }
 
   Future<bool> _requestMicrophone() async {
     try {
@@ -219,6 +282,7 @@ class SttService {
     String model = 'moonshine',
     void Function(int percent)? onProgress,
   }) async {
+    if (isCloudBackend(backend)) return true;
     if (backend == 'system') {
       try {
         return await _speech.initialize(

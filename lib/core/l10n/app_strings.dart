@@ -92,6 +92,8 @@ abstract class AppStrings {
   String get modelErrorStorage;
   String get modelErrorInvalidFile;
   String get modelErrorEngine;
+  String get modelErrorTimeout;
+  String get modelErrorInvalidConfig;
   String get modelErrorUnknown;
   String get modelFileEmpty;
   String get modelCancelledSnack;
@@ -137,6 +139,11 @@ abstract class AppStrings {
   String get chatGenerationFailed;
   String get chatContextLimit;
   String get chatModelUnavailable;
+  String get chatAuthError;
+  String get chatRateLimited;
+  String get chatNetworkError;
+  String get chatModelNotFound;
+  String get chatTimeout;
   String get chatInterrupted;
   String get chatRetry;
   String get chatDismiss;
@@ -509,7 +516,8 @@ class IndonesianStrings extends AppStrings {
   String get modelErrorNetwork =>
       'Tidak ada koneksi. Periksa jaringan lalu coba lagi.';
   @override
-  String get modelErrorAuth => 'Akses ditolak. Periksa token HuggingFace.';
+  String get modelErrorAuth =>
+      'Akses ditolak. Periksa API key atau token HuggingFace.';
   @override
   String get modelErrorNotFound => 'Model tidak ditemukan di server.';
   @override
@@ -522,6 +530,12 @@ class IndonesianStrings extends AppStrings {
   String get modelErrorInvalidFile => 'File model tidak valid atau rusak.';
   @override
   String get modelErrorEngine => 'Model gagal dimuat di perangkat ini.';
+  @override
+  String get modelErrorTimeout =>
+      'Permintaan melampaui batas waktu. Coba lagi atau naikkan timeout di parameter cloud.';
+  @override
+  String get modelErrorInvalidConfig =>
+      'Konfigurasi provider atau parameter tidak valid. Periksa Base URL, Model ID, dan opsi.';
   @override
   String get modelErrorUnknown => 'Terjadi kesalahan. Coba lagi.';
   @override
@@ -600,7 +614,22 @@ class IndonesianStrings extends AppStrings {
       'percakapan baru.';
   @override
   String get chatModelUnavailable =>
-      'Model AI belum siap. Buka Pengaturan → Model untuk memasang atau memuat model.';
+      'Model AI belum siap. Buka Pengaturan → Model untuk memasang model lokal atau mengaktifkan profil Cloud BYOK.';
+  @override
+  String get chatAuthError =>
+      'API key ditolak oleh provider (401/403). Periksa API key di pengaturan Cloud BYOK.';
+  @override
+  String get chatRateLimited =>
+      'Batas kuota atau rate limit provider tercapai (429). Tunggu sebentar lalu coba lagi.';
+  @override
+  String get chatNetworkError =>
+      'Tidak bisa terhubung ke provider cloud. Periksa koneksi internet dan Base URL.';
+  @override
+  String get chatModelNotFound =>
+      'Model ID tidak ditemukan di provider (404). Periksa nama model di pengaturan Cloud BYOK.';
+  @override
+  String get chatTimeout =>
+      'Permintaan ke provider cloud terlalu lama. Coba lagi atau naikkan batas timeout.';
   @override
   String get chatInterrupted => 'Jawaban terhenti.';
   @override
@@ -1150,7 +1179,8 @@ class EnglishStrings extends AppStrings {
   String get modelErrorNetwork =>
       'No connection. Check your network and try again.';
   @override
-  String get modelErrorAuth => 'Access denied. Check your HuggingFace token.';
+  String get modelErrorAuth =>
+      'Access denied. Check your API key or HuggingFace token.';
   @override
   String get modelErrorNotFound => 'Model not found on the server.';
   @override
@@ -1162,6 +1192,12 @@ class EnglishStrings extends AppStrings {
   String get modelErrorInvalidFile => 'The model file is invalid or corrupted.';
   @override
   String get modelErrorEngine => 'The model failed to load on this device.';
+  @override
+  String get modelErrorTimeout =>
+      'Request timed out. Try again or increase the timeout in cloud parameters.';
+  @override
+  String get modelErrorInvalidConfig =>
+      'Invalid provider configuration or parameters. Check Base URL, Model ID, and options.';
   @override
   String get modelErrorUnknown => 'Something went wrong. Try again.';
   @override
@@ -1240,7 +1276,22 @@ class EnglishStrings extends AppStrings {
       'conversation.';
   @override
   String get chatModelUnavailable =>
-      'The AI model isn\'t ready. Open Settings → Model to install or load a model.';
+      'The AI model isn\'t ready. Open Settings → Model to install a local model or activate a Cloud BYOK profile.';
+  @override
+  String get chatAuthError =>
+      'API key was rejected by the provider (401/403). Check your key in Cloud BYOK settings.';
+  @override
+  String get chatRateLimited =>
+      'Provider rate limit or quota exceeded (429). Please wait a moment and retry.';
+  @override
+  String get chatNetworkError =>
+      'Could not reach the cloud provider. Check your internet connection and Base URL.';
+  @override
+  String get chatModelNotFound =>
+      'Model ID was not found on the provider (404). Check the model ID in Cloud BYOK settings.';
+  @override
+  String get chatTimeout =>
+      'Cloud provider request timed out. Retry or increase the timeout limit.';
   @override
   String get chatInterrupted => 'Reply stopped.';
   @override

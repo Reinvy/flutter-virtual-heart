@@ -4,10 +4,12 @@ import 'package:objectbox/objectbox.dart';
 
 import '../../core/errors/app_logger.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../models/app_settings.dart';
 import '../../models/memory_fact.dart';
 import '../../models/message.dart';
 import 'package:virtual_heart/services/database/objectbox_provider.dart';
 import '../../models/persona_config.dart';
+import '../../services/ai/ai_provider_controller.dart';
 import '../../services/ai/content_safety.dart';
 import '../../services/ai/memory_extractor.dart';
 import '../../services/ai/memory_fact_merger.dart';
@@ -49,11 +51,14 @@ class ChatNotifier extends Notifier<ChatState> {
   Future<void> sendMessage(String text, {bool isVoice = false}) {
     if (!ref.mounted || state.isTyping || _cancelling) return Future.value();
     final trimmed = text.trim();
-    // FR-05: batas input 2000 karakter tanpa memotong pasangan surrogate.
-    final content = PromptBuilder.truncate(
-      trimmed,
-      PromptBuilder.maxLatestUserChars,
-    );
+    final settings = ref.read(appSettingsProvider);
+    final cloudProfile = settings.aiMode == AiMode.cloud
+        ? ref.read(activeCloudProfileProvider)
+        : null;
+    final maxInputChars =
+        cloudProfile?.maxInputChars ?? PromptBuilder.maxLatestUserChars;
+    // Batas input adaptif (2000 lokal; hingga 64000 di profil Cloud BYOK).
+    final content = PromptBuilder.truncate(trimmed, maxInputChars);
     if (content.isEmpty) return Future.value();
 
     late final Future<void> future;
@@ -215,9 +220,20 @@ class ChatNotifier extends Notifier<ChatState> {
       final personas = db.personaBox.getAll();
       final persona = personas.isNotEmpty ? personas.first : PersonaConfig();
       final settings = db.getOrCreateSettings();
+      final cloudProfile = settings.aiMode == AiMode.cloud
+          ? ref.read(activeCloudProfileProvider)
+          : null;
+      final limits = cloudProfile != null
+          ? PromptLimits.fromCloudProfile(cloudProfile)
+          : PromptLimits.local;
       final mood = ref.read(moodServiceProvider).getCurrentMood();
       final allFacts = db.memoryFactBox.getAll();
-      usedFacts.addAll(PromptBuilder.selectMemoryFacts(allFacts));
+      usedFacts.addAll(
+        PromptBuilder.selectMemoryFacts(
+          allFacts,
+          maxFacts: limits.maxMemoryFacts,
+        ),
+      );
 
       final systemPrompt = PromptBuilder.buildSystemPrompt(
         persona,
@@ -225,14 +241,18 @@ class ChatNotifier extends Notifier<ChatState> {
         usedFacts,
         settings.conversationSummary,
         language: settings.language,
+        limits: limits,
+        enforceShortReply: cloudProfile?.enforceShortReply ?? true,
+        customSystemPrompt: cloudProfile?.customSystemPrompt ?? '',
       );
-      final fullPrompt = PromptBuilder.buildFullPrompt(systemPrompt, history, latestUserInput);
 
       // Holdback 64 karakter: token terakhir tidak langsung tampil sehingga
       // pola terlarang sempat terdeteksi sebelum terlihat pengguna.
       const holdback = 64;
-      await for (final token in model.generateResponseStream(
-        fullPrompt,
+      await for (final token in model.generateChatStream(
+        systemPrompt: systemPrompt,
+        history: history,
+        latestUserInput: latestUserInput,
         isCancelled: () => _cancelRequested || !ref.mounted,
       )) {
         if (_cancelRequested || !ref.mounted) break;
@@ -356,7 +376,9 @@ class ChatNotifier extends Notifier<ChatState> {
       final conversation = 'User: $userMessage\nAI: $aiResponse';
       final facts = await ref.read(memoryExtractorProvider).extractFacts(
         conversation,
-        (p) => ref.read(modelServiceProvider.notifier).generateResponse(p),
+        (p) => ref
+            .read(modelServiceProvider.notifier)
+            .generateBackgroundResponse(p),
       );
       if (_cancelRequested || !ref.mounted) return;
       if (facts.isNotEmpty) {
@@ -388,8 +410,9 @@ class ChatNotifier extends Notifier<ChatState> {
           language: settings.language,
         );
         if (_cancelRequested || !ref.mounted) return;
-        final summary =
-            await ref.read(modelServiceProvider.notifier).generateResponse(prompt);
+        final summary = await ref
+            .read(modelServiceProvider.notifier)
+            .generateBackgroundResponse(prompt);
         if (_cancelRequested || !ref.mounted) return;
         final cleaned = _cleanSummary(summary);
         if (cleaned.isNotEmpty) {
@@ -432,9 +455,17 @@ class ChatNotifier extends Notifier<ChatState> {
   static ChatErrorKind _classifyGenerationError(Object error) {
     if (error is ContextLimitReachedException) return ChatErrorKind.contextLimit;
     if (error is ModelException) {
-      return error.kind == ModelErrorKind.engine
-          ? ChatErrorKind.modelUnavailable
-          : ChatErrorKind.generationFailed;
+      return switch (error.kind) {
+        ModelErrorKind.engine ||
+        ModelErrorKind.invalidConfig => ChatErrorKind.modelUnavailable,
+        ModelErrorKind.auth => ChatErrorKind.authError,
+        ModelErrorKind.rateLimited => ChatErrorKind.rateLimited,
+        ModelErrorKind.network => ChatErrorKind.networkError,
+        ModelErrorKind.notFound => ChatErrorKind.modelNotFound,
+        ModelErrorKind.timeout => ChatErrorKind.timeout,
+        ModelErrorKind.cancelled => ChatErrorKind.interrupted,
+        _ => ChatErrorKind.generationFailed,
+      };
     }
     if (error is StateError) return ChatErrorKind.modelUnavailable;
     return ChatErrorKind.generationFailed;

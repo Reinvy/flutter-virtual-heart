@@ -12,6 +12,21 @@ enum ChatErrorKind {
   /// Prompt melebihi context window model.
   contextLimit,
 
+  /// API key cloud tidak valid atau ditolak (401/403).
+  authError,
+
+  /// Batas permintaan atau kuota provider cloud terlampaui (429).
+  rateLimited,
+
+  /// Gangguan jaringan saat menghubungi provider cloud.
+  networkError,
+
+  /// Model ID tidak ditemukan pada provider (404).
+  modelNotFound,
+
+  /// Permintaan cloud melampaui batas waktu tunggu.
+  timeout,
+
   /// Generasi gagal karena sebab lain.
   generationFailed,
 
