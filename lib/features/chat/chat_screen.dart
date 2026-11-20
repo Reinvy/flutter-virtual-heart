@@ -16,8 +16,12 @@ import '../../core/design/tokens/text_styles.dart';
 import '../../core/errors/app_logger.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../models/app_settings.dart';
+import '../../models/cloud_speech_config.dart';
 import '../../models/message.dart';
 import '../../models/persona_config.dart';
+import '../../services/ai/ai_provider_controller.dart';
+import '../../services/ai/genkit/genkit_cloud_client.dart';
+import '../../services/ai/prompt_builder.dart';
 import '../../services/stt_service.dart';
 import '../../services/tts_service.dart';
 import '../persona/avatar_catalog.dart';
@@ -48,6 +52,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   int _speakingMessageId = -1;
   int _audioSessionEpoch = 0;
   bool _isListening = false;
+  bool _isTranscribing = false;
   String? _voiceDraft;
   bool _didInitialScroll = false;
   final Set<int> _seenMessageIds = {};
@@ -124,6 +129,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final persona = ref.watch(personaProvider);
     final chatState = ref.watch(chatProvider);
     final settings = ref.watch(appSettingsProvider);
+    final cloudProfile = settings.aiMode == AiMode.cloud
+        ? ref.watch(activeCloudProfileProvider)
+        : null;
+    final maxInputChars =
+        cloudProfile?.maxInputChars ?? PromptBuilder.maxLatestUserChars;
 
     ref.listen(pendingChatDraftProvider, (prev, next) {
       if (next != null && next.isNotEmpty) {
@@ -159,6 +169,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               (ModalRoute.of(context)?.isCurrent ?? false) &&
               currentSettings.ttsEnabled &&
               currentSettings.ttsAutoPlay) {
+            unawaited(_speakMessage(last, ref.read(personaProvider)));
           }
         }
       }
@@ -197,6 +208,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 enabled: !chatState.isTyping,
                 isTyping: chatState.isTyping,
                 isListening: _isListening,
+                isTranscribing: _isTranscribing,
+                maxLength: maxInputChars,
                 controller: _inputTextController,
                 onMicTap: _handleMicTap,
                 onStop: () =>
@@ -301,9 +314,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _audioSessionEpoch++;
     unawaited(_ttsService.stop());
     unawaited(_sttService.cancel());
-    if (mounted && (_isListening || _speakingMessageId != -1)) {
+    if (mounted && (_isListening || _isTranscribing || _speakingMessageId != -1)) {
       setState(() {
         _isListening = false;
+        _isTranscribing = false;
         _speakingMessageId = -1;
       });
     }
@@ -331,9 +345,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
 
     final epoch = ++_audioSessionEpoch;
+    final isCloud = TtsService.isCloudBackend(settings.ttsBackend);
+    CloudSpeechConfig? cloudConfig;
+    String? apiKey;
+    GenkitCloudClient? cloudClient;
+    if (isCloud) {
+      cloudConfig = ref.read(cloudSpeechConfigProvider);
+      apiKey = await ref
+          .read(cloudSpeechConfigProvider.notifier)
+          .resolveTtsApiKey(settings.ttsBackend);
+      cloudClient = ref.read(genkitCloudClientProvider);
+    }
+
     final ready = await _ttsService.ensureReady(
       backend: settings.ttsBackend,
       model: settings.ttsModel,
+      cloudConfig: cloudConfig,
+      apiKey: apiKey,
     );
     if (!mounted ||
         epoch != _audioSessionEpoch ||
@@ -341,7 +369,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return;
     }
     if (!ready) {
-      _showSnack(ref.read(appStringsProvider).chatTtsUnavailable);
+      final strings = ref.read(appStringsProvider);
+      _showSnack(
+        isCloud ? strings.speechCloudMissingKey : strings.chatTtsUnavailable,
+      );
       return;
     }
 
@@ -352,6 +383,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       model: settings.ttsModel,
       gender: persona?.gender,
       languageCode: _speechLanguageCode(settings.language),
+      cloudConfig: cloudConfig,
+      apiKey: apiKey,
+      cloudClient: cloudClient,
       onDone: () {
         if (mounted && epoch == _audioSessionEpoch) {
           setState(() => _speakingMessageId = -1);
@@ -373,15 +407,35 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> _handleMicTap() async {
     final strings = ref.read(appStringsProvider);
     final settings = ref.read(appSettingsProvider);
+    final isCloud = SttService.isCloudBackend(settings.sttBackend);
 
     if (_isListening) {
       final epoch = _audioSessionEpoch;
+      if (isCloud && mounted) {
+        setState(() {
+          _isListening = false;
+          _isTranscribing = true;
+        });
+      }
       String transcript;
       var stopFailed = false;
       try {
+        CloudSpeechConfig? cloudConfig;
+        String? apiKey;
+        GenkitCloudClient? cloudClient;
+        if (isCloud) {
+          cloudConfig = ref.read(cloudSpeechConfigProvider);
+          apiKey = await ref
+              .read(cloudSpeechConfigProvider.notifier)
+              .resolveSttApiKey(settings.sttBackend);
+          cloudClient = ref.read(genkitCloudClientProvider);
+        }
         transcript = await _sttService.stopListening(
           backend: settings.sttBackend,
           languageCode: _speechLanguageCode(settings.language),
+          cloudConfig: cloudConfig,
+          apiKey: apiKey,
+          cloudClient: cloudClient,
         );
       } catch (e) {
         AppLogger.debug('STT stop failed', e);
@@ -389,7 +443,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         stopFailed = true;
       }
       if (!mounted || epoch != _audioSessionEpoch) return;
-      setState(() => _isListening = false);
+      setState(() {
+        _isListening = false;
+        _isTranscribing = false;
+      });
       if (stopFailed) {
         _showSnack(strings.chatSttUnavailable);
       } else if (transcript.trim().isNotEmpty) {
@@ -408,9 +465,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
     setState(() => _speakingMessageId = -1);
 
+    CloudSpeechConfig? cloudConfig;
+    String? apiKey;
+    if (isCloud) {
+      cloudConfig = ref.read(cloudSpeechConfigProvider);
+      apiKey = await ref
+          .read(cloudSpeechConfigProvider.notifier)
+          .resolveSttApiKey(settings.sttBackend);
+      if (!mounted ||
+          epoch != _audioSessionEpoch ||
+          ref.read(activeShellTabProvider) != 1) {
+        return;
+      }
+    }
+
     final result = await _sttService.startListening(
       backend: settings.sttBackend,
       languageCode: _speechLanguageCode(settings.language),
+      cloudConfig: cloudConfig,
+      apiKey: apiKey,
     );
     if (!mounted ||
         epoch != _audioSessionEpoch ||
@@ -432,7 +505,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
         );
       case SttStartResult.unavailable:
-        _showSnack(strings.chatSttUnavailable);
+        _showSnack(
+          isCloud ? strings.speechCloudMissingKey : strings.chatSttUnavailable,
+        );
       case SttStartResult.busy:
         break;
     }

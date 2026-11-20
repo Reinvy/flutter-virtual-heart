@@ -14,6 +14,8 @@ class InputBar extends ConsumerStatefulWidget {
     this.enabled = true,
     this.isTyping = false,
     this.isListening = false,
+    this.isTranscribing = false,
+    this.maxLength = 2000,
     this.onMicTap,
     this.onStop,
     this.controller,
@@ -23,6 +25,8 @@ class InputBar extends ConsumerStatefulWidget {
   final bool enabled;
   final bool isTyping;
   final bool isListening;
+  final bool isTranscribing;
+  final int maxLength;
   final VoidCallback? onMicTap;
   final VoidCallback? onStop;
   final TextEditingController? controller;
@@ -89,10 +93,15 @@ class _InputBarState extends ConsumerState<InputBar> {
           children: [
             _MicButton(
               isListening: widget.isListening,
-              onTap: widget.enabled ? _handleMicTap : null,
-              semanticLabel: widget.isListening
-                  ? strings.chatMicStop
-                  : strings.chatMicStart,
+              isTranscribing: widget.isTranscribing,
+              onTap: (widget.enabled && !widget.isTranscribing)
+                  ? _handleMicTap
+                  : null,
+              semanticLabel: widget.isTranscribing
+                  ? strings.speechTranscribing
+                  : (widget.isListening
+                        ? strings.chatMicStop
+                        : strings.chatMicStart),
             ),
             const SizedBox(width: AppSizes.spaceXs),
             Expanded(
@@ -106,12 +115,14 @@ class _InputBarState extends ConsumerState<InputBar> {
                   focusNode: _focusNode,
                   enabled: widget.enabled,
                   maxLines: null,
-                  maxLength: 2000,
+                  maxLength: widget.maxLength,
                   keyboardType: TextInputType.multiline,
                   textInputAction: TextInputAction.newline,
                   style: AppTextStyles.bubbleText(color: scheme.onSurface),
                   decoration: InputDecoration(
-                    hintText: strings.chatInputHint,
+                    hintText: widget.isTranscribing
+                        ? strings.speechTranscribing
+                        : strings.chatInputHint,
                     hintStyle: AppTextStyles.inputHint(
                       color: scheme.onSurfaceVariant,
                     ),
@@ -130,9 +141,9 @@ class _InputBarState extends ConsumerState<InputBar> {
                         required currentLength,
                         required isFocused,
                         maxLength,
-                      }) => currentLength >= 1800
+                      }) => currentLength >= (widget.maxLength * 0.9).round()
                       ? Text(
-                          '$currentLength/2000',
+                          '$currentLength/${widget.maxLength}',
                           style: AppTextStyles.timestamp(
                             color: scheme.onSurfaceVariant,
                           ),
@@ -168,11 +179,13 @@ class _InputBarState extends ConsumerState<InputBar> {
 class _MicButton extends StatefulWidget {
   const _MicButton({
     required this.isListening,
+    this.isTranscribing = false,
     required this.onTap,
     required this.semanticLabel,
   });
 
   final bool isListening;
+  final bool isTranscribing;
   final VoidCallback? onTap;
   final String semanticLabel;
 
@@ -259,11 +272,20 @@ class _MicButtonState extends State<_MicButton>
                   width: listening ? 1.5 : 1,
                 ),
               ),
-              child: Icon(
-                listening ? Icons.mic_rounded : Icons.mic_none_rounded,
-                color: iconColor,
-                size: 20,
-              ),
+              child: widget.isTranscribing
+                  ? SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: scheme.primary,
+                      ),
+                    )
+                  : Icon(
+                      listening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                      color: iconColor,
+                      size: 20,
+                    ),
             ),
           ),
         ),

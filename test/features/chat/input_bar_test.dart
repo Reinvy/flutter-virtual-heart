@@ -109,4 +109,39 @@ void main() {
     await tester.pump();
     expect(find.text('1900/2000'), findsOneWidget);
   });
+
+  testWidgets('mendukung maxLength dinamis untuk mode Cloud BYOK', (tester) async {
+    await tester.pumpWidget(wrap(InputBar(onSend: (_) {}, maxLength: 12000)));
+
+    await tester.enterText(find.byType(TextField), 'a' * 3000);
+    await tester.pump();
+
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.maxLength, 12000);
+    expect(field.controller!.text.length, 3000);
+    // Di bawah 90% threshold (10800) → counter belum tampil.
+    expect(find.text('3000/12000'), findsNothing);
+
+    await tester.enterText(find.byType(TextField), 'a' * 11000);
+    await tester.pump();
+    expect(find.text('11000/12000'), findsOneWidget);
+  });
+
+  testWidgets('saat isTranscribing tampilkan indikator transkripsi cloud', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrap(
+        InputBar(
+          onSend: (_) {},
+          onMicTap: () {},
+          isTranscribing: true,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.text('Mentranskrip audio...'), findsOneWidget);
+  });
 }

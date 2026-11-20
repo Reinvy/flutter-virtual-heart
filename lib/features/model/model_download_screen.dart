@@ -1,14 +1,15 @@
-// Fitur Model (FR-04) — layar pilih/ganti model AI (network / upload file).
+// Fitur Model (FR-04) — layar pilih/ganti model AI Lokal (On-Device) atau Cloud (BYOK via Genkit).
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../core/design/components/app_icon_badge.dart';
 import '../../core/design/components/app_scaffold.dart';
+import '../../core/design/components/confirm_dialog.dart';
 import '../../core/design/components/double_back_exit_scope.dart';
 import '../../core/design/components/primary_button.dart';
 import '../../core/design/components/resonance_mark.dart';
@@ -21,11 +22,14 @@ import '../../core/design/tokens/text_styles.dart';
 import '../../core/errors/app_logger.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
+import '../../models/ai_provider_profile.dart';
+import '../../models/app_settings.dart';
+import '../../services/ai/ai_provider_controller.dart';
+import '../../services/ai/cloud_provider_catalog.dart';
 import '../../services/ai/model_catalog.dart';
 import '../../services/ai/model_service.dart';
-
 import 'package:virtual_heart/services/settings/settings_service.dart';
-
+import 'cloud_provider_editor_sheet.dart';
 import 'model_error_text.dart';
 
 class ModelDownloadScreen extends ConsumerStatefulWidget {
@@ -38,6 +42,7 @@ class ModelDownloadScreen extends ConsumerStatefulWidget {
 
 class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
   final _tokenController = TextEditingController();
+  late AiMode _tabMode;
   ModelOption? _selected;
   bool _pickingFile = false;
   bool _lastRetryWasFile = false;
@@ -45,7 +50,9 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
   @override
   void initState() {
     super.initState();
-    _selected = _catalogOptionFor(ref.read(appSettingsProvider).modelVariant);
+    final settings = ref.read(appSettingsProvider);
+    _tabMode = settings.aiMode;
+    _selected = _catalogOptionFor(settings.modelVariant);
   }
 
   @override
@@ -70,13 +77,14 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
     final status = modelState.value;
     final bool busy = status?.installing ?? false;
     final bool building = modelState.isLoading && !modelState.hasValue && !busy;
-    final bool activeReady = status?.ready ?? false;
+    final bool activeLocalReady =
+        (status?.ready ?? false) && settings.aiMode == AiMode.local;
     final String activeFile = settings.modelVariant;
 
     final chosen = _selected ?? _catalogOptionFor(activeFile);
-    final isActive = chosen != null
-        ? (activeReady && activeFile == chosen.fileName)
-        : activeReady;
+    final isLocalSelectedActive = chosen != null
+        ? (activeLocalReady && activeFile == chosen.fileName)
+        : activeLocalReady;
     final installTarget = _selected ?? kDefaultModelOption;
     final hasBackRoute =
         GoRouter.maybeOf(context)?.canPop() ?? Navigator.canPop(context);
@@ -94,7 +102,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
       child: AppScaffold(
         appBar: AppBar(
           leading: hasBackRoute && !busy ? const BackButton() : null,
-          title: Text(strings.modelChooseTitle),
+          title: Text(strings.aiEngineTitle),
         ),
         body: AppContent(
           maxWidth: 720,
@@ -102,18 +110,27 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
             padding: const EdgeInsets.symmetric(vertical: AppSizes.spaceMd),
             children: [
               _buildHeader(strings),
+              const SizedBox(height: AppSizes.spaceMd),
+              _buildModeSwitcher(strings, busy: busy),
               const SizedBox(height: AppSizes.spaceLg),
               if (building)
                 _buildLoading(strings)
+              else if (_tabMode == AiMode.cloud)
+                _buildCloudTab(strings, settings)
               else ...[
-                _buildModelList(strings, activeReady, activeFile, busy: busy),
+                _buildModelList(
+                  strings,
+                  activeLocalReady,
+                  activeFile,
+                  busy: busy,
+                ),
                 const SizedBox(height: AppSizes.spaceLg),
                 _buildTokenField(strings, busy: busy),
                 const SizedBox(height: AppSizes.spaceLg),
                 _buildActions(
                   strings,
                   busy: busy,
-                  isActive: isActive,
+                  isActive: isLocalSelectedActive,
                   target: installTarget,
                 ),
                 if (busy) _buildProgress(strings, status?.progress ?? 0),
@@ -139,7 +156,7 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
         const SizedBox(width: AppSizes.spaceMd),
         Expanded(
           child: Text(
-            strings.modelChooseSubtitle,
+            strings.aiEngineSubtitle,
             style: AppTextStyles.bodyLarge(
               color: AppColors.textSecondaryFor(context),
             ),
@@ -148,6 +165,202 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
       ],
     );
   }
+
+  Widget _buildModeSwitcher(AppStrings strings, {required bool busy}) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SegmentedButton<AiMode>(
+        segments: [
+          ButtonSegment(
+            value: AiMode.local,
+            label: Text(strings.aiModeLocal),
+            icon: const Icon(Icons.memory_rounded),
+          ),
+          ButtonSegment(
+            value: AiMode.cloud,
+            label: Text(strings.aiModeCloud),
+            icon: const Icon(Icons.cloud_outlined),
+          ),
+        ],
+        selected: {_tabMode},
+        onSelectionChanged: busy
+            ? null
+            : (selection) {
+                if (selection.isEmpty) return;
+                setState(() => _tabMode = selection.first);
+              },
+      ),
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Cloud BYOK Tab
+  // -------------------------------------------------------------------------
+
+  Widget _buildCloudTab(AppStrings strings, AppSettings settings) {
+    final scheme = Theme.of(context).colorScheme;
+    final profiles = ref.watch(aiProviderProfilesProvider);
+    final isCloudMode = settings.aiMode == AiMode.cloud;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(AppSizes.spaceMd),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(AppSizes.radiusPanel),
+            border: Border.all(color: scheme.outlineVariant),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const AppIconBadge(icon: Icons.vpn_key_outlined),
+              const SizedBox(width: AppSizes.spaceSm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      strings.cloudByokBannerTitle,
+                      style: AppTextStyles.headingSmall(
+                        context,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      strings.cloudByokBannerBody,
+                      style: AppTextStyles.bodySmall(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSizes.spaceLg),
+        Text(
+          strings.cloudSavedProfiles.toUpperCase(),
+          style: AppTextStyles.sectionLabel(
+            color: AppColors.textSecondaryFor(context),
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (profiles.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppSizes.spaceMd),
+            decoration: AppBorders.cardDecoration(
+              context,
+              radius: AppSizes.radiusPanel,
+            ),
+            child: Text(
+              strings.cloudNoProfiles,
+              style: AppTextStyles.bodyMedium(color: scheme.onSurfaceVariant),
+            ),
+          )
+        else
+          ...profiles.map((profile) {
+            final active =
+                isCloudMode && settings.activeCloudProfileId == profile.id;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSizes.spaceXs),
+              child: _CloudProfileTile(
+                profile: profile,
+                active: active,
+                strings: strings,
+                onActivate: () => _activateCloudProfile(profile),
+                onEdit: () => _editCloudProfile(profile),
+                onDelete: () => _deleteCloudProfile(profile),
+              ),
+            );
+          }),
+        const SizedBox(height: AppSizes.spaceLg),
+        Text(
+          strings.cloudQuickAddTitle.toUpperCase(),
+          style: AppTextStyles.sectionLabel(
+            color: AppColors.textSecondaryFor(context),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: AppSizes.spaceXs,
+          runSpacing: AppSizes.spaceXs,
+          children: [
+            for (final preset in kCloudProviderPresets)
+              ActionChip(
+                avatar: Icon(
+                  _providerIcon(preset.providerType),
+                  size: 16,
+                  color: AppColors.primaryDeepFor(context),
+                ),
+                label: Text(preset.displayName),
+                onPressed: () => _createFromPreset(preset),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _createFromPreset(CloudProviderPreset preset) async {
+    final notifier = ref.read(aiProviderProfilesProvider.notifier);
+    final draft = preset.toNewProfile(
+      profileKey: notifier.generateProfileKey(preset.id),
+    );
+    final res = await showCloudProviderEditorSheet(
+      context,
+      initialProfile: draft,
+      isNew: true,
+    );
+    if (!mounted || res == null) return;
+    if (res.activated) _onInstalled();
+  }
+
+  Future<void> _editCloudProfile(AiProviderProfile profile) async {
+    final res = await showCloudProviderEditorSheet(
+      context,
+      initialProfile: profile,
+      isNew: false,
+    );
+    if (!mounted || res == null) return;
+    if (res.activated) _onInstalled();
+  }
+
+  Future<void> _activateCloudProfile(AiProviderProfile profile) async {
+    final strings = ref.read(appStringsProvider);
+    final ok = await ref
+        .read(modelServiceProvider.notifier)
+        .activateCloudProfile(profile);
+    if (!mounted) return;
+    if (ok) {
+      _onInstalled();
+    } else {
+      _snack(strings.modelErrorAuth);
+    }
+  }
+
+  Future<void> _deleteCloudProfile(AiProviderProfile profile) async {
+    final strings = ref.read(appStringsProvider);
+    final confirmed = await showConfirmDialog(
+      context,
+      title: strings.cloudDeleteProfileTitle,
+      body: strings.cloudDeleteProfileBody,
+      confirmLabel: strings.settingsDelete,
+      cancelLabel: strings.commonCancel,
+    );
+    if (!confirmed || !mounted) return;
+    await ref.read(aiProviderProfilesProvider.notifier).deleteProfile(profile.id);
+    if (!mounted) return;
+    ref.invalidate(modelServiceProvider);
+  }
+
+  // -------------------------------------------------------------------------
+  // Local On-Device Tab (existing FR-04 preserved)
+  // -------------------------------------------------------------------------
 
   Widget _buildLoading(AppStrings strings) {
     final scheme = Theme.of(context).colorScheme;
@@ -365,10 +578,6 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
     );
   }
 
-  // -------------------------------------------------------------------------
-  // Actions
-  // -------------------------------------------------------------------------
-
   Future<void> _startDownload(ModelOption option) async {
     _lastRetryWasFile = false;
     final token = _tokenController.text.trim();
@@ -490,9 +699,146 @@ class _ModelDownloadScreenState extends ConsumerState<ModelDownloadScreen> {
   static Future<void> _deleteQuietly(File file) async {
     try {
       if (await file.exists()) await file.delete();
-    } catch (_) {
-      // Pembersihan best-effort; file yatim tidak memblokir alur.
-    }
+    } catch (_) {}
+  }
+
+  static IconData _providerIcon(LlmProviderType type) => switch (type) {
+    LlmProviderType.google => Icons.auto_awesome_rounded,
+    LlmProviderType.anthropic => Icons.psychology_outlined,
+    LlmProviderType.openai => Icons.hub_outlined,
+  };
+}
+
+class _CloudProfileTile extends StatelessWidget {
+  const _CloudProfileTile({
+    required this.profile,
+    required this.active,
+    required this.strings,
+    required this.onActivate,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final AiProviderProfile profile;
+  final bool active;
+  final AppStrings strings;
+  final VoidCallback onActivate;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final radius = BorderRadius.circular(AppSizes.radiusPanel);
+    final protocolTag = switch (profile.providerType) {
+      LlmProviderType.google => 'Google',
+      LlmProviderType.anthropic => 'Anthropic',
+      LlmProviderType.openai => 'OpenAI',
+    };
+    final tempText = profile.temperature != null
+        ? 'T=${profile.temperature!.toStringAsFixed(1)}'
+        : 'T=Auto';
+    final summary =
+        '$tempText · ${profile.maxOutputTokens} tok · ${profile.maxHistoryMessages} msg';
+
+    return Material(
+      color: active ? scheme.surfaceContainerLow : scheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: radius,
+        side: BorderSide(
+          color: active ? scheme.primary : scheme.outlineVariant,
+          width: active ? 1.5 : 1,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.spaceMd),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppIconBadge(
+                  icon: _ModelDownloadScreenState._providerIcon(
+                    profile.providerType,
+                  ),
+                  size: 40,
+                ),
+                const SizedBox(width: AppSizes.spaceSm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            profile.name,
+                            style: AppTextStyles.headingSmall(
+                              context,
+                              color: scheme.onSurface,
+                            ),
+                          ),
+                          _Badge(
+                            label: protocolTag,
+                            background: scheme.secondaryContainer,
+                            foreground: scheme.onSecondaryContainer,
+                          ),
+                          if (active)
+                            _Badge(
+                              label: strings.modelActive,
+                              background: scheme.primaryContainer,
+                              foreground: scheme.onPrimaryContainer,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        profile.modelId,
+                        style: AppTextStyles.bodySmall(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        summary,
+                        style: AppTextStyles.caption(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSizes.spaceSm),
+            Wrap(
+              spacing: AppSizes.spaceXs,
+              runSpacing: AppSizes.spaceXs,
+              children: [
+                FilledButton.tonal(
+                  onPressed: active ? null : onActivate,
+                  child: Text(active ? strings.modelActive : strings.modelUse),
+                ),
+                OutlinedButton.icon(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.tune_rounded, size: 16),
+                  label: Text(strings.cloudParametersTitle),
+                ),
+                TextButton(
+                  onPressed: onDelete,
+                  style: TextButton.styleFrom(foregroundColor: scheme.error),
+                  child: Text(strings.settingsDelete),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

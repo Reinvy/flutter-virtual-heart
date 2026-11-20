@@ -111,6 +111,131 @@ abstract class AppStrings {
   String get modelFileInvalid;
   String get modelHfTokenBadge;
 
+  // ── Cloud AI BYOK & Parameters ──────────────────────────────────────────
+  String get aiModeLocal;
+  String get aiModeCloud;
+  String get aiEngineTitle;
+  String get aiEngineSubtitle;
+  String get cloudByokBannerTitle;
+  String get cloudByokBannerBody;
+  String get cloudSavedProfiles;
+  String get cloudNoProfiles;
+  String get cloudQuickAddTitle;
+  String get cloudAddCustom;
+  String get cloudEditProfile;
+  String get cloudNewProfile;
+  String get cloudDeleteProfileTitle;
+  String get cloudDeleteProfileBody;
+  String get cloudProfileName;
+  String get cloudProfileNameHint;
+  String get cloudProviderProtocol;
+  String get cloudProtocolGoogle;
+  String get cloudProtocolAnthropic;
+  String get cloudProtocolOpenAi;
+  String get cloudBaseUrl;
+  String get cloudBaseUrlHint;
+  String get cloudBaseUrlInvalid;
+  String get cloudApiKey;
+  String get cloudApiKeyHint;
+  String get cloudApiKeySavedHint;
+  String get cloudApiKeyOptionalLocal;
+  String get cloudApiKeyRequired;
+  String get cloudModelId;
+  String get cloudModelIdHint;
+  String get cloudModelIdRequired;
+  String get cloudFetchModels;
+  String get cloudFetchingModels;
+  String get cloudModelsLoaded;
+  String get cloudModelsLoadFailed;
+  String get cloudCustomHeaders;
+  String get cloudCustomHeadersHint;
+  String get cloudTestConnection;
+  String get cloudTestingConnection;
+  String cloudTestSuccess(int ms);
+  String get cloudSaveOnly;
+  String get cloudSaveAndActivate;
+  String get cloudParametersTitle;
+  String get cloudParametersReset;
+  String get cloudSectionConnection;
+  String get cloudSectionGeneration;
+  String get cloudSectionContext;
+  String get cloudParamTemperature;
+  String get cloudParamTopP;
+  String get cloudParamTopK;
+  String get cloudParamMaxOutputTokens;
+  String get cloudParamPresencePenalty;
+  String get cloudParamFrequencyPenalty;
+  String get cloudParamReasoningEffort;
+  String get cloudParamThinkingBudget;
+  String get cloudParamGeminiSafety;
+  String get cloudParamStopSequences;
+  String get cloudParamStopSequencesHint;
+  String get cloudParamSeed;
+  String get cloudParamStripStreamOptions;
+  String get cloudParamStripStreamOptionsDesc;
+  String get cloudParamAnthropicSamplingNote;
+  String get cloudParamMaxHistory;
+  String get cloudParamMaxMemoryFacts;
+  String get cloudParamMaxInputChars;
+  String get cloudParamMaxPromptChars;
+  String get cloudParamEnforceShortReply;
+  String get cloudParamEnforceShortReplyDesc;
+  String get cloudParamCustomSystemPrompt;
+  String get cloudParamCustomSystemPromptHint;
+  String get cloudParamTimeoutSeconds;
+  String get cloudParamEnableBackground;
+  String get cloudParamEnableBackgroundDesc;
+  String get cloudParamBackgroundModel;
+  String get cloudParamBackgroundModelHint;
+  String get cloudParamAuto;
+  String get cloudSafetyDefault;
+  String get cloudSafetyBlockOnlyHigh;
+  String get cloudSafetyBlockNone;
+  String get settingsCloudParameters;
+  String get hubEngineCloudTitle;
+  String get hubEngineCloudReady;
+
+  // ── Cloud Speech (TTS / STT) ────────────────────────────────────────────
+  String get settingsTtsBackendLabel;
+  String get settingsSttBackendLabel;
+  String get speechBackendElevenLabs;
+  String get speechBackendOpenAi;
+  String get speechBackendGoogle;
+  String get speechCloudConfigure;
+  String get speechCloudConfigTitle;
+  String get speechCloudMissingKey;
+  String get speechReuseLlmKey;
+  String get speechReuseLlmKeyDesc;
+  String get speechTestVoice;
+  String get speechTestVoiceSample;
+  String get speechTestVoiceFailed;
+  String get speechTranscribing;
+  String get elevenLabsVoiceId;
+  String get elevenLabsVoiceIdHint;
+  String get elevenLabsLoadVoices;
+  String get elevenLabsVoicesLoaded;
+  String get elevenLabsStability;
+  String get elevenLabsSimilarity;
+  String get elevenLabsStyle;
+  String get elevenLabsSpeed;
+  String get elevenLabsSpeakerBoost;
+  String get elevenLabsOutputFormat;
+  String get elevenLabsSttTagEvents;
+  String get elevenLabsSttDiarize;
+  String get openAiTtsVoice;
+  String get openAiTtsInstructions;
+  String get openAiTtsInstructionsHint;
+  String get openAiTtsFormat;
+  String get openAiSttPrompt;
+  String get openAiSttPromptHint;
+  String get openAiSttTemperature;
+  String get openAiSttGroqPreset;
+  String get googleTtsVoice;
+  String get googleTtsStylePrompt;
+  String get googleTtsStylePromptHint;
+  String get speechCloudTimeout;
+  String get speechCloudNote;
+
   // ── Chat (FR-05..FR-10) ─────────────────────────────────────────────────
   String get chatEmptyGreeting;
   String get chatEmptyBody;
@@ -502,6 +627,268 @@ class IndonesianStrings extends AppStrings {
       'Format file tidak didukung. Gunakan .litertlm atau .task.';
   @override
   String get modelHfTokenBadge => 'HF Token';
+
+  @override
+  String get aiModeLocal => 'Lokal (On-Device)';
+  @override
+  String get aiModeCloud => 'Cloud (BYOK)';
+  @override
+  String get aiEngineTitle => 'Model & Provider AI';
+  @override
+  String get aiEngineSubtitle =>
+      'Pilih model lokal offline di perangkat atau hubungkan provider Cloud BYOK lewat Genkit.';
+  @override
+  String get cloudByokBannerTitle => 'Bring Your Own Key (BYOK)';
+  @override
+  String get cloudByokBannerBody =>
+      'API key disimpan terenkripsi di perangkat ini. Saat mode Cloud aktif, percakapan dikirim langsung dari perangkat ke provider pilihanmu.';
+  @override
+  String get cloudSavedProfiles => 'Profil Cloud Tersimpan';
+  @override
+  String get cloudNoProfiles =>
+      'Belum ada profil cloud. Pilih preset provider di bawah untuk mulai.';
+  @override
+  String get cloudQuickAddTitle => 'Tambah Provider';
+  @override
+  String get cloudAddCustom => 'Tambah Kustom';
+  @override
+  String get cloudEditProfile => 'Edit Profil & Parameter';
+  @override
+  String get cloudNewProfile => 'Profil Cloud Baru';
+  @override
+  String get cloudDeleteProfileTitle => 'Hapus Profil Cloud?';
+  @override
+  String get cloudDeleteProfileBody =>
+      'Profil dan API key terenkripsi untuk provider ini akan dihapus dari perangkat.';
+  @override
+  String get cloudProfileName => 'Nama Profil';
+  @override
+  String get cloudProfileNameHint => 'Contoh: Gemini Utama, OpenRouter';
+  @override
+  String get cloudProviderProtocol => 'Protokol API';
+  @override
+  String get cloudProtocolGoogle => 'Google (Gemini)';
+  @override
+  String get cloudProtocolAnthropic => 'Anthropic / Compatible';
+  @override
+  String get cloudProtocolOpenAi => 'OpenAI / Compatible';
+  @override
+  String get cloudBaseUrl => 'Base URL (opsional)';
+  @override
+  String get cloudBaseUrlHint => 'Kosongkan untuk endpoint resmi provider';
+  @override
+  String get cloudBaseUrlInvalid => 'Base URL harus diawali http:// atau https://';
+  @override
+  String get cloudApiKey => 'API Key';
+  @override
+  String get cloudApiKeyHint => 'Masukkan API key provider kamu';
+  @override
+  String get cloudApiKeySavedHint =>
+      'API key sudah tersimpan terenkripsi (kosongkan jika tidak ingin mengubah)';
+  @override
+  String get cloudApiKeyOptionalLocal =>
+      'Opsional untuk server lokal (localhost/LAN)';
+  @override
+  String get cloudApiKeyRequired => 'API key wajib diisi untuk endpoint publik.';
+  @override
+  String get cloudModelId => 'Model ID';
+  @override
+  String get cloudModelIdHint => 'Contoh: gemini-2.5-flash, claude-sonnet-4-6, gpt-4o';
+  @override
+  String get cloudModelIdRequired => 'Model ID tidak boleh kosong.';
+  @override
+  String get cloudFetchModels => 'Muat Model';
+  @override
+  String get cloudFetchingModels => 'Memuat...';
+  @override
+  String get cloudModelsLoaded => 'Daftar model berhasil dimuat.';
+  @override
+  String get cloudModelsLoadFailed => 'Gagal memuat daftar model. Masukkan ID secara manual.';
+  @override
+  String get cloudCustomHeaders => 'Custom Headers JSON (opsional)';
+  @override
+  String get cloudCustomHeadersHint => '{"HTTP-Referer": "https://app.local"}';
+  @override
+  String get cloudTestConnection => 'Tes Koneksi';
+  @override
+  String get cloudTestingConnection => 'Menguji koneksi...';
+  @override
+  String cloudTestSuccess(int ms) => 'Koneksi berhasil ($ms ms)';
+  @override
+  String get cloudSaveOnly => 'Simpan';
+  @override
+  String get cloudSaveAndActivate => 'Simpan & Aktifkan';
+  @override
+  String get cloudParametersTitle => 'Parameter Cloud';
+  @override
+  String get cloudParametersReset => 'Reset Default';
+  @override
+  String get cloudSectionConnection => 'Koneksi & Kredensial';
+  @override
+  String get cloudSectionGeneration => 'Parameter Generasi';
+  @override
+  String get cloudSectionContext => 'Kebebasan Konteks & Prompt';
+  @override
+  String get cloudParamTemperature => 'Temperature';
+  @override
+  String get cloudParamTopP => 'Top-P';
+  @override
+  String get cloudParamTopK => 'Top-K (opsional)';
+  @override
+  String get cloudParamMaxOutputTokens => 'Maks. Token Output';
+  @override
+  String get cloudParamPresencePenalty => 'Presence Penalty';
+  @override
+  String get cloudParamFrequencyPenalty => 'Frequency Penalty';
+  @override
+  String get cloudParamReasoningEffort => 'Reasoning / Thinking Effort';
+  @override
+  String get cloudParamThinkingBudget => 'Thinking Budget Tokens (opsional)';
+  @override
+  String get cloudParamGeminiSafety => 'Filter Safety Gemini';
+  @override
+  String get cloudParamStopSequences => 'Stop Sequences (pisahkan koma)';
+  @override
+  String get cloudParamStopSequencesHint => 'Contoh: ###, END';
+  @override
+  String get cloudParamSeed => 'Seed Deterministik (opsional)';
+  @override
+  String get cloudParamStripStreamOptions => 'Kompatibilitas Stream Ketat';
+  @override
+  String get cloudParamStripStreamOptionsDesc =>
+      'Hapus stream_options bagi server OpenAI-compatible lama (Ollama/LM Studio/proxy).';
+  @override
+  String get cloudParamAnthropicSamplingNote =>
+      'Anthropic tidak menerima Temperature & Top-P bersamaan; Temperature diprioritaskan bila aktif.';
+  @override
+  String get cloudParamMaxHistory => 'Maks. Pesan Riwayat';
+  @override
+  String get cloudParamMaxMemoryFacts => 'Maks. Fakta Memori';
+  @override
+  String get cloudParamMaxInputChars => 'Batas Panjang Input User';
+  @override
+  String get cloudParamMaxPromptChars => 'Anggaran Total Karakter Prompt';
+  @override
+  String get cloudParamEnforceShortReply => 'Batasi Balasan Singkat (1–3 paragraf)';
+  @override
+  String get cloudParamEnforceShortReplyDesc =>
+      'Matikan agar model cloud bebas menjawab lebih panjang dan ekspresif.';
+  @override
+  String get cloudParamCustomSystemPrompt => 'Instruksi Gaya Tambahan (opsional)';
+  @override
+  String get cloudParamCustomSystemPromptHint =>
+      'Tambahkan aturan gaya bicara, nuansa, atau instruksi khusus...';
+  @override
+  String get cloudParamTimeoutSeconds => 'Timeout Request';
+  @override
+  String get cloudParamEnableBackground => 'Memori & Ringkasan Otomatis';
+  @override
+  String get cloudParamEnableBackgroundDesc =>
+      'Matikan jika ingin menghemat kuota token API untuk proses latar belakang.';
+  @override
+  String get cloudParamBackgroundModel => 'Model Latar Belakang (opsional)';
+  @override
+  String get cloudParamBackgroundModelHint =>
+      'Kosongkan untuk pakai model utama, atau isi model lebih cepat/murah';
+  @override
+  String get cloudParamAuto => 'Otomatis';
+  @override
+  String get cloudSafetyDefault => 'Default Provider';
+  @override
+  String get cloudSafetyBlockOnlyHigh => 'Hanya Risiko Tinggi';
+  @override
+  String get cloudSafetyBlockNone => 'Nonaktif (Block None)';
+  @override
+  String get settingsCloudParameters => 'Parameter & Konteks Cloud';
+  @override
+  String get hubEngineCloudTitle => 'AI CLOUD (BYOK)';
+  @override
+  String get hubEngineCloudReady => 'Siap lewat Cloud BYOK';
+
+  @override
+  String get settingsTtsBackendLabel => 'Provider Suara (TTS)';
+  @override
+  String get settingsSttBackendLabel => 'Provider Dikte (STT)';
+  @override
+  String get speechBackendElevenLabs => 'ElevenLabs';
+  @override
+  String get speechBackendOpenAi => 'OpenAI / Compat';
+  @override
+  String get speechBackendGoogle => 'Google Gemini';
+  @override
+  String get speechCloudConfigure => 'Konfigurasi Provider Suara Cloud';
+  @override
+  String get speechCloudConfigTitle => 'Pengaturan Suara Cloud';
+  @override
+  String get speechCloudMissingKey =>
+      'API key suara cloud belum diatur. Buka Pengaturan → Suara untuk mengisinya.';
+  @override
+  String get speechReuseLlmKey => 'Pakai API Key dari Profil LLM';
+  @override
+  String get speechReuseLlmKeyDesc =>
+      'Otomatis memakai key profil LLM sejenis jika tersedia.';
+  @override
+  String get speechTestVoice => 'Tes Suara';
+  @override
+  String get speechTestVoiceSample =>
+      'Halo, ini adalah suara pendamping VirtualHeart-mu.';
+  @override
+  String get speechTestVoiceFailed =>
+      'Gagal memutar suara cloud. Periksa API key, model, dan jaringan.';
+  @override
+  String get speechTranscribing => 'Mentranskrip audio...';
+  @override
+  String get elevenLabsVoiceId => 'Voice ID';
+  @override
+  String get elevenLabsVoiceIdHint => 'Contoh: EXAVITQu4vr4xnSDxMaL';
+  @override
+  String get elevenLabsLoadVoices => 'Muat Suara Akun';
+  @override
+  String get elevenLabsVoicesLoaded => 'Daftar suara ElevenLabs dimuat.';
+  @override
+  String get elevenLabsStability => 'Stability';
+  @override
+  String get elevenLabsSimilarity => 'Similarity Boost';
+  @override
+  String get elevenLabsStyle => 'Style Exaggeration';
+  @override
+  String get elevenLabsSpeed => 'Kecepatan Bicara';
+  @override
+  String get elevenLabsSpeakerBoost => 'Speaker Boost';
+  @override
+  String get elevenLabsOutputFormat => 'Format Audio';
+  @override
+  String get elevenLabsSttTagEvents => 'Tandai Kejadian Audio (tawa, dll.)';
+  @override
+  String get elevenLabsSttDiarize => 'Speaker Diarization';
+  @override
+  String get openAiTtsVoice => 'Suara (Voice)';
+  @override
+  String get openAiTtsInstructions => 'Instruksi Gaya Suara (gpt-4o-mini-tts)';
+  @override
+  String get openAiTtsInstructionsHint =>
+      'Contoh: Berbicara lembut, hangat, dan santai.';
+  @override
+  String get openAiTtsFormat => 'Format Audio';
+  @override
+  String get openAiSttPrompt => 'Petunjuk Kosakata STT (opsional)';
+  @override
+  String get openAiSttPromptHint => 'Nama panggilan, istilah khusus...';
+  @override
+  String get openAiSttTemperature => 'Temperature STT';
+  @override
+  String get openAiSttGroqPreset => 'Pakai Preset Groq Whisper';
+  @override
+  String get googleTtsVoice => 'Suara Prebuilt Gemini';
+  @override
+  String get googleTtsStylePrompt => 'Gaya Penyampaian (opsional)';
+  @override
+  String get googleTtsStylePromptHint => 'Contoh: Ucapkan dengan nada hangat dan ramah';
+  @override
+  String get speechCloudTimeout => 'Timeout Suara Cloud';
+  @override
+  String get speechCloudNote =>
+      'Memakai API cloud pilihanmu (BYOK). Audio atau teks dikirim langsung ke provider terkait.';
   @override
   String get modelCurrent => 'Model aktif';
   @override
@@ -794,8 +1181,8 @@ class IndonesianStrings extends AppStrings {
   String get settingsLocalStorage => 'Penyimpanan Lokal';
   @override
   String get settingsLocalStorageBody =>
-      'Semua data tersimpan di perangkat ini.\n'
-      'Tidak ada data yang pernah dikirim ke server mana pun.';
+      'Percakapan, memori, dan persona disimpan lokal di perangkat ini. '
+      'API key Cloud BYOK disimpan terenkripsi. Saat mode Cloud aktif, pesan dikirim langsung ke provider pilihanmu.';
   @override
   String get settingsDeleteConversations => 'Hapus Semua Percakapan';
   @override
@@ -824,13 +1211,13 @@ class IndonesianStrings extends AppStrings {
   String get settingsResetAll => 'Reset semua data';
   @override
   String get settingsResetAllDesc =>
-      'Hapus persona, memori, mood, percakapan, dan pengaturan dari perangkat ini.';
+      'Hapus persona, memori, mood, percakapan, pengaturan, profil cloud, dan seluruh API key BYOK.';
   @override
   String get settingsResetAllTitle => 'Reset Semua Data?';
   @override
   String get settingsResetAllBody =>
-      'Persona, memori, mood, seluruh percakapan, dan pengaturan akan dihapus. '
-      'File model yang sudah diunduh tetap tersimpan. Tindakan ini tidak bisa dibatalkan.';
+      'Persona, memori, mood, seluruh percakapan, pengaturan, profil cloud, dan API key BYOK akan dihapus. '
+      'File model lokal yang sudah diunduh tetap tersimpan. Tindakan ini tidak bisa dibatalkan.';
   @override
   String get settingsResetAllConfirm => 'Reset Semua';
   @override
@@ -905,13 +1292,18 @@ class IndonesianStrings extends AppStrings {
   String get privacyTitle => 'Kebijakan Privasi';
   @override
   String get privacyPolicy =>
-      'VirtualHeart menyimpan percakapan, memori, persona, mood, dan pengaturan hanya di '
-      'perangkat ini. Tidak ada akun, server aplikasi, analitik, atau telemetri. Jaringan hanya '
-      'dipakai untuk mengunduh model AI dari HuggingFace dan memuat font Google Fonts. Isi '
-      'percakapan, memori, persona, dan mood tidak pernah dikirim ke mana pun. Mikrofon hanya '
-      'dipakai saat kamu memakai fitur suara. Notifikasi bersifat opsional dan bisa dimatikan di '
-      'Pengaturan. Kamu bisa menghapus percakapan, memori, persona, atau seluruh data kapan saja '
-      'di Pengaturan → Data & Privasi. File model yang sudah diunduh tetap tersimpan sampai '
+      'VirtualHeart menyimpan percakapan, memori, persona, mood, dan pengaturan secara lokal di '
+      'perangkat ini. Tidak ada akun, server aplikasi VirtualHeart, analitik, atau telemetri. '
+      'Jaringan hanya dipakai untuk mengunduh model lokal dari HuggingFace, memuat font Google '
+      'Fonts, serta — secara opsional bila kamu mengaktifkan mode Cloud BYOK atau suara Cloud '
+      '(Google, Anthropic-compatible, OpenAI-compatible, ElevenLabs) — mengirim prompt, pesan, '
+      'atau audio langsung dari perangkat ke endpoint provider yang kamu konfigurasi sendiri. '
+      'Saat memakai mode Lokal sepenuhnya, isi percakapan, memori, persona, dan mood tidak pernah '
+      'dikirim ke mana pun. Seluruh API key BYOK disimpan terenkripsi di penyimpanan aman OS dan '
+      'tidak pernah disertakan pada ekspor chat. Mikrofon hanya dipakai saat kamu memakai fitur '
+      'suara. Notifikasi bersifat opsional dan bisa dimatikan di Pengaturan. Kamu bisa menghapus '
+      'percakapan, memori, persona, profil cloud, API key, atau seluruh data kapan saja di '
+      'Pengaturan → Data & Privasi. File model lokal yang sudah diunduh tetap tersimpan sampai '
       'aplikasi di-uninstall. VirtualHeart bukan pengganti bantuan medis, hukum, atau keuangan '
       'profesional.';
 
@@ -1165,6 +1557,268 @@ class EnglishStrings extends AppStrings {
       'Unsupported file format. Use .litertlm or .task.';
   @override
   String get modelHfTokenBadge => 'HF Token';
+
+  @override
+  String get aiModeLocal => 'Local (On-Device)';
+  @override
+  String get aiModeCloud => 'Cloud (BYOK)';
+  @override
+  String get aiEngineTitle => 'AI Model & Provider';
+  @override
+  String get aiEngineSubtitle =>
+      'Choose an offline on-device model or connect a Cloud BYOK provider powered by Genkit.';
+  @override
+  String get cloudByokBannerTitle => 'Bring Your Own Key (BYOK)';
+  @override
+  String get cloudByokBannerBody =>
+      'API keys are stored encrypted on this device. When Cloud mode is active, conversations are sent directly from your device to your chosen provider.';
+  @override
+  String get cloudSavedProfiles => 'Saved Cloud Profiles';
+  @override
+  String get cloudNoProfiles =>
+      'No cloud profiles yet. Pick a provider preset below to get started.';
+  @override
+  String get cloudQuickAddTitle => 'Add Provider';
+  @override
+  String get cloudAddCustom => 'Add Custom';
+  @override
+  String get cloudEditProfile => 'Edit Profile & Parameters';
+  @override
+  String get cloudNewProfile => 'New Cloud Profile';
+  @override
+  String get cloudDeleteProfileTitle => 'Delete Cloud Profile?';
+  @override
+  String get cloudDeleteProfileBody =>
+      'This profile and its encrypted API key will be permanently removed from this device.';
+  @override
+  String get cloudProfileName => 'Profile Name';
+  @override
+  String get cloudProfileNameHint => 'e.g. Main Gemini, OpenRouter';
+  @override
+  String get cloudProviderProtocol => 'API Protocol';
+  @override
+  String get cloudProtocolGoogle => 'Google (Gemini)';
+  @override
+  String get cloudProtocolAnthropic => 'Anthropic / Compatible';
+  @override
+  String get cloudProtocolOpenAi => 'OpenAI / Compatible';
+  @override
+  String get cloudBaseUrl => 'Base URL (optional)';
+  @override
+  String get cloudBaseUrlHint => 'Leave blank for official provider endpoint';
+  @override
+  String get cloudBaseUrlInvalid => 'Base URL must start with http:// or https://';
+  @override
+  String get cloudApiKey => 'API Key';
+  @override
+  String get cloudApiKeyHint => 'Enter your provider API key';
+  @override
+  String get cloudApiKeySavedHint =>
+      'API key saved encrypted (leave blank to keep existing key)';
+  @override
+  String get cloudApiKeyOptionalLocal =>
+      'Optional for local servers (localhost/LAN)';
+  @override
+  String get cloudApiKeyRequired => 'API key is required for public endpoints.';
+  @override
+  String get cloudModelId => 'Model ID';
+  @override
+  String get cloudModelIdHint => 'e.g. gemini-2.5-flash, claude-sonnet-4-6, gpt-4o';
+  @override
+  String get cloudModelIdRequired => 'Model ID cannot be empty.';
+  @override
+  String get cloudFetchModels => 'Fetch Models';
+  @override
+  String get cloudFetchingModels => 'Fetching...';
+  @override
+  String get cloudModelsLoaded => 'Model list loaded.';
+  @override
+  String get cloudModelsLoadFailed => 'Failed to fetch models. Enter a model ID manually.';
+  @override
+  String get cloudCustomHeaders => 'Custom Headers JSON (optional)';
+  @override
+  String get cloudCustomHeadersHint => '{"HTTP-Referer": "https://app.local"}';
+  @override
+  String get cloudTestConnection => 'Test Connection';
+  @override
+  String get cloudTestingConnection => 'Testing connection...';
+  @override
+  String cloudTestSuccess(int ms) => 'Connected ($ms ms)';
+  @override
+  String get cloudSaveOnly => 'Save';
+  @override
+  String get cloudSaveAndActivate => 'Save & Activate';
+  @override
+  String get cloudParametersTitle => 'Cloud Parameters';
+  @override
+  String get cloudParametersReset => 'Reset Defaults';
+  @override
+  String get cloudSectionConnection => 'Connection & Credentials';
+  @override
+  String get cloudSectionGeneration => 'Generation Parameters';
+  @override
+  String get cloudSectionContext => 'Context & Prompt Freedom';
+  @override
+  String get cloudParamTemperature => 'Temperature';
+  @override
+  String get cloudParamTopP => 'Top-P';
+  @override
+  String get cloudParamTopK => 'Top-K (optional)';
+  @override
+  String get cloudParamMaxOutputTokens => 'Max Output Tokens';
+  @override
+  String get cloudParamPresencePenalty => 'Presence Penalty';
+  @override
+  String get cloudParamFrequencyPenalty => 'Frequency Penalty';
+  @override
+  String get cloudParamReasoningEffort => 'Reasoning / Thinking Effort';
+  @override
+  String get cloudParamThinkingBudget => 'Thinking Budget Tokens (optional)';
+  @override
+  String get cloudParamGeminiSafety => 'Gemini Safety Filter';
+  @override
+  String get cloudParamStopSequences => 'Stop Sequences (comma separated)';
+  @override
+  String get cloudParamStopSequencesHint => 'e.g. ###, END';
+  @override
+  String get cloudParamSeed => 'Deterministic Seed (optional)';
+  @override
+  String get cloudParamStripStreamOptions => 'Strict Stream Compatibility';
+  @override
+  String get cloudParamStripStreamOptionsDesc =>
+      'Remove stream_options for older OpenAI-compatible hosts (Ollama/LM Studio/proxies).';
+  @override
+  String get cloudParamAnthropicSamplingNote =>
+      'Anthropic does not accept both Temperature & Top-P; Temperature takes priority when enabled.';
+  @override
+  String get cloudParamMaxHistory => 'Max History Messages';
+  @override
+  String get cloudParamMaxMemoryFacts => 'Max Memory Facts';
+  @override
+  String get cloudParamMaxInputChars => 'Max User Input Length';
+  @override
+  String get cloudParamMaxPromptChars => 'Total Prompt Char Budget';
+  @override
+  String get cloudParamEnforceShortReply => 'Limit Short Replies (1–3 paragraphs)';
+  @override
+  String get cloudParamEnforceShortReplyDesc =>
+      'Turn off to let cloud models reply freely at any length.';
+  @override
+  String get cloudParamCustomSystemPrompt => 'Additional Style Instructions (optional)';
+  @override
+  String get cloudParamCustomSystemPromptHint =>
+      'Add tone guidelines, roleplay nuances, or custom instructions...';
+  @override
+  String get cloudParamTimeoutSeconds => 'Request Timeout';
+  @override
+  String get cloudParamEnableBackground => 'Auto Memory & Summarization';
+  @override
+  String get cloudParamEnableBackgroundDesc =>
+      'Disable to avoid extra API token usage for background tasks.';
+  @override
+  String get cloudParamBackgroundModel => 'Background Model ID (optional)';
+  @override
+  String get cloudParamBackgroundModelHint =>
+      'Leave empty to use main model, or set a faster/cheaper model ID';
+  @override
+  String get cloudParamAuto => 'Auto';
+  @override
+  String get cloudSafetyDefault => 'Provider Default';
+  @override
+  String get cloudSafetyBlockOnlyHigh => 'Block Only High';
+  @override
+  String get cloudSafetyBlockNone => 'Off (Block None)';
+  @override
+  String get settingsCloudParameters => 'Cloud Parameters & Context';
+  @override
+  String get hubEngineCloudTitle => 'CLOUD AI (BYOK)';
+  @override
+  String get hubEngineCloudReady => 'Ready via Cloud BYOK';
+
+  @override
+  String get settingsTtsBackendLabel => 'Voice Output (TTS)';
+  @override
+  String get settingsSttBackendLabel => 'Voice Input (STT)';
+  @override
+  String get speechBackendElevenLabs => 'ElevenLabs';
+  @override
+  String get speechBackendOpenAi => 'OpenAI / Compat';
+  @override
+  String get speechBackendGoogle => 'Google Gemini';
+  @override
+  String get speechCloudConfigure => 'Configure Cloud Voice Provider';
+  @override
+  String get speechCloudConfigTitle => 'Cloud Voice Settings';
+  @override
+  String get speechCloudMissingKey =>
+      'Cloud voice API key is not configured. Open Settings → Voice to set it.';
+  @override
+  String get speechReuseLlmKey => 'Reuse API Key from LLM Profile';
+  @override
+  String get speechReuseLlmKeyDesc =>
+      'Automatically reuse key from matching LLM profile if available.';
+  @override
+  String get speechTestVoice => 'Test Voice';
+  @override
+  String get speechTestVoiceSample =>
+      'Hello, this is your VirtualHeart companion voice.';
+  @override
+  String get speechTestVoiceFailed =>
+      'Failed to play cloud voice. Check API key, model, and network.';
+  @override
+  String get speechTranscribing => 'Transcribing audio...';
+  @override
+  String get elevenLabsVoiceId => 'Voice ID';
+  @override
+  String get elevenLabsVoiceIdHint => 'e.g. EXAVITQu4vr4xnSDxMaL';
+  @override
+  String get elevenLabsLoadVoices => 'Load Account Voices';
+  @override
+  String get elevenLabsVoicesLoaded => 'ElevenLabs voices loaded.';
+  @override
+  String get elevenLabsStability => 'Stability';
+  @override
+  String get elevenLabsSimilarity => 'Similarity Boost';
+  @override
+  String get elevenLabsStyle => 'Style Exaggeration';
+  @override
+  String get elevenLabsSpeed => 'Speech Speed';
+  @override
+  String get elevenLabsSpeakerBoost => 'Speaker Boost';
+  @override
+  String get elevenLabsOutputFormat => 'Audio Format';
+  @override
+  String get elevenLabsSttTagEvents => 'Tag Audio Events (laughter, etc.)';
+  @override
+  String get elevenLabsSttDiarize => 'Speaker Diarization';
+  @override
+  String get openAiTtsVoice => 'Voice';
+  @override
+  String get openAiTtsInstructions => 'Delivery Instructions (gpt-4o-mini-tts)';
+  @override
+  String get openAiTtsInstructionsHint =>
+      'e.g. Speak softly, warmly, and naturally.';
+  @override
+  String get openAiTtsFormat => 'Audio Format';
+  @override
+  String get openAiSttPrompt => 'STT Vocabulary Hint (optional)';
+  @override
+  String get openAiSttPromptHint => 'Nicknames, custom terms...';
+  @override
+  String get openAiSttTemperature => 'STT Temperature';
+  @override
+  String get openAiSttGroqPreset => 'Apply Groq Whisper Preset';
+  @override
+  String get googleTtsVoice => 'Gemini Prebuilt Voice';
+  @override
+  String get googleTtsStylePrompt => 'Style Guidance (optional)';
+  @override
+  String get googleTtsStylePromptHint => 'e.g. Speak in a warm, gentle tone';
+  @override
+  String get speechCloudTimeout => 'Cloud Speech Timeout';
+  @override
+  String get speechCloudNote =>
+      'Uses your configured cloud API (BYOK). Audio or text is sent directly to the chosen provider.';
   @override
   String get modelCurrent => 'Active model';
   @override
@@ -1452,8 +2106,8 @@ class EnglishStrings extends AppStrings {
   String get settingsLocalStorage => 'Local Storage';
   @override
   String get settingsLocalStorageBody =>
-      'All data is stored on this device.\n'
-      'No data is ever sent to any server.';
+      'Conversations, memories, and persona are stored locally on this device. '
+      'Cloud BYOK API keys are stored encrypted. When Cloud mode is enabled, messages are sent directly to your chosen provider.';
   @override
   String get settingsDeleteConversations => 'Delete All Conversations';
   @override
@@ -1483,13 +2137,13 @@ class EnglishStrings extends AppStrings {
   String get settingsResetAll => 'Reset all data';
   @override
   String get settingsResetAllDesc =>
-      'Delete persona, memory, mood, conversations, and settings from this device.';
+      'Delete persona, memory, mood, conversations, settings, cloud profiles, and all BYOK API keys.';
   @override
   String get settingsResetAllTitle => 'Reset All Data?';
   @override
   String get settingsResetAllBody =>
-      'Persona, memory, mood, all conversations, and settings will be deleted. '
-      'Downloaded model files are kept. This cannot be undone.';
+      'Persona, memory, mood, all conversations, settings, cloud profiles, and BYOK API keys will be deleted. '
+      'Downloaded local model files are kept. This cannot be undone.';
   @override
   String get settingsResetAllConfirm => 'Reset All';
   @override
@@ -1568,15 +2222,19 @@ class EnglishStrings extends AppStrings {
   String get privacyTitle => 'Privacy Policy';
   @override
   String get privacyPolicy =>
-      'VirtualHeart stores conversations, memories, persona, mood, and settings on this device '
-      'only. There are no accounts, no application server, no analytics, and no telemetry. '
-      'Network access is used only to download AI models from HuggingFace and to load Google '
-      'Fonts. Conversation content, memories, persona, and mood are never sent anywhere. The '
-      'microphone is used only while you use voice features. Notifications are optional and can '
-      'be disabled in Settings. You can delete conversations, memories, persona, or all data at '
-      'any time in Settings → Data & Privacy. Downloaded model files remain until the app is '
-      'uninstalled. VirtualHeart is not a substitute for professional medical, legal, or '
-      'financial help.';
+      'VirtualHeart stores conversations, memories, persona, mood, and settings locally on this '
+      'device. There are no accounts, no VirtualHeart application server, no analytics, and no '
+      'telemetry. Network access is used only to download local AI models from HuggingFace, load '
+      'Google Fonts, and — optionally when you enable Cloud BYOK mode or Cloud speech (Google, '
+      'Anthropic-compatible, OpenAI-compatible, ElevenLabs) — send prompts, messages, or audio '
+      'directly from your device to the provider endpoints you configure. When using Local mode '
+      'only, conversation content, memories, persona, and mood never leave your device. All BYOK '
+      'API keys are stored encrypted in OS secure storage and are never included in chat exports. '
+      'The microphone is used only while you use voice features. Notifications are optional and '
+      'can be disabled in Settings. You can delete conversations, memories, persona, cloud '
+      'profiles, API keys, or all data at any time in Settings → Data & Privacy. Downloaded local '
+      'model files remain until the app is uninstalled. VirtualHeart is not a substitute for '
+      'professional medical, legal, or financial help.';
 
   @override
   String get settingsExportTitle => 'VirtualHeart — Chat Export';

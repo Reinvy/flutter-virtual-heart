@@ -18,6 +18,7 @@ import '../../../core/l10n/app_strings.dart';
 import '../../../core/router/app_router.dart';
 import '../../../models/message.dart';
 import 'package:virtual_heart/services/database/objectbox_provider.dart';
+import '../../../services/ai/ai_provider_controller.dart';
 import '../../../services/ai/model_service.dart';
 import '../../../services/notification_service.dart';
 import '../../../services/stt_service.dart';
@@ -96,6 +97,8 @@ class DataPrivacySection extends ConsumerWidget {
     container.invalidate(moodProvider);
     container.invalidate(modelServiceProvider);
     container.invalidate(modelReadyProvider);
+    container.invalidate(aiProviderProfilesProvider);
+    container.invalidate(cloudSpeechConfigProvider);
     container.invalidate(notificationProvider);
 
     if (!context.mounted) return;

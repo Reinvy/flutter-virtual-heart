@@ -16,7 +16,9 @@ import '../../core/design/tokens/app_sizes.dart';
 import '../../core/design/tokens/text_styles.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/router/app_router.dart';
+import '../../models/app_settings.dart';
 import '../../models/persona_config.dart';
+import '../../services/ai/ai_provider_controller.dart';
 import '../../services/ai/model_ready_provider.dart';
 import '../../services/settings/settings_service.dart';
 import '../chat/chat_controller.dart';
@@ -326,13 +328,17 @@ class _EngineSnapshotSection extends ConsumerWidget {
     final strings = ref.watch(appStringsProvider);
     final settings = ref.watch(appSettingsProvider);
     final modelReady = ref.watch(modelReadyProvider);
+    final isCloud = settings.aiMode == AiMode.cloud;
+    final cloudProfile = isCloud ? ref.watch(activeCloudProfileProvider) : null;
     final scheme = Theme.of(context).colorScheme;
 
-    final bool hasSelectedModel = settings.modelVariant.isNotEmpty;
+    final bool hasSelectedModel = isCloud
+        ? (cloudProfile != null && cloudProfile.modelId.isNotEmpty)
+        : settings.modelVariant.isNotEmpty;
     final String body;
     final Color dotColor;
     if (modelReady) {
-      body = strings.hubEngineReady;
+      body = isCloud ? strings.hubEngineCloudReady : strings.hubEngineReady;
       dotColor = AppColors.successFor(context);
     } else if (hasSelectedModel) {
       body = strings.modelLoadingTitle;
@@ -344,9 +350,13 @@ class _EngineSnapshotSection extends ConsumerWidget {
 
     return _SnapshotCard(
       key: const ValueKey('hub-engine-card'),
-      title: strings.hubEngineTitle,
-      icon: Icons.memory_rounded,
-      headline: currentModelLabel(settings, strings),
+      title: isCloud ? strings.hubEngineCloudTitle : strings.hubEngineTitle,
+      icon: isCloud ? Icons.cloud_outlined : Icons.memory_rounded,
+      headline: currentModelLabel(
+        settings,
+        strings,
+        cloudProfile: cloudProfile,
+      ),
       body: body,
       accentDotColor: dotColor,
       actionLabel: modelReady ? strings.navSettings : strings.modelChange,

@@ -1,20 +1,22 @@
-// Settings — Voice (FR-07): backend (gemma/system), pilihan model speech,
-// status izin mikrofon (FR-18).
+// Settings — Voice (FR-06/FR-07): backend TTS & STT independen (system / gemma /
+// elevenlabs / openai / google), model speech lokal, konfigurasi cloud, & izin mikrofon.
 import 'dart:async';
 
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../../core/design/tokens/app_sizes.dart';
 import '../../../core/design/tokens/text_styles.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../models/app_settings.dart';
+import '../../../services/ai/ai_provider_controller.dart';
 import '../../../services/ai/speech_model_catalog.dart';
 import '../../../services/stt_service.dart';
 import '../../../services/tts_service.dart';
 import 'package:virtual_heart/services/settings/settings_service.dart';
+import 'cloud_speech_sheet.dart';
 import 'settings_permission_row.dart';
 import 'settings_row.dart';
 import 'settings_section.dart';
@@ -26,7 +28,13 @@ class VoiceSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(appStringsProvider);
-    final gemma = settings.ttsBackend == 'gemma' || settings.sttBackend == 'gemma';
+    final showLocalTts = settings.ttsBackend == 'gemma';
+    final showLocalStt = settings.sttBackend == 'gemma';
+    final cloudProviders = <String>{
+      if (TtsService.isCloudBackend(settings.ttsBackend)) settings.ttsBackend,
+      if (SttService.isCloudBackend(settings.sttBackend)) settings.sttBackend,
+    };
+
     return SettingsSection(
       title: strings.settingsVoice,
       icon: Icons.record_voice_over_rounded,
@@ -61,71 +69,134 @@ class VoiceSection extends ConsumerWidget {
               },
             ),
           ),
-        _BackendSelector(settings: settings),
-        if (gemma) ..._speechModelChildren(context, ref, settings, strings),
+        _BackendChipPicker(
+          label: strings.settingsTtsBackendLabel,
+          selected: settings.ttsBackend,
+          note: _backendNote(settings.ttsBackend, strings),
+          onSelect: (backend) {
+            HapticFeedback.selectionClick();
+            unawaited(TtsService().stop());
+            ref
+                .read(appSettingsProvider.notifier)
+                .save(settings.copyWith(ttsBackend: backend));
+          },
+        ),
+        _BackendChipPicker(
+          label: strings.settingsSttBackendLabel,
+          selected: settings.sttBackend,
+          note: _backendNote(settings.sttBackend, strings),
+          onSelect: (backend) {
+            HapticFeedback.selectionClick();
+            unawaited(SttService().cancel());
+            ref
+                .read(appSettingsProvider.notifier)
+                .save(settings.copyWith(sttBackend: backend));
+          },
+        ),
+        for (final provider in cloudProviders)
+          _CloudSpeechConfigRow(provider: provider),
+        if (showLocalTts) ..._localTtsChildren(context, ref, settings, strings),
+        if (showLocalStt) ..._localSttChildren(context, ref, settings, strings),
         _MicPermissionTile(strings: strings),
       ],
     );
   }
+
+  static String _backendNote(String backend, AppStrings strings) {
+    if (backend == 'system') return strings.speechSystemNote;
+    if (backend == 'gemma') return strings.speechGemmaNote;
+    return strings.speechCloudNote;
+  }
 }
 
-/// Pilihan backend TTS & STT: Gemma (on-device) / System (flutter_tts).
-class _BackendSelector extends ConsumerWidget {
-  const _BackendSelector({required this.settings});
+/// Pemilih backend suara berbasis `Wrap` + `ChoiceChip` (bebas overflow di 320 dp).
+class _BackendChipPicker extends ConsumerWidget {
+  const _BackendChipPicker({
+    required this.label,
+    required this.selected,
+    required this.note,
+    required this.onSelect,
+  });
 
-  final AppSettings settings;
+  final String label;
+  final String selected;
+  final String note;
+  final ValueChanged<String> onSelect;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(appStringsProvider);
     final scheme = Theme.of(context).colorScheme;
+    final options = <(String, String)>[
+      ('system', strings.settingsVoiceBackendSystem),
+      ('gemma', strings.settingsVoiceBackendOnDevice),
+      ('elevenlabs', strings.speechBackendElevenLabs),
+      ('openai', strings.speechBackendOpenAi),
+      ('google', strings.speechBackendGoogle),
+    ];
+
     return Padding(
       padding: const EdgeInsets.all(AppSizes.spaceMd),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            strings.settingsVoiceBackend,
-            style: AppTextStyles.settingsLabel(),
-          ),
+          Text(label, style: AppTextStyles.settingsLabel()),
           const SizedBox(height: 10),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SegmentedButton<String>(
-              segments: [
-                ButtonSegment(
-                  value: 'gemma',
-                  label: Text(strings.settingsVoiceBackendOnDevice),
-                  icon: const Icon(Icons.memory_rounded),
+          Wrap(
+            spacing: AppSizes.spaceXs,
+            runSpacing: AppSizes.spaceXs,
+            children: [
+              for (final (value, title) in options)
+                ChoiceChip(
+                  label: Text(title),
+                  selected: selected == value,
+                  onSelected: (isSelected) {
+                    if (isSelected && selected != value) onSelect(value);
+                  },
                 ),
-                ButtonSegment(
-                  value: 'system',
-                  label: Text(strings.settingsVoiceBackendSystem),
-                  icon: const Icon(Icons.speaker_rounded),
-                ),
-              ],
-              selected: {settings.ttsBackend},
-              onSelectionChanged: (s) {
-                if (s.isEmpty) return;
-                HapticFeedback.selectionClick();
-                final backend = s.first;
-                unawaited(TtsService().stop());
-                unawaited(SttService().cancel());
-                ref.read(appSettingsProvider.notifier).save(
-                  settings.copyWith(ttsBackend: backend, sttBackend: backend),
-                );
-              },
-            ),
+            ],
           ),
           const SizedBox(height: AppSizes.spaceXs),
           Text(
-            settings.ttsBackend == 'system'
-                ? strings.speechSystemNote
-                : strings.speechGemmaNote,
+            note,
             style: AppTextStyles.caption(color: scheme.onSurfaceVariant),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CloudSpeechConfigRow extends ConsumerWidget {
+  const _CloudSpeechConfigRow({required this.provider});
+
+  final String provider;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
+    final cfg = ref.watch(cloudSpeechConfigProvider);
+    final (title, subtitle) = switch (provider) {
+      'elevenlabs' => (
+        '${strings.speechBackendElevenLabs} · ${strings.speechCloudConfigTitle}',
+        '${cfg.elevenLabsVoiceName} · ${cfg.elevenLabsTtsModel} / ${cfg.elevenLabsSttModel}',
+      ),
+      'openai' => (
+        '${strings.speechBackendOpenAi} · ${strings.speechCloudConfigTitle}',
+        '${cfg.openaiTtsVoice} (${cfg.openaiTtsModel}) / ${cfg.openaiSttModel}',
+      ),
+      _ => (
+        '${strings.speechBackendGoogle} · ${strings.speechCloudConfigTitle}',
+        '${cfg.googleTtsVoiceName} · ${cfg.googleTtsModel}',
+      ),
+    };
+
+    return SettingsRow(
+      icon: Icons.tune_rounded,
+      title: title,
+      subtitle: subtitle,
+      showChevron: true,
+      onTap: () => showCloudSpeechConfigSheet(context, provider: provider),
     );
   }
 }
@@ -147,9 +218,7 @@ Widget _speechGroupHeader(BuildContext context, String label) {
   );
 }
 
-/// Daftar baris model speech (TTS & STT) — diratakan agar divider kartu
-/// mengatur pemisahan antar baris.
-List<Widget> _speechModelChildren(
+List<Widget> _localTtsChildren(
   BuildContext context,
   WidgetRef ref,
   AppSettings settings,
@@ -178,6 +247,16 @@ List<Widget> _speechModelChildren(
         ),
       ),
     ),
+  ];
+}
+
+List<Widget> _localSttChildren(
+  BuildContext context,
+  WidgetRef ref,
+  AppSettings settings,
+  AppStrings strings,
+) {
+  return [
     _speechGroupHeader(context, strings.settingsVoiceSttModel),
     ...kSttModelOptions.map(
       (opt) => _SpeechModelTile(
@@ -335,9 +414,7 @@ class _MicPermissionTileState extends ConsumerState<_MicPermissionTile>
   Future<void> _request() async {
     try {
       await Permission.microphone.request();
-    } catch (_) {
-      // Izin tidak tersedia di platform ini; biarkan status apa adanya.
-    }
+    } catch (_) {}
     await _load();
   }
 

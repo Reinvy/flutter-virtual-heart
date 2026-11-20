@@ -18,8 +18,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Kebijakan Privasi'), findsOneWidget);
-    expect(find.textContaining('hanya di perangkat ini'), findsOneWidget);
-    expect(find.textContaining('tidak pernah dikirim'), findsOneWidget);
+    expect(find.textContaining('secara lokal di perangkat ini'), findsOneWidget);
+    expect(find.textContaining('Cloud BYOK'), findsOneWidget);
+    expect(find.textContaining('tidak pernah dikirim ke mana pun'), findsOneWidget);
     expect(find.byType(BackButton), findsOneWidget);
   });
 
@@ -28,7 +29,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Privacy Policy'), findsOneWidget);
-    expect(find.textContaining('on this device only'), findsOneWidget);
+    expect(find.textContaining('locally on this device'), findsOneWidget);
+    expect(find.textContaining('Cloud BYOK'), findsOneWidget);
     expect(find.textContaining('not a substitute for professional'), findsOneWidget);
   });
 }
