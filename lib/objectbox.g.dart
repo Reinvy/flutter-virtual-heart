@@ -14,7 +14,9 @@ import 'package:objectbox/internal.dart'
 import 'package:objectbox/objectbox.dart' as obx;
 import 'package:objectbox_flutter_libs/objectbox_flutter_libs.dart';
 
+import 'models/ai_provider_profile.dart';
 import 'models/app_settings.dart';
+import 'models/cloud_speech_config.dart';
 import 'models/memory_fact.dart';
 import 'models/message.dart';
 import 'models/mood_state.dart';
@@ -26,7 +28,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(1, 1350341759699591298),
     name: 'AppSettings',
-    lastPropertyId: const obx_int.IdUid(22, 2639245651235476350),
+    lastPropertyId: const obx_int.IdUid(24, 6735136582354379447),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -158,6 +160,18 @@ final _entities = <obx_int.ModelEntity>[
       obx_int.ModelProperty(
         id: const obx_int.IdUid(22, 2639245651235476350),
         name: 'themeStyleIndex',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(23, 1533018097584945982),
+        name: 'activeCloudProfileId',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(24, 6735136582354379447),
+        name: 'aiModeIndex',
         type: 6,
         flags: 0,
       ),
@@ -367,6 +381,404 @@ final _entities = <obx_int.ModelEntity>[
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
   ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(6, 2845512999646695925),
+    name: 'AiProviderProfile',
+    lastPropertyId: const obx_int.IdUid(30, 1252082249471357000),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 5498589567850108359),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 8113142119174512408),
+        name: 'profileKey',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 4050660217340536847),
+        name: 'name',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 4464871344601360651),
+        name: 'providerTypeIndex',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 8094470779403784126),
+        name: 'presetId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 6353863433068622084),
+        name: 'baseUrl',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 4112651690735614844),
+        name: 'modelId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 1906380480497701807),
+        name: 'customHeadersJson',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 5759213202019138849),
+        name: 'stripStreamOptions',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(10, 596196467081491113),
+        name: 'temperature',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(11, 950269593785561424),
+        name: 'topP',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(12, 3854221445630278367),
+        name: 'topK',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(13, 7869769291727696344),
+        name: 'maxOutputTokens',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(14, 2065529474623925296),
+        name: 'presencePenalty',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(15, 3298893691597446282),
+        name: 'frequencyPenalty',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(16, 3978545810243248449),
+        name: 'stopSequences',
+        type: 30,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(17, 602428996324247958),
+        name: 'seed',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(18, 7088500363665246583),
+        name: 'reasoningEffort',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(19, 2912972791597479439),
+        name: 'thinkingBudgetTokens',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(20, 8094419269521131033),
+        name: 'geminiSafetyLevel',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(21, 8210573775123643910),
+        name: 'maxHistoryMessages',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(22, 8706565415642445858),
+        name: 'maxMemoryFacts',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(23, 3739847707789805137),
+        name: 'maxInputChars',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(24, 3195584273586493318),
+        name: 'maxPromptChars',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(25, 1297516357350943096),
+        name: 'enforceShortReply',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(26, 7914120081800328581),
+        name: 'customSystemPrompt',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(27, 8215697125302675950),
+        name: 'timeoutSeconds',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(28, 4609005377018491928),
+        name: 'enableBackgroundTasks',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(29, 6028543239344790768),
+        name: 'backgroundModelId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(30, 1252082249471357000),
+        name: 'createdAt',
+        type: 10,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(7, 7638008323712811899),
+    name: 'CloudSpeechConfig',
+    lastPropertyId: const obx_int.IdUid(33, 5064629000809070221),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 481795596990448801),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 5975696814225973018),
+        name: 'elevenLabsBaseUrl',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 2776748535850846581),
+        name: 'elevenLabsVoiceId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 5359536390794393019),
+        name: 'elevenLabsVoiceName',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 2515271439631750497),
+        name: 'elevenLabsTtsModel',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 2360602790298295304),
+        name: 'elevenLabsStability',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 8287296938118878652),
+        name: 'elevenLabsSimilarityBoost',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 6474375255269349147),
+        name: 'elevenLabsStyle',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 6308078266360383396),
+        name: 'elevenLabsSpeed',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(10, 287075187784288787),
+        name: 'elevenLabsUseSpeakerBoost',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(11, 3781331499303856566),
+        name: 'elevenLabsOutputFormat',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(12, 9183206056953925208),
+        name: 'elevenLabsSttModel',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(13, 2921446368357523536),
+        name: 'elevenLabsSttTagAudioEvents',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(14, 1800332704008898404),
+        name: 'elevenLabsSttDiarize',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(15, 3016613450024026334),
+        name: 'openaiTtsReuseLlmKey',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(16, 10275763821264815),
+        name: 'openaiTtsBaseUrl',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(17, 1069082496812248951),
+        name: 'openaiTtsModel',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(18, 2675815113504529495),
+        name: 'openaiTtsVoice',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(19, 1274356898725522924),
+        name: 'openaiTtsSpeed',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(20, 928912467614960042),
+        name: 'openaiTtsInstructions',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(21, 540214640006866534),
+        name: 'openaiTtsFormat',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(22, 3065608082210108198),
+        name: 'openaiSttReuseLlmKey',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(23, 8753218613179567945),
+        name: 'openaiSttBaseUrl',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(24, 2573323276477185654),
+        name: 'openaiSttModel',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(25, 2706978689651823065),
+        name: 'openaiSttPrompt',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(26, 7373567141501755718),
+        name: 'openaiSttTemperature',
+        type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(27, 1372487806466803478),
+        name: 'googleSpeechReuseLlmKey',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(28, 210282663079988346),
+        name: 'googleSpeechBaseUrl',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(29, 981734279116780758),
+        name: 'googleTtsModel',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(30, 380278879313599238),
+        name: 'googleTtsVoiceName',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(31, 5773855892025445201),
+        name: 'googleTtsStylePrompt',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(32, 5230019741877835589),
+        name: 'googleSttModel',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(33, 5064629000809070221),
+        name: 'timeoutSeconds',
+        type: 6,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
 ];
 
 /// Shortcut for [obx.Store.new] that passes [getObjectBoxModel] and for Flutter
@@ -412,7 +824,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
     // Typically, this is done with `dart run build_runner build`.
     generatorVersion: obx_int.GeneratorVersion.v2025_12_16,
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(5, 4531824928226325680),
+    lastEntityId: const obx_int.IdUid(7, 7638008323712811899),
     lastIndexId: const obx_int.IdUid(0, 0),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
@@ -448,7 +860,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final sttModelOffset = fbb.writeString(object.sttModel);
         final modelSourceOffset = fbb.writeString(object.modelSource);
         final modelUrlOffset = fbb.writeString(object.modelUrl);
-        fbb.startTable(23);
+        fbb.startTable(25);
         fbb.addInt64(0, object.id);
         fbb.addBool(1, object.ttsEnabled);
         fbb.addBool(2, object.ttsAutoPlay);
@@ -471,6 +883,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addInt64(19, object.notificationCheckinHours);
         fbb.addInt64(20, object.summaryMessageCount);
         fbb.addInt64(21, object.themeStyleIndex);
+        fbb.addInt64(22, object.activeCloudProfileId);
+        fbb.addInt64(23, object.aiModeIndex);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -537,6 +951,12 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final modelUrlParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGet(buffer, rootOffset, 40, '');
+        final activeCloudProfileIdParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          48,
+          0,
+        );
         final isAgeVerifiedParam = const fb.BoolReader().vTableGet(
           buffer,
           rootOffset,
@@ -580,6 +1000,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
                 modelVariant: modelVariantParam,
                 modelSource: modelSourceParam,
                 modelUrl: modelUrlParam,
+                activeCloudProfileId: activeCloudProfileIdParam,
                 isAgeVerified: isAgeVerifiedParam,
                 isOnboardingDone: isOnboardingDoneParam,
                 isPersonaSetup: isPersonaSetupParam,
@@ -602,6 +1023,12 @@ obx_int.ModelDefinition getObjectBoxModel() {
                 buffer,
                 rootOffset,
                 46,
+                0,
+              )
+              ..aiModeIndex = const fb.Int64Reader().vTableGet(
+                buffer,
+                rootOffset,
+                50,
                 0,
               );
 
@@ -882,6 +1309,501 @@ obx_int.ModelDefinition getObjectBoxModel() {
         return object;
       },
     ),
+    AiProviderProfile: obx_int.EntityDefinition<AiProviderProfile>(
+      model: _entities[5],
+      toOneRelations: (AiProviderProfile object) => [],
+      toManyRelations: (AiProviderProfile object) => {},
+      getId: (AiProviderProfile object) => object.id,
+      setId: (AiProviderProfile object, int id) {
+        object.id = id;
+      },
+      objectToFB: (AiProviderProfile object, fb.Builder fbb) {
+        final profileKeyOffset = fbb.writeString(object.profileKey);
+        final nameOffset = fbb.writeString(object.name);
+        final presetIdOffset = fbb.writeString(object.presetId);
+        final baseUrlOffset = fbb.writeString(object.baseUrl);
+        final modelIdOffset = fbb.writeString(object.modelId);
+        final customHeadersJsonOffset = fbb.writeString(
+          object.customHeadersJson,
+        );
+        final stopSequencesOffset = fbb.writeList(
+          object.stopSequences.map(fbb.writeString).toList(growable: false),
+        );
+        final reasoningEffortOffset = fbb.writeString(object.reasoningEffort);
+        final geminiSafetyLevelOffset = fbb.writeString(
+          object.geminiSafetyLevel,
+        );
+        final customSystemPromptOffset = fbb.writeString(
+          object.customSystemPrompt,
+        );
+        final backgroundModelIdOffset = fbb.writeString(
+          object.backgroundModelId,
+        );
+        fbb.startTable(31);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, profileKeyOffset);
+        fbb.addOffset(2, nameOffset);
+        fbb.addInt64(3, object.providerTypeIndex);
+        fbb.addOffset(4, presetIdOffset);
+        fbb.addOffset(5, baseUrlOffset);
+        fbb.addOffset(6, modelIdOffset);
+        fbb.addOffset(7, customHeadersJsonOffset);
+        fbb.addBool(8, object.stripStreamOptions);
+        fbb.addFloat64(9, object.temperature);
+        fbb.addFloat64(10, object.topP);
+        fbb.addInt64(11, object.topK);
+        fbb.addInt64(12, object.maxOutputTokens);
+        fbb.addFloat64(13, object.presencePenalty);
+        fbb.addFloat64(14, object.frequencyPenalty);
+        fbb.addOffset(15, stopSequencesOffset);
+        fbb.addInt64(16, object.seed);
+        fbb.addOffset(17, reasoningEffortOffset);
+        fbb.addInt64(18, object.thinkingBudgetTokens);
+        fbb.addOffset(19, geminiSafetyLevelOffset);
+        fbb.addInt64(20, object.maxHistoryMessages);
+        fbb.addInt64(21, object.maxMemoryFacts);
+        fbb.addInt64(22, object.maxInputChars);
+        fbb.addInt64(23, object.maxPromptChars);
+        fbb.addBool(24, object.enforceShortReply);
+        fbb.addOffset(25, customSystemPromptOffset);
+        fbb.addInt64(26, object.timeoutSeconds);
+        fbb.addBool(27, object.enableBackgroundTasks);
+        fbb.addOffset(28, backgroundModelIdOffset);
+        fbb.addInt64(29, object.createdAt.millisecondsSinceEpoch);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final profileKeyParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final nameParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final presetIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 12, '');
+        final baseUrlParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 14, '');
+        final modelIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 16, '');
+        final customHeadersJsonParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 18, '');
+        final stripStreamOptionsParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          20,
+          false,
+        );
+        final temperatureParam = const fb.Float64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          22,
+        );
+        final topPParam = const fb.Float64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          24,
+        );
+        final topKParam = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          26,
+        );
+        final maxOutputTokensParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          28,
+          0,
+        );
+        final presencePenaltyParam = const fb.Float64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          30,
+        );
+        final frequencyPenaltyParam = const fb.Float64Reader()
+            .vTableGetNullable(buffer, rootOffset, 32);
+        final stopSequencesParam = const fb.ListReader<String>(
+          fb.StringReader(asciiOptimization: true),
+          lazy: false,
+        ).vTableGet(buffer, rootOffset, 34, []);
+        final seedParam = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          36,
+        );
+        final reasoningEffortParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 38, '');
+        final thinkingBudgetTokensParam = const fb.Int64Reader()
+            .vTableGetNullable(buffer, rootOffset, 40);
+        final geminiSafetyLevelParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 42, '');
+        final maxHistoryMessagesParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          44,
+          0,
+        );
+        final maxMemoryFactsParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          46,
+          0,
+        );
+        final maxInputCharsParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          48,
+          0,
+        );
+        final maxPromptCharsParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          50,
+          0,
+        );
+        final enforceShortReplyParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          52,
+          false,
+        );
+        final customSystemPromptParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 54, '');
+        final timeoutSecondsParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          56,
+          0,
+        );
+        final enableBackgroundTasksParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          58,
+          false,
+        );
+        final backgroundModelIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 60, '');
+        final createdAtParam = DateTime.fromMillisecondsSinceEpoch(
+          const fb.Int64Reader().vTableGet(buffer, rootOffset, 62, 0),
+        );
+        final object =
+            AiProviderProfile(
+                id: idParam,
+                profileKey: profileKeyParam,
+                name: nameParam,
+                presetId: presetIdParam,
+                baseUrl: baseUrlParam,
+                modelId: modelIdParam,
+                customHeadersJson: customHeadersJsonParam,
+                stripStreamOptions: stripStreamOptionsParam,
+                temperature: temperatureParam,
+                topP: topPParam,
+                topK: topKParam,
+                maxOutputTokens: maxOutputTokensParam,
+                presencePenalty: presencePenaltyParam,
+                frequencyPenalty: frequencyPenaltyParam,
+                stopSequences: stopSequencesParam,
+                seed: seedParam,
+                reasoningEffort: reasoningEffortParam,
+                thinkingBudgetTokens: thinkingBudgetTokensParam,
+                geminiSafetyLevel: geminiSafetyLevelParam,
+                maxHistoryMessages: maxHistoryMessagesParam,
+                maxMemoryFacts: maxMemoryFactsParam,
+                maxInputChars: maxInputCharsParam,
+                maxPromptChars: maxPromptCharsParam,
+                enforceShortReply: enforceShortReplyParam,
+                customSystemPrompt: customSystemPromptParam,
+                timeoutSeconds: timeoutSecondsParam,
+                enableBackgroundTasks: enableBackgroundTasksParam,
+                backgroundModelId: backgroundModelIdParam,
+                createdAt: createdAtParam,
+              )
+              ..providerTypeIndex = const fb.Int64Reader().vTableGet(
+                buffer,
+                rootOffset,
+                10,
+                0,
+              );
+
+        return object;
+      },
+    ),
+    CloudSpeechConfig: obx_int.EntityDefinition<CloudSpeechConfig>(
+      model: _entities[6],
+      toOneRelations: (CloudSpeechConfig object) => [],
+      toManyRelations: (CloudSpeechConfig object) => {},
+      getId: (CloudSpeechConfig object) => object.id,
+      setId: (CloudSpeechConfig object, int id) {
+        object.id = id;
+      },
+      objectToFB: (CloudSpeechConfig object, fb.Builder fbb) {
+        final elevenLabsBaseUrlOffset = fbb.writeString(
+          object.elevenLabsBaseUrl,
+        );
+        final elevenLabsVoiceIdOffset = fbb.writeString(
+          object.elevenLabsVoiceId,
+        );
+        final elevenLabsVoiceNameOffset = fbb.writeString(
+          object.elevenLabsVoiceName,
+        );
+        final elevenLabsTtsModelOffset = fbb.writeString(
+          object.elevenLabsTtsModel,
+        );
+        final elevenLabsOutputFormatOffset = fbb.writeString(
+          object.elevenLabsOutputFormat,
+        );
+        final elevenLabsSttModelOffset = fbb.writeString(
+          object.elevenLabsSttModel,
+        );
+        final openaiTtsBaseUrlOffset = fbb.writeString(object.openaiTtsBaseUrl);
+        final openaiTtsModelOffset = fbb.writeString(object.openaiTtsModel);
+        final openaiTtsVoiceOffset = fbb.writeString(object.openaiTtsVoice);
+        final openaiTtsInstructionsOffset = fbb.writeString(
+          object.openaiTtsInstructions,
+        );
+        final openaiTtsFormatOffset = fbb.writeString(object.openaiTtsFormat);
+        final openaiSttBaseUrlOffset = fbb.writeString(object.openaiSttBaseUrl);
+        final openaiSttModelOffset = fbb.writeString(object.openaiSttModel);
+        final openaiSttPromptOffset = fbb.writeString(object.openaiSttPrompt);
+        final googleSpeechBaseUrlOffset = fbb.writeString(
+          object.googleSpeechBaseUrl,
+        );
+        final googleTtsModelOffset = fbb.writeString(object.googleTtsModel);
+        final googleTtsVoiceNameOffset = fbb.writeString(
+          object.googleTtsVoiceName,
+        );
+        final googleTtsStylePromptOffset = fbb.writeString(
+          object.googleTtsStylePrompt,
+        );
+        final googleSttModelOffset = fbb.writeString(object.googleSttModel);
+        fbb.startTable(34);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, elevenLabsBaseUrlOffset);
+        fbb.addOffset(2, elevenLabsVoiceIdOffset);
+        fbb.addOffset(3, elevenLabsVoiceNameOffset);
+        fbb.addOffset(4, elevenLabsTtsModelOffset);
+        fbb.addFloat64(5, object.elevenLabsStability);
+        fbb.addFloat64(6, object.elevenLabsSimilarityBoost);
+        fbb.addFloat64(7, object.elevenLabsStyle);
+        fbb.addFloat64(8, object.elevenLabsSpeed);
+        fbb.addBool(9, object.elevenLabsUseSpeakerBoost);
+        fbb.addOffset(10, elevenLabsOutputFormatOffset);
+        fbb.addOffset(11, elevenLabsSttModelOffset);
+        fbb.addBool(12, object.elevenLabsSttTagAudioEvents);
+        fbb.addBool(13, object.elevenLabsSttDiarize);
+        fbb.addBool(14, object.openaiTtsReuseLlmKey);
+        fbb.addOffset(15, openaiTtsBaseUrlOffset);
+        fbb.addOffset(16, openaiTtsModelOffset);
+        fbb.addOffset(17, openaiTtsVoiceOffset);
+        fbb.addFloat64(18, object.openaiTtsSpeed);
+        fbb.addOffset(19, openaiTtsInstructionsOffset);
+        fbb.addOffset(20, openaiTtsFormatOffset);
+        fbb.addBool(21, object.openaiSttReuseLlmKey);
+        fbb.addOffset(22, openaiSttBaseUrlOffset);
+        fbb.addOffset(23, openaiSttModelOffset);
+        fbb.addOffset(24, openaiSttPromptOffset);
+        fbb.addFloat64(25, object.openaiSttTemperature);
+        fbb.addBool(26, object.googleSpeechReuseLlmKey);
+        fbb.addOffset(27, googleSpeechBaseUrlOffset);
+        fbb.addOffset(28, googleTtsModelOffset);
+        fbb.addOffset(29, googleTtsVoiceNameOffset);
+        fbb.addOffset(30, googleTtsStylePromptOffset);
+        fbb.addOffset(31, googleSttModelOffset);
+        fbb.addInt64(32, object.timeoutSeconds);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final elevenLabsBaseUrlParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final elevenLabsVoiceIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final elevenLabsVoiceNameParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 10, '');
+        final elevenLabsTtsModelParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 12, '');
+        final elevenLabsStabilityParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          14,
+          0,
+        );
+        final elevenLabsSimilarityBoostParam = const fb.Float64Reader()
+            .vTableGet(buffer, rootOffset, 16, 0);
+        final elevenLabsStyleParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          18,
+          0,
+        );
+        final elevenLabsSpeedParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          20,
+          0,
+        );
+        final elevenLabsUseSpeakerBoostParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          22,
+          false,
+        );
+        final elevenLabsOutputFormatParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 24, '');
+        final elevenLabsSttModelParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 26, '');
+        final elevenLabsSttTagAudioEventsParam = const fb.BoolReader()
+            .vTableGet(buffer, rootOffset, 28, false);
+        final elevenLabsSttDiarizeParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          30,
+          false,
+        );
+        final openaiTtsReuseLlmKeyParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          32,
+          false,
+        );
+        final openaiTtsBaseUrlParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 34, '');
+        final openaiTtsModelParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 36, '');
+        final openaiTtsVoiceParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 38, '');
+        final openaiTtsSpeedParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          40,
+          0,
+        );
+        final openaiTtsInstructionsParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 42, '');
+        final openaiTtsFormatParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 44, '');
+        final openaiSttReuseLlmKeyParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          46,
+          false,
+        );
+        final openaiSttBaseUrlParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 48, '');
+        final openaiSttModelParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 50, '');
+        final openaiSttPromptParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 52, '');
+        final openaiSttTemperatureParam = const fb.Float64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          54,
+          0,
+        );
+        final googleSpeechReuseLlmKeyParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          56,
+          false,
+        );
+        final googleSpeechBaseUrlParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 58, '');
+        final googleTtsModelParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 60, '');
+        final googleTtsVoiceNameParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 62, '');
+        final googleTtsStylePromptParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 64, '');
+        final googleSttModelParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 66, '');
+        final timeoutSecondsParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          68,
+          0,
+        );
+        final object = CloudSpeechConfig(
+          id: idParam,
+          elevenLabsBaseUrl: elevenLabsBaseUrlParam,
+          elevenLabsVoiceId: elevenLabsVoiceIdParam,
+          elevenLabsVoiceName: elevenLabsVoiceNameParam,
+          elevenLabsTtsModel: elevenLabsTtsModelParam,
+          elevenLabsStability: elevenLabsStabilityParam,
+          elevenLabsSimilarityBoost: elevenLabsSimilarityBoostParam,
+          elevenLabsStyle: elevenLabsStyleParam,
+          elevenLabsSpeed: elevenLabsSpeedParam,
+          elevenLabsUseSpeakerBoost: elevenLabsUseSpeakerBoostParam,
+          elevenLabsOutputFormat: elevenLabsOutputFormatParam,
+          elevenLabsSttModel: elevenLabsSttModelParam,
+          elevenLabsSttTagAudioEvents: elevenLabsSttTagAudioEventsParam,
+          elevenLabsSttDiarize: elevenLabsSttDiarizeParam,
+          openaiTtsReuseLlmKey: openaiTtsReuseLlmKeyParam,
+          openaiTtsBaseUrl: openaiTtsBaseUrlParam,
+          openaiTtsModel: openaiTtsModelParam,
+          openaiTtsVoice: openaiTtsVoiceParam,
+          openaiTtsSpeed: openaiTtsSpeedParam,
+          openaiTtsInstructions: openaiTtsInstructionsParam,
+          openaiTtsFormat: openaiTtsFormatParam,
+          openaiSttReuseLlmKey: openaiSttReuseLlmKeyParam,
+          openaiSttBaseUrl: openaiSttBaseUrlParam,
+          openaiSttModel: openaiSttModelParam,
+          openaiSttPrompt: openaiSttPromptParam,
+          openaiSttTemperature: openaiSttTemperatureParam,
+          googleSpeechReuseLlmKey: googleSpeechReuseLlmKeyParam,
+          googleSpeechBaseUrl: googleSpeechBaseUrlParam,
+          googleTtsModel: googleTtsModelParam,
+          googleTtsVoiceName: googleTtsVoiceNameParam,
+          googleTtsStylePrompt: googleTtsStylePromptParam,
+          googleSttModel: googleSttModelParam,
+          timeoutSeconds: timeoutSecondsParam,
+        );
+
+        return object;
+      },
+    ),
   };
 
   return obx_int.ModelDefinition(model, bindings);
@@ -995,6 +1917,16 @@ class AppSettings_ {
   /// See [AppSettings.themeStyleIndex].
   static final themeStyleIndex = obx.QueryIntegerProperty<AppSettings>(
     _entities[0].properties[21],
+  );
+
+  /// See [AppSettings.activeCloudProfileId].
+  static final activeCloudProfileId = obx.QueryIntegerProperty<AppSettings>(
+    _entities[0].properties[22],
+  );
+
+  /// See [AppSettings.aiModeIndex].
+  static final aiModeIndex = obx.QueryIntegerProperty<AppSettings>(
+    _entities[0].properties[23],
   );
 }
 
@@ -1142,5 +2074,313 @@ class PersonaConfig_ {
   /// See [PersonaConfig.hobbies].
   static final hobbies = obx.QueryStringVectorProperty<PersonaConfig>(
     _entities[4].properties[7],
+  );
+}
+
+/// [AiProviderProfile] entity fields to define ObjectBox queries.
+class AiProviderProfile_ {
+  /// See [AiProviderProfile.id].
+  static final id = obx.QueryIntegerProperty<AiProviderProfile>(
+    _entities[5].properties[0],
+  );
+
+  /// See [AiProviderProfile.profileKey].
+  static final profileKey = obx.QueryStringProperty<AiProviderProfile>(
+    _entities[5].properties[1],
+  );
+
+  /// See [AiProviderProfile.name].
+  static final name = obx.QueryStringProperty<AiProviderProfile>(
+    _entities[5].properties[2],
+  );
+
+  /// See [AiProviderProfile.providerTypeIndex].
+  static final providerTypeIndex = obx.QueryIntegerProperty<AiProviderProfile>(
+    _entities[5].properties[3],
+  );
+
+  /// See [AiProviderProfile.presetId].
+  static final presetId = obx.QueryStringProperty<AiProviderProfile>(
+    _entities[5].properties[4],
+  );
+
+  /// See [AiProviderProfile.baseUrl].
+  static final baseUrl = obx.QueryStringProperty<AiProviderProfile>(
+    _entities[5].properties[5],
+  );
+
+  /// See [AiProviderProfile.modelId].
+  static final modelId = obx.QueryStringProperty<AiProviderProfile>(
+    _entities[5].properties[6],
+  );
+
+  /// See [AiProviderProfile.customHeadersJson].
+  static final customHeadersJson = obx.QueryStringProperty<AiProviderProfile>(
+    _entities[5].properties[7],
+  );
+
+  /// See [AiProviderProfile.stripStreamOptions].
+  static final stripStreamOptions = obx.QueryBooleanProperty<AiProviderProfile>(
+    _entities[5].properties[8],
+  );
+
+  /// See [AiProviderProfile.temperature].
+  static final temperature = obx.QueryDoubleProperty<AiProviderProfile>(
+    _entities[5].properties[9],
+  );
+
+  /// See [AiProviderProfile.topP].
+  static final topP = obx.QueryDoubleProperty<AiProviderProfile>(
+    _entities[5].properties[10],
+  );
+
+  /// See [AiProviderProfile.topK].
+  static final topK = obx.QueryIntegerProperty<AiProviderProfile>(
+    _entities[5].properties[11],
+  );
+
+  /// See [AiProviderProfile.maxOutputTokens].
+  static final maxOutputTokens = obx.QueryIntegerProperty<AiProviderProfile>(
+    _entities[5].properties[12],
+  );
+
+  /// See [AiProviderProfile.presencePenalty].
+  static final presencePenalty = obx.QueryDoubleProperty<AiProviderProfile>(
+    _entities[5].properties[13],
+  );
+
+  /// See [AiProviderProfile.frequencyPenalty].
+  static final frequencyPenalty = obx.QueryDoubleProperty<AiProviderProfile>(
+    _entities[5].properties[14],
+  );
+
+  /// See [AiProviderProfile.stopSequences].
+  static final stopSequences = obx.QueryStringVectorProperty<AiProviderProfile>(
+    _entities[5].properties[15],
+  );
+
+  /// See [AiProviderProfile.seed].
+  static final seed = obx.QueryIntegerProperty<AiProviderProfile>(
+    _entities[5].properties[16],
+  );
+
+  /// See [AiProviderProfile.reasoningEffort].
+  static final reasoningEffort = obx.QueryStringProperty<AiProviderProfile>(
+    _entities[5].properties[17],
+  );
+
+  /// See [AiProviderProfile.thinkingBudgetTokens].
+  static final thinkingBudgetTokens =
+      obx.QueryIntegerProperty<AiProviderProfile>(_entities[5].properties[18]);
+
+  /// See [AiProviderProfile.geminiSafetyLevel].
+  static final geminiSafetyLevel = obx.QueryStringProperty<AiProviderProfile>(
+    _entities[5].properties[19],
+  );
+
+  /// See [AiProviderProfile.maxHistoryMessages].
+  static final maxHistoryMessages = obx.QueryIntegerProperty<AiProviderProfile>(
+    _entities[5].properties[20],
+  );
+
+  /// See [AiProviderProfile.maxMemoryFacts].
+  static final maxMemoryFacts = obx.QueryIntegerProperty<AiProviderProfile>(
+    _entities[5].properties[21],
+  );
+
+  /// See [AiProviderProfile.maxInputChars].
+  static final maxInputChars = obx.QueryIntegerProperty<AiProviderProfile>(
+    _entities[5].properties[22],
+  );
+
+  /// See [AiProviderProfile.maxPromptChars].
+  static final maxPromptChars = obx.QueryIntegerProperty<AiProviderProfile>(
+    _entities[5].properties[23],
+  );
+
+  /// See [AiProviderProfile.enforceShortReply].
+  static final enforceShortReply = obx.QueryBooleanProperty<AiProviderProfile>(
+    _entities[5].properties[24],
+  );
+
+  /// See [AiProviderProfile.customSystemPrompt].
+  static final customSystemPrompt = obx.QueryStringProperty<AiProviderProfile>(
+    _entities[5].properties[25],
+  );
+
+  /// See [AiProviderProfile.timeoutSeconds].
+  static final timeoutSeconds = obx.QueryIntegerProperty<AiProviderProfile>(
+    _entities[5].properties[26],
+  );
+
+  /// See [AiProviderProfile.enableBackgroundTasks].
+  static final enableBackgroundTasks =
+      obx.QueryBooleanProperty<AiProviderProfile>(_entities[5].properties[27]);
+
+  /// See [AiProviderProfile.backgroundModelId].
+  static final backgroundModelId = obx.QueryStringProperty<AiProviderProfile>(
+    _entities[5].properties[28],
+  );
+
+  /// See [AiProviderProfile.createdAt].
+  static final createdAt = obx.QueryDateProperty<AiProviderProfile>(
+    _entities[5].properties[29],
+  );
+}
+
+/// [CloudSpeechConfig] entity fields to define ObjectBox queries.
+class CloudSpeechConfig_ {
+  /// See [CloudSpeechConfig.id].
+  static final id = obx.QueryIntegerProperty<CloudSpeechConfig>(
+    _entities[6].properties[0],
+  );
+
+  /// See [CloudSpeechConfig.elevenLabsBaseUrl].
+  static final elevenLabsBaseUrl = obx.QueryStringProperty<CloudSpeechConfig>(
+    _entities[6].properties[1],
+  );
+
+  /// See [CloudSpeechConfig.elevenLabsVoiceId].
+  static final elevenLabsVoiceId = obx.QueryStringProperty<CloudSpeechConfig>(
+    _entities[6].properties[2],
+  );
+
+  /// See [CloudSpeechConfig.elevenLabsVoiceName].
+  static final elevenLabsVoiceName = obx.QueryStringProperty<CloudSpeechConfig>(
+    _entities[6].properties[3],
+  );
+
+  /// See [CloudSpeechConfig.elevenLabsTtsModel].
+  static final elevenLabsTtsModel = obx.QueryStringProperty<CloudSpeechConfig>(
+    _entities[6].properties[4],
+  );
+
+  /// See [CloudSpeechConfig.elevenLabsStability].
+  static final elevenLabsStability = obx.QueryDoubleProperty<CloudSpeechConfig>(
+    _entities[6].properties[5],
+  );
+
+  /// See [CloudSpeechConfig.elevenLabsSimilarityBoost].
+  static final elevenLabsSimilarityBoost =
+      obx.QueryDoubleProperty<CloudSpeechConfig>(_entities[6].properties[6]);
+
+  /// See [CloudSpeechConfig.elevenLabsStyle].
+  static final elevenLabsStyle = obx.QueryDoubleProperty<CloudSpeechConfig>(
+    _entities[6].properties[7],
+  );
+
+  /// See [CloudSpeechConfig.elevenLabsSpeed].
+  static final elevenLabsSpeed = obx.QueryDoubleProperty<CloudSpeechConfig>(
+    _entities[6].properties[8],
+  );
+
+  /// See [CloudSpeechConfig.elevenLabsUseSpeakerBoost].
+  static final elevenLabsUseSpeakerBoost =
+      obx.QueryBooleanProperty<CloudSpeechConfig>(_entities[6].properties[9]);
+
+  /// See [CloudSpeechConfig.elevenLabsOutputFormat].
+  static final elevenLabsOutputFormat =
+      obx.QueryStringProperty<CloudSpeechConfig>(_entities[6].properties[10]);
+
+  /// See [CloudSpeechConfig.elevenLabsSttModel].
+  static final elevenLabsSttModel = obx.QueryStringProperty<CloudSpeechConfig>(
+    _entities[6].properties[11],
+  );
+
+  /// See [CloudSpeechConfig.elevenLabsSttTagAudioEvents].
+  static final elevenLabsSttTagAudioEvents =
+      obx.QueryBooleanProperty<CloudSpeechConfig>(_entities[6].properties[12]);
+
+  /// See [CloudSpeechConfig.elevenLabsSttDiarize].
+  static final elevenLabsSttDiarize =
+      obx.QueryBooleanProperty<CloudSpeechConfig>(_entities[6].properties[13]);
+
+  /// See [CloudSpeechConfig.openaiTtsReuseLlmKey].
+  static final openaiTtsReuseLlmKey =
+      obx.QueryBooleanProperty<CloudSpeechConfig>(_entities[6].properties[14]);
+
+  /// See [CloudSpeechConfig.openaiTtsBaseUrl].
+  static final openaiTtsBaseUrl = obx.QueryStringProperty<CloudSpeechConfig>(
+    _entities[6].properties[15],
+  );
+
+  /// See [CloudSpeechConfig.openaiTtsModel].
+  static final openaiTtsModel = obx.QueryStringProperty<CloudSpeechConfig>(
+    _entities[6].properties[16],
+  );
+
+  /// See [CloudSpeechConfig.openaiTtsVoice].
+  static final openaiTtsVoice = obx.QueryStringProperty<CloudSpeechConfig>(
+    _entities[6].properties[17],
+  );
+
+  /// See [CloudSpeechConfig.openaiTtsSpeed].
+  static final openaiTtsSpeed = obx.QueryDoubleProperty<CloudSpeechConfig>(
+    _entities[6].properties[18],
+  );
+
+  /// See [CloudSpeechConfig.openaiTtsInstructions].
+  static final openaiTtsInstructions =
+      obx.QueryStringProperty<CloudSpeechConfig>(_entities[6].properties[19]);
+
+  /// See [CloudSpeechConfig.openaiTtsFormat].
+  static final openaiTtsFormat = obx.QueryStringProperty<CloudSpeechConfig>(
+    _entities[6].properties[20],
+  );
+
+  /// See [CloudSpeechConfig.openaiSttReuseLlmKey].
+  static final openaiSttReuseLlmKey =
+      obx.QueryBooleanProperty<CloudSpeechConfig>(_entities[6].properties[21]);
+
+  /// See [CloudSpeechConfig.openaiSttBaseUrl].
+  static final openaiSttBaseUrl = obx.QueryStringProperty<CloudSpeechConfig>(
+    _entities[6].properties[22],
+  );
+
+  /// See [CloudSpeechConfig.openaiSttModel].
+  static final openaiSttModel = obx.QueryStringProperty<CloudSpeechConfig>(
+    _entities[6].properties[23],
+  );
+
+  /// See [CloudSpeechConfig.openaiSttPrompt].
+  static final openaiSttPrompt = obx.QueryStringProperty<CloudSpeechConfig>(
+    _entities[6].properties[24],
+  );
+
+  /// See [CloudSpeechConfig.openaiSttTemperature].
+  static final openaiSttTemperature =
+      obx.QueryDoubleProperty<CloudSpeechConfig>(_entities[6].properties[25]);
+
+  /// See [CloudSpeechConfig.googleSpeechReuseLlmKey].
+  static final googleSpeechReuseLlmKey =
+      obx.QueryBooleanProperty<CloudSpeechConfig>(_entities[6].properties[26]);
+
+  /// See [CloudSpeechConfig.googleSpeechBaseUrl].
+  static final googleSpeechBaseUrl = obx.QueryStringProperty<CloudSpeechConfig>(
+    _entities[6].properties[27],
+  );
+
+  /// See [CloudSpeechConfig.googleTtsModel].
+  static final googleTtsModel = obx.QueryStringProperty<CloudSpeechConfig>(
+    _entities[6].properties[28],
+  );
+
+  /// See [CloudSpeechConfig.googleTtsVoiceName].
+  static final googleTtsVoiceName = obx.QueryStringProperty<CloudSpeechConfig>(
+    _entities[6].properties[29],
+  );
+
+  /// See [CloudSpeechConfig.googleTtsStylePrompt].
+  static final googleTtsStylePrompt =
+      obx.QueryStringProperty<CloudSpeechConfig>(_entities[6].properties[30]);
+
+  /// See [CloudSpeechConfig.googleSttModel].
+  static final googleSttModel = obx.QueryStringProperty<CloudSpeechConfig>(
+    _entities[6].properties[31],
+  );
+
+  /// See [CloudSpeechConfig.timeoutSeconds].
+  static final timeoutSeconds = obx.QueryIntegerProperty<CloudSpeechConfig>(
+    _entities[6].properties[32],
   );
 }

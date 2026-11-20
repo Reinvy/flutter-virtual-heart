@@ -5,7 +5,9 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../core/errors/app_logger.dart';
 
+import '../../models/ai_provider_profile.dart';
 import '../../models/app_settings.dart';
+import '../../models/cloud_speech_config.dart';
 import '../../models/memory_fact.dart';
 import '../../models/message.dart';
 import '../../models/mood_state.dart';
@@ -27,6 +29,8 @@ class ObjectBoxService implements MoodStore {
   late final Box<MoodState> moodStateBox;
 
   late final Box<AppSettings> appSettingsBox;
+  late final Box<AiProviderProfile> aiProviderProfileBox;
+  late final Box<CloudSpeechConfig> cloudSpeechConfigBox;
 
   ObjectBoxService._();
 
@@ -71,6 +75,8 @@ class ObjectBoxService implements MoodStore {
     service.memoryFactBox = service.store.box<MemoryFact>();
     service.moodStateBox = service.store.box<MoodState>();
     service.appSettingsBox = service.store.box<AppSettings>();
+    service.aiProviderProfileBox = service.store.box<AiProviderProfile>();
+    service.cloudSpeechConfigBox = service.store.box<CloudSpeechConfig>();
 
     _instance = service;
     return service;
@@ -93,6 +99,28 @@ class ObjectBoxService implements MoodStore {
     final canonical = all.first.normalized();
     if (all.length > 1 || !canonical.hasSameValues(all.first)) {
       appSettingsBox.put(canonical);
+    }
+    return canonical;
+  }
+
+  /// Mengembalikan [CloudSpeechConfig] kanonik (baris id terkecil) atau
+  /// membuat default baru, lalu menormalkan nilai yang mungkin rusak.
+  CloudSpeechConfig getOrCreateCloudSpeechConfig() {
+    final all = cloudSpeechConfigBox.getAll()
+      ..sort((a, b) => a.id.compareTo(b.id));
+    if (all.isEmpty) {
+      final defaults = CloudSpeechConfig().normalized();
+      cloudSpeechConfigBox.put(defaults);
+      return defaults;
+    }
+    if (all.length > 1) {
+      cloudSpeechConfigBox.removeMany(
+        all.skip(1).map((row) => row.id).toList(),
+      );
+    }
+    final canonical = all.first.normalized();
+    if (all.length > 1 || !canonical.hasSameValues(all.first)) {
+      cloudSpeechConfigBox.put(canonical);
     }
     return canonical;
   }

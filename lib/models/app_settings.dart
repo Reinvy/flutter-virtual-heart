@@ -7,6 +7,9 @@ enum AppThemeStyle { editorial, romantic, classic, botanical }
 
 enum AppLanguage { indonesian, english, mixed }
 
+/// Mode eksekusi LLM utama: on-device lokal atau Cloud BYOK (via Genkit).
+enum AiMode { local, cloud }
+
 @Entity()
 class AppSettings {
   @Id()
@@ -14,8 +17,8 @@ class AppSettings {
 
   bool ttsEnabled = false;
   bool ttsAutoPlay = false;
-  String ttsBackend = 'system'; // 'gemma' (on-device) | 'system'
-  String sttBackend = 'system'; // 'gemma' (on-device) | 'system'
+  String ttsBackend = 'system'; // 'system' | 'gemma' | 'elevenlabs' | 'openai' | 'google'
+  String sttBackend = 'system'; // 'system' | 'gemma' | 'elevenlabs' | 'openai' | 'google'
   String ttsModel = 'inflect'; // 'inflect' | 'matcha' | 'qwen3'
   String sttModel = 'moonshine';
   bool notificationMorningEnabled = false;
@@ -25,11 +28,16 @@ class AppSettings {
   /// Jarak waktu (jam) sebelum notifikasi check-in muncul.
   int notificationCheckinHours = 6;
 
-  /// Identitas model LLM aktif = **nama file** yang dipakai
+  /// Identitas model LLM lokal aktif = **nama file** yang dipakai
   /// `FlutterEdgeAi.isModelInstalled`. String kosong = belum dipilih.
   String modelVariant = '';
   String modelSource = ''; // '' | 'network' | 'file'
   String modelUrl = '';
+
+  /// ID `AiProviderProfile` yang sedang aktif bila [aiMode] == [AiMode.cloud].
+  /// `0` menandakan belum ada profil cloud yang dipilih.
+  int activeCloudProfileId = 0;
+
   bool isAgeVerified = false;
   bool isOnboardingDone = false;
   bool isPersonaSetup = false;
@@ -42,6 +50,7 @@ class AppSettings {
   int themeIndex = 0;
   int themeStyleIndex = 0;
   int languageIndex = 0;
+  int aiModeIndex = 0;
 
   // Getter meng-clamp index: baris rusak tidak boleh melempar RangeError.
   AppThemeSetting get theme => _enumAt(AppThemeSetting.values, themeIndex);
@@ -53,10 +62,19 @@ class AppSettings {
   AppLanguage get language => _enumAt(AppLanguage.values, languageIndex);
   set language(AppLanguage value) => languageIndex = value.index;
 
+  AiMode get aiMode => _enumAt(AiMode.values, aiModeIndex);
+  set aiMode(AiMode value) => aiModeIndex = value.index;
+
   /// Pilihan interval check-in yang didukung UI.
   static const List<int> checkinHourOptions = [1, 3, 6, 12];
 
-  static const Set<String> _voiceBackends = {'gemma', 'system'};
+  static const Set<String> _voiceBackends = {
+    'gemma',
+    'system',
+    'elevenlabs',
+    'openai',
+    'google',
+  };
   static const Set<String> _ttsModels = {'inflect', 'matcha', 'qwen3'};
   static const Set<String> _modelSources = {'', 'network', 'file'};
   static final RegExp _hhmm = RegExp(r'^\d{2}:\d{2}$');
@@ -66,6 +84,7 @@ class AppSettings {
     AppThemeSetting theme = AppThemeSetting.light, // default: Atelier Ivory Light
     AppThemeStyle themeStyle = AppThemeStyle.editorial,
     AppLanguage language = AppLanguage.indonesian,
+    AiMode aiMode = AiMode.local,
     this.ttsEnabled = false,
     this.ttsAutoPlay = false,
     this.ttsBackend = 'system',
@@ -79,6 +98,7 @@ class AppSettings {
     this.modelVariant = '',
     this.modelSource = '',
     this.modelUrl = '',
+    this.activeCloudProfileId = 0,
     this.isAgeVerified = false,
     this.isOnboardingDone = false,
     this.isPersonaSetup = false,
@@ -88,6 +108,7 @@ class AppSettings {
     themeIndex = theme.index;
     themeStyleIndex = themeStyle.index;
     languageIndex = language.index;
+    aiModeIndex = aiMode.index;
   }
 
   /// Returns a new [AppSettings] instance with selected fields overridden.
@@ -96,6 +117,7 @@ class AppSettings {
     AppThemeSetting? theme,
     AppThemeStyle? themeStyle,
     AppLanguage? language,
+    AiMode? aiMode,
     bool? ttsEnabled,
     bool? ttsAutoPlay,
     String? ttsBackend,
@@ -109,6 +131,7 @@ class AppSettings {
     String? modelVariant,
     String? modelSource,
     String? modelUrl,
+    int? activeCloudProfileId,
     bool? isAgeVerified,
     bool? isOnboardingDone,
     bool? isPersonaSetup,
@@ -119,6 +142,7 @@ class AppSettings {
       theme: theme ?? this.theme,
       themeStyle: themeStyle ?? this.themeStyle,
       language: language ?? this.language,
+      aiMode: aiMode ?? this.aiMode,
       ttsEnabled: ttsEnabled ?? this.ttsEnabled,
       ttsAutoPlay: ttsAutoPlay ?? this.ttsAutoPlay,
       ttsBackend: ttsBackend ?? this.ttsBackend,
@@ -132,6 +156,7 @@ class AppSettings {
       modelVariant: modelVariant ?? this.modelVariant,
       modelSource: modelSource ?? this.modelSource,
       modelUrl: modelUrl ?? this.modelUrl,
+      activeCloudProfileId: activeCloudProfileId ?? this.activeCloudProfileId,
       isAgeVerified: isAgeVerified ?? this.isAgeVerified,
       isOnboardingDone: isOnboardingDone ?? this.isOnboardingDone,
       isPersonaSetup: isPersonaSetup ?? this.isPersonaSetup,
@@ -151,6 +176,7 @@ class AppSettings {
       ttsModel: _ttsModels.contains(ttsModel) ? ttsModel : 'inflect',
       sttModel: 'moonshine',
       modelSource: _modelSources.contains(modelSource) ? modelSource : '',
+      activeCloudProfileId: activeCloudProfileId < 0 ? 0 : activeCloudProfileId,
       notificationMorningTime: isValidMorningTime(notificationMorningTime)
           ? notificationMorningTime
           : '08:00',
@@ -160,6 +186,7 @@ class AppSettings {
       theme: _enumAt(AppThemeSetting.values, themeIndex),
       themeStyle: _enumAt(AppThemeStyle.values, themeStyleIndex),
       language: _enumAt(AppLanguage.values, languageIndex),
+      aiMode: _enumAt(AiMode.values, aiModeIndex),
     );
   }
 
@@ -178,6 +205,7 @@ class AppSettings {
         modelVariant == other.modelVariant &&
         modelSource == other.modelSource &&
         modelUrl == other.modelUrl &&
+        activeCloudProfileId == other.activeCloudProfileId &&
         isAgeVerified == other.isAgeVerified &&
         isOnboardingDone == other.isOnboardingDone &&
         isPersonaSetup == other.isPersonaSetup &&
@@ -185,7 +213,8 @@ class AppSettings {
         summaryMessageCount == other.summaryMessageCount &&
         themeIndex == other.themeIndex &&
         themeStyleIndex == other.themeStyleIndex &&
-        languageIndex == other.languageIndex;
+        languageIndex == other.languageIndex &&
+        aiModeIndex == other.aiModeIndex;
   }
 
   /// `HH:mm` dengan jam 0–23 dan menit 0–59.

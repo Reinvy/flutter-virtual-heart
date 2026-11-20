@@ -17,7 +17,8 @@
     <application
         android:label="VirtualHeart"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false">
         <!-- Override WorkManager SystemForegroundService agar download besar
              memakai foregroundServiceType dataSync (wajib API 34+). -->
         <service

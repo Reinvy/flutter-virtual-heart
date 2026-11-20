@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:1350341759699591298",
-      "lastPropertyId": "22:2639245651235476350",
+      "lastPropertyId": "24:6735136582354379447",
       "name": "AppSettings",
       "properties": [
         {
@@ -117,6 +117,16 @@
         {
           "id": "22:2639245651235476350",
           "name": "themeStyleIndex",
+          "type": 6
+        },
+        {
+          "id": "23:1533018097584945982",
+          "name": "activeCloudProfileId",
+          "type": 6
+        },
+        {
+          "id": "24:6735136582354379447",
+          "name": "aiModeIndex",
           "type": 6
         }
       ],
@@ -292,9 +302,342 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "6:2845512999646695925",
+      "lastPropertyId": "30:1252082249471357000",
+      "name": "AiProviderProfile",
+      "properties": [
+        {
+          "id": "1:5498589567850108359",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:8113142119174512408",
+          "name": "profileKey",
+          "type": 9
+        },
+        {
+          "id": "3:4050660217340536847",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "4:4464871344601360651",
+          "name": "providerTypeIndex",
+          "type": 6
+        },
+        {
+          "id": "5:8094470779403784126",
+          "name": "presetId",
+          "type": 9
+        },
+        {
+          "id": "6:6353863433068622084",
+          "name": "baseUrl",
+          "type": 9
+        },
+        {
+          "id": "7:4112651690735614844",
+          "name": "modelId",
+          "type": 9
+        },
+        {
+          "id": "8:1906380480497701807",
+          "name": "customHeadersJson",
+          "type": 9
+        },
+        {
+          "id": "9:5759213202019138849",
+          "name": "stripStreamOptions",
+          "type": 1
+        },
+        {
+          "id": "10:596196467081491113",
+          "name": "temperature",
+          "type": 8
+        },
+        {
+          "id": "11:950269593785561424",
+          "name": "topP",
+          "type": 8
+        },
+        {
+          "id": "12:3854221445630278367",
+          "name": "topK",
+          "type": 6
+        },
+        {
+          "id": "13:7869769291727696344",
+          "name": "maxOutputTokens",
+          "type": 6
+        },
+        {
+          "id": "14:2065529474623925296",
+          "name": "presencePenalty",
+          "type": 8
+        },
+        {
+          "id": "15:3298893691597446282",
+          "name": "frequencyPenalty",
+          "type": 8
+        },
+        {
+          "id": "16:3978545810243248449",
+          "name": "stopSequences",
+          "type": 30
+        },
+        {
+          "id": "17:602428996324247958",
+          "name": "seed",
+          "type": 6
+        },
+        {
+          "id": "18:7088500363665246583",
+          "name": "reasoningEffort",
+          "type": 9
+        },
+        {
+          "id": "19:2912972791597479439",
+          "name": "thinkingBudgetTokens",
+          "type": 6
+        },
+        {
+          "id": "20:8094419269521131033",
+          "name": "geminiSafetyLevel",
+          "type": 9
+        },
+        {
+          "id": "21:8210573775123643910",
+          "name": "maxHistoryMessages",
+          "type": 6
+        },
+        {
+          "id": "22:8706565415642445858",
+          "name": "maxMemoryFacts",
+          "type": 6
+        },
+        {
+          "id": "23:3739847707789805137",
+          "name": "maxInputChars",
+          "type": 6
+        },
+        {
+          "id": "24:3195584273586493318",
+          "name": "maxPromptChars",
+          "type": 6
+        },
+        {
+          "id": "25:1297516357350943096",
+          "name": "enforceShortReply",
+          "type": 1
+        },
+        {
+          "id": "26:7914120081800328581",
+          "name": "customSystemPrompt",
+          "type": 9
+        },
+        {
+          "id": "27:8215697125302675950",
+          "name": "timeoutSeconds",
+          "type": 6
+        },
+        {
+          "id": "28:4609005377018491928",
+          "name": "enableBackgroundTasks",
+          "type": 1
+        },
+        {
+          "id": "29:6028543239344790768",
+          "name": "backgroundModelId",
+          "type": 9
+        },
+        {
+          "id": "30:1252082249471357000",
+          "name": "createdAt",
+          "type": 10
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "7:7638008323712811899",
+      "lastPropertyId": "33:5064629000809070221",
+      "name": "CloudSpeechConfig",
+      "properties": [
+        {
+          "id": "1:481795596990448801",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:5975696814225973018",
+          "name": "elevenLabsBaseUrl",
+          "type": 9
+        },
+        {
+          "id": "3:2776748535850846581",
+          "name": "elevenLabsVoiceId",
+          "type": 9
+        },
+        {
+          "id": "4:5359536390794393019",
+          "name": "elevenLabsVoiceName",
+          "type": 9
+        },
+        {
+          "id": "5:2515271439631750497",
+          "name": "elevenLabsTtsModel",
+          "type": 9
+        },
+        {
+          "id": "6:2360602790298295304",
+          "name": "elevenLabsStability",
+          "type": 8
+        },
+        {
+          "id": "7:8287296938118878652",
+          "name": "elevenLabsSimilarityBoost",
+          "type": 8
+        },
+        {
+          "id": "8:6474375255269349147",
+          "name": "elevenLabsStyle",
+          "type": 8
+        },
+        {
+          "id": "9:6308078266360383396",
+          "name": "elevenLabsSpeed",
+          "type": 8
+        },
+        {
+          "id": "10:287075187784288787",
+          "name": "elevenLabsUseSpeakerBoost",
+          "type": 1
+        },
+        {
+          "id": "11:3781331499303856566",
+          "name": "elevenLabsOutputFormat",
+          "type": 9
+        },
+        {
+          "id": "12:9183206056953925208",
+          "name": "elevenLabsSttModel",
+          "type": 9
+        },
+        {
+          "id": "13:2921446368357523536",
+          "name": "elevenLabsSttTagAudioEvents",
+          "type": 1
+        },
+        {
+          "id": "14:1800332704008898404",
+          "name": "elevenLabsSttDiarize",
+          "type": 1
+        },
+        {
+          "id": "15:3016613450024026334",
+          "name": "openaiTtsReuseLlmKey",
+          "type": 1
+        },
+        {
+          "id": "16:10275763821264815",
+          "name": "openaiTtsBaseUrl",
+          "type": 9
+        },
+        {
+          "id": "17:1069082496812248951",
+          "name": "openaiTtsModel",
+          "type": 9
+        },
+        {
+          "id": "18:2675815113504529495",
+          "name": "openaiTtsVoice",
+          "type": 9
+        },
+        {
+          "id": "19:1274356898725522924",
+          "name": "openaiTtsSpeed",
+          "type": 8
+        },
+        {
+          "id": "20:928912467614960042",
+          "name": "openaiTtsInstructions",
+          "type": 9
+        },
+        {
+          "id": "21:540214640006866534",
+          "name": "openaiTtsFormat",
+          "type": 9
+        },
+        {
+          "id": "22:3065608082210108198",
+          "name": "openaiSttReuseLlmKey",
+          "type": 1
+        },
+        {
+          "id": "23:8753218613179567945",
+          "name": "openaiSttBaseUrl",
+          "type": 9
+        },
+        {
+          "id": "24:2573323276477185654",
+          "name": "openaiSttModel",
+          "type": 9
+        },
+        {
+          "id": "25:2706978689651823065",
+          "name": "openaiSttPrompt",
+          "type": 9
+        },
+        {
+          "id": "26:7373567141501755718",
+          "name": "openaiSttTemperature",
+          "type": 8
+        },
+        {
+          "id": "27:1372487806466803478",
+          "name": "googleSpeechReuseLlmKey",
+          "type": 1
+        },
+        {
+          "id": "28:210282663079988346",
+          "name": "googleSpeechBaseUrl",
+          "type": 9
+        },
+        {
+          "id": "29:981734279116780758",
+          "name": "googleTtsModel",
+          "type": 9
+        },
+        {
+          "id": "30:380278879313599238",
+          "name": "googleTtsVoiceName",
+          "type": 9
+        },
+        {
+          "id": "31:5773855892025445201",
+          "name": "googleTtsStylePrompt",
+          "type": 9
+        },
+        {
+          "id": "32:5230019741877835589",
+          "name": "googleSttModel",
+          "type": 9
+        },
+        {
+          "id": "33:5064629000809070221",
+          "name": "timeoutSeconds",
+          "type": 6
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "5:4531824928226325680",
+  "lastEntityId": "7:7638008323712811899",
   "lastIndexId": "0:0",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
