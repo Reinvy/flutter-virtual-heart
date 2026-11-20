@@ -22,7 +22,7 @@ subprojects {
 // checkAarMetadata.
 subprojects {
     afterEvaluate {
-        extensions.findByType(com.android.build.gradle.LibraryExtension::class.java)?.let { ext ->
+        extensions.findByType(com.android.build.api.dsl.LibraryExtension::class.java)?.let { ext ->
             ext.compileSdk = 37
         }
     }

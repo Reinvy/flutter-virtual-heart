@@ -10,9 +10,9 @@ akhir dokumen bersifat mesin-terbaca: `tool/check_docs.dart` membandingkannya de
 | --- | --- | --- |
 | Flutter | **3.50.1** (`.fvmrc`) | jangan diubah tanpa task tersendiri |
 | Dart | **3.14.0** | dibawa Flutter 3.50.1 |
-| Android Gradle Plugin | **9.1.0** | lihat catatan pin di §5 |
-| Gradle wrapper | **9.3.1** | |
-| Kotlin plugin | **2.4.0** | `org.jetbrains.kotlin.android`, `android.newDsl=false` |
+| Android Gradle Plugin | **9.3.1** | versi template Flutter 3.50.1 |
+| Gradle wrapper | **9.5.0** | versi template Flutter 3.50.1 |
+| Kotlin plugin | **2.4.20** | `org.jetbrains.kotlin.android`, `android.newDsl=false`, `android.builtInKotlin=false`; app tidak meng-apply KGP langsung (Flutter Gradle Plugin yang meng-apply) |
 | JDK | 17+ (host pengembangan: 25) | `jvmTarget = JVM_17` |
 | compileSdk / minSdk / targetSdk | 37 / 30 / 36 (`flutter.targetSdkVersion`) | wajib 37 untuk `flutter_local_notifications 23` |
 | NDK | `flutter.ndkVersion` (28.2.13676358) | |
@@ -83,7 +83,10 @@ Tidak ada `dependency_overrides` (aturan CI).
 | --- | --- | --- | --- |
 | `build_runner` | 2.15.1 | 2.15.x/2.17 | konflik `analyzer`/`build` dengan `objectbox_generator 5.3.2` |
 | `objectbox_generator` | 5.3.2 | 5.3.2 | satu-satunya versi yang cocok dengan `objectbox 5.3.2` |
-| AGP | 9.1.0 | 9.1.1 | 9.1.1 menjadikan accessor DSL lama (blok `android` pada `BaseAppModuleExtension`) **error** kompilasi skrip, sedangkan `org.jetbrains.kotlin.android` belum kompatibel dengan new DSL AGP 9 — Flutter 3.47.1 masih memakai DSL lama (`android.newDsl=false`). 9.0.1 tidak bisa dipakai karena `androidx.core 1.19.0` menuntut AGP >= 9.1.0. |
+
+Toolchain Android (AGP 9.3.1, Gradle 9.5.0, KGP 2.4.20) mengikuti template Flutter 3.50.1
+dan tidak dipin. AGP 9.3.1 memenuhi batas minimum Flutter 3.50.1 (AGP 9.1.1) dan berada pada
+versi yang didukung penuh untuk Kotlin.
 
 Paket transitif lain yang tertinggal mengikuti constraint di atas; cek berkala dengan
 `fvm flutter pub outdated`.

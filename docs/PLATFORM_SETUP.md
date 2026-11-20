@@ -4,9 +4,9 @@
 
 | Item | Nilai | Lokasi |
 | --- | --- | --- |
-| AGP | 9.1.0 | `android/settings.gradle.kts` |
-| Gradle | 9.3.1 | `android/gradle/wrapper/gradle-wrapper.properties` |
-| Kotlin plugin | 2.4.0 | `android/settings.gradle.kts` |
+| AGP | 9.3.1 | `android/settings.gradle.kts` |
+| Gradle | 9.5.0 | `android/gradle/wrapper/gradle-wrapper.properties` |
+| Kotlin plugin | 2.4.20 | `android/settings.gradle.kts` (dideklarasikan, di-apply Flutter Gradle Plugin) |
 | compileSdk | 37 | `android/app/build.gradle.kts` |
 | minSdk / targetSdk | 30 / 36 (`flutter.targetSdkVersion`) | idem |
 | NDK | `flutter.ndkVersion` | idem |
@@ -16,11 +16,10 @@
 
 Catatan:
 
-- `android.newDsl=false` dipertahankan karena `org.jetbrains.kotlin.android` (dipakai juga oleh
-  plugin pihak ketiga) belum kompatibel dengan new DSL AGP 9. AGP dipin **9.1.0**: 9.1.1
-  mengubah accessor DSL lama menjadi error kompilasi, sedangkan 9.0.1 ditolak `androidx.core 1.19.0`
-  (lihat `DEPENDENCIES.md` §5). AGP 9.1.0 memberi peringatan "tested up to compileSdk 36.1"; build debug
-  dengan compileSdk 37 tetap lulus.
+- Toolchain Android mengikuti template Flutter 3.50.1: AGP **9.3.1**, Gradle **9.5.0**, Kotlin
+  plugin **2.4.20**. `android.newDsl=false` dan `android.builtInKotlin=false` dipertahankan karena
+  plugin pihak ketiga masih memakai DSL lama; `android/app/build.gradle.kts` tidak lagi meng-apply
+  `kotlin-android` (Flutter Gradle Plugin yang meng-apply KGP ke modul app).
 - `compileSdk = 37` wajib untuk `flutter_local_notifications 23`.
 - `android/build.gradle.kts` memaksa `compileSdk = 37` untuk seluruh subproject library:
   sebagian plugin (`flutter_pcm_sound`) masih mengunci `compileSdkVersion 33`, sementara
@@ -36,8 +35,7 @@ Catatan:
   cleanup otomatis setelah selesai atau dibatalkan.
 - Penyimpanan model lokal: direktori aplikasi milik `flutter_edge_ai` (bukan `assets/`), diunduh dari
   HuggingFace atau di-upload pengguna.
-- Build: `make apk` (atau `fvm flutter build apk --debug --android-skip-build-dependency-validation`
-  pada Flutter 3.50.1 selama AGP masih dipin `9.1.0`; lihat `KNOWN_ISSUES.md` KI-26).
+- Build: `make apk` (atau `fvm flutter build apk --debug`).
 - Application ID masih `com.example.edge_chat` dan release memakai signing debug — lihat
   `KNOWN_ISSUES.md`.
 
