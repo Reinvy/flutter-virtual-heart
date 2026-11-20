@@ -14,7 +14,7 @@ WidgetsFlutterBinding.ensureInitialized()
         ttsBackends:      [LiteRtTtsBackend()],
         huggingFaceToken: <token|nul>, maxDownloadRetries: 10)
   → NotificationService().initialize()   # plugin + zona waktu lokal (best-effort)
-  → ObjectBoxService.create()            # openStore + 5 box (pulih dari store korup)
+  → ObjectBoxService.create()            # openStore + 7 box (pulih dari store korup)
   → runApp(ProviderScope(overrides: [objectBoxServiceProvider], child: VirtualHeartApp))
 ```
 
@@ -46,7 +46,10 @@ lib/
 │   ├── l10n/app_strings.dart    # AppStrings + IndonesianStrings + EnglishStrings
 │   ├── router/app_router.dart   # GoRouter + resolveRedirect (fungsi murni)
 │   └── utils/                   # async_fifo_lock, date_formatter, wav_pcm
-│   ├── app_settings.dart        # @Entity AppSettings
+├── models/
+│   ├── ai_provider_profile.dart # @Entity AiProviderProfile (BYOK LLM + parameter)
+│   ├── app_settings.dart        # @Entity AppSettings (mode local/cloud, speech backends)
+│   ├── cloud_speech_config.dart # @Entity CloudSpeechConfig (ElevenLabs/OpenAI/Google)
 │   ├── message.dart             # @Entity Message (termasuk isBlocked)
 │   ├── memory_fact.dart         # @Entity MemoryFact
 │   ├── mood_state.dart          # @Entity MoodState
@@ -55,43 +58,57 @@ lib/
 │   └── objectbox-model.json     # GENERATED — jangan diedit
 ├── services/
 │   ├── ai/
-│   │   ├── model_service.dart        # ModelServiceNotifier (install + inference + stop)
-│   │   ├── model_ready_provider.dart # modelReadyProvider (wiring router)
-│   │   ├── model_catalog.dart        # 5 model LLM
-│   │   ├── speech_model_catalog.dart # 3 TTS + 1 STT
-│   │   ├── prompt_builder.dart       # prompt berbatas + selectMemoryFacts
-│   │   ├── memory_extractor.dart     # parser "FACT: ..." (tanpa dependensi engine)
-│   │   ├── memory_fact_merger.dart   # mergeFacts (fungsi murni)
-│   │   └── content_safety.dart       # gate input/output → SafetyRedirect
+│   │   ├── genkit/
+│   │   │   ├── provider_config_builder.dart # URL normalizer & sanitizer opsi provider
+│   │   │   ├── compat_http_client.dart      # strip stream_options, header, cancel token
+│   │   │   ├── elevenlabs_plugin.dart       # ElevenLabsGenkitPlugin (TTS/STT/voices)
+│   │   │   └── genkit_cloud_client.dart     # GenkitCloudClient + genkitCloudClientProvider
+│   │   ├── ai_provider_controller.dart      # CRUD profil BYOK, active profile, speech config
+│   │   ├── cloud_provider_catalog.dart      # preset provider Cloud LLM & speech
+│   │   ├── secret_store.dart                # SecretStore terenkripsi (flutter_secure_storage)
+│   │   ├── model_service.dart               # ModelServiceNotifier hybrid (Lokal + Cloud BYOK)
+│   │   ├── model_ready_provider.dart        # modelReadyProvider (wiring router)
+│   │   ├── model_catalog.dart               # 5 model LLM lokal
+│   │   ├── speech_model_catalog.dart        # 3 TTS + 1 STT lokal
+│   │   ├── prompt_builder.dart              # PromptLimits (Lokal & Cloud), buildCloudMessages
+│   │   ├── memory_extractor.dart            # parser "FACT: ..." (tanpa dependensi engine)
+│   │   ├── memory_fact_merger.dart          # mergeFacts (fungsi murni)
+│   │   └── content_safety.dart              # gate input/output → SafetyRedirect
 │   ├── database/
-│   │   ├── objectbox_service.dart    # open + pemulihan store korup
+│   │   ├── objectbox_service.dart    # open + pemulihan store korup (7 box)
 │   │   └── objectbox_provider.dart   # objectBoxServiceProvider
-│   ├── settings/settings_service.dart # appSettingsProvider + reset flows
+│   ├── settings/settings_service.dart # appSettingsProvider + reset flows (termasuk BYOK)
 │   ├── mood_service.dart             # MoodService (transisi mood)
 │   ├── mood_store.dart               # kontrak Box<MoodState>
 │   ├── notification_service.dart     # plugin + zona waktu + tap stream
 │   ├── notification_time.dart        # nextInstanceOf (fungsi murni)
-│   ├── stt_service.dart              # backend 'gemma' | 'system'
-│   └── tts_service.dart              # backend 'gemma' | 'system'
+│   ├── stt_service.dart              # backend 'system'|'gemma'|'elevenlabs'|'openai'|'google'
+│   └── tts_service.dart              # backend 'system'|'gemma'|'elevenlabs'|'openai'|'google'
 └── features/
-    ├── hub/            # companion_hub_screen (beranda pendamping & starter)
+    ├── hub/            # companion_hub_screen (beranda pendamping, starter, badge Lokal/Cloud)
     ├── onboarding/     # splash, age_gate, onboarding
     ├── persona/        # setup, edit sheet, profile sheet, avatar_catalog, persona_options
-    ├── model/          # model_download_screen, model_error_text
-    ├── chat/           # chat_screen, chat_controller, mood_provider, widgets/
+    ├── model/          # model_download_screen (tab Lokal & Cloud BYOK),
+    │                   # cloud_provider_editor_sheet, model_error_text
+    ├── chat/           # chat_screen, chat_controller, chat_models, mood_provider, widgets/
     ├── memory/         # memory_screen, memory_controller
     ├── settings/       # settings_screen, privacy_screen + widgets/ (section, row,
     │                   # permission_row, appearance, language, model, voice,
-    │                   # notifications, data_privacy, persona)
+    │                   # cloud_speech_sheet, notifications, data_privacy, persona)
     └── notifications/  # app_lifecycle_observer, notification_controller
 ```
 
-## 3. Provider (18)
+## 3. Provider (23)
 
 | Provider | Tipe | State | File |
 | --- | --- | --- | --- |
 | `objectBoxServiceProvider` | `Provider` (di-override di `main`) | `ObjectBoxService` | `services/database/objectbox_provider.dart` |
+| `secretStoreProvider` | `Provider` | `SecretStore` | `services/ai/secret_store.dart` |
+| `genkitCloudClientProvider` | `Provider` | `GenkitCloudClient` | `services/ai/genkit/genkit_cloud_client.dart` |
 | `appSettingsProvider` | `NotifierProvider` | `AppSettings` | `services/settings/settings_service.dart` |
+| `aiProviderProfilesProvider` | `NotifierProvider` | `List<AiProviderProfile>` | `services/ai/ai_provider_controller.dart` |
+| `activeCloudProfileProvider` | `Provider` | `AiProviderProfile?` | `services/ai/ai_provider_controller.dart` |
+| `cloudSpeechConfigProvider` | `NotifierProvider` | `CloudSpeechConfig` | `services/ai/ai_provider_controller.dart` |
 | `themeModeProvider` | `Provider` | `ThemeMode` | `core/design/app_theme_provider.dart` |
 | `themeStyleProvider` | `Provider` | `AppThemeStyle` | `core/design/app_theme_provider.dart` |
 | `activeShellTabProvider` | `NotifierProvider` | `int` | `core/design/active_shell_tab_provider.dart` |
@@ -145,40 +162,47 @@ InputBar.onSend
       ├─ ContentSafety.filterInput                    # SEBELUM persist
       ├─ persist Message(user, isBlocked: hasil gate) → state.messages
       ├─ blocked? → Message(assistant, deflection AppStrings), stop (tanpa model/memori/mood)
-      ├─ PromptBuilder.buildSystemPrompt(persona, mood, ≤12 fakta, summary≤500, language)
-      ├─ PromptBuilder.buildFullPrompt(system, history tanpa isBlocked, text)  # ≤6000 char
-      ├─ ModelServiceNotifier.generateResponseStream(fullPrompt, isCancelled:)
-      │     ├─ antrean inferensi (chat/memori/ringkasan tidak tumpang tindih)
+      ├─ pilih PromptLimits: PromptLimits.local (Lokal) atau PromptLimits.forCloud(profile) (Cloud)
+      ├─ PromptBuilder.buildSystemPrompt(persona, mood, fakta, summary, language, limits,
+      │     enforceShortReply, customSystemPrompt)
+      ├─ Mode Lokal: PromptBuilder.buildFullPrompt(system, history, text) → generateResponseStream
+      ├─ Mode Cloud BYOK: PromptBuilder.buildCloudMessages(history, text, limits) →
+      │     ModelServiceNotifier.generateChatStream → GenkitCloudClient.streamChat (multi-turn)
+      │     ├─ antrean inferensi FIFO (chat/memori/ringkasan tidak tumpang tindih)
       │     └─ holdback 64 char: output terlarang tidak pernah terlihat
       ├─ ContentSafety.validateOutput → finalContent (deflection bila perlu)
       ├─ MoodService.updateMoodFromConversation(user, finalContent) → moodProvider.refresh
       ├─ persist Message(assistant, mood: <mood baru>) → state.messages
       ├─ tandai lastReferencedAt HANYA fakta yang dipakai (setelah sukses)
-      └─ _enqueuePostProcess (serial):
-            ├─ MemoryExtractor.extractFacts → mergeFacts (pure) → put/remove + invalidate
+      └─ _enqueuePostProcess (serial; dilewati di Cloud bila enableBackgroundTasks=false):
+            ├─ MemoryExtractor.extractFacts (pakai backgroundModelId bila diisi) → mergeFacts
             └─ bila ≥30 pesan baru: summarize → conversationSummary + summaryMessageCount
 ```
 
-Kegagalan generasi tidak lagi hilang diam-diam: `ChatState.error` membawa `ChatErrorKind`
-(`modelUnavailable`, `contextLimit`, `generationFailed`, `interrupted`) yang dipetakan ke
-`AppStrings` oleh `ChatScreen`, dengan aksi Coba Lagi/Dismiss. `cancelGeneration()` menandai
-pembatalan, memanggil `InferenceChat.stopGeneration()`, lalu menunggu generasi + antrean
-post-process selesai — dipakai tombol stop dan sebelum aksi destruktif.
+Kegagalan generasi dipetakan ke `ChatState.error` (`ChatErrorKind`: `modelUnavailable`,
+`contextLimit`, `authError`, `rateLimited`, `timeout`, `invalidConfig`, `generationFailed`,
+`interrupted`) lalu ditampilkan via `AppStrings` oleh `ChatScreen`, dengan aksi Coba Lagi/Dismiss.
+`cancelGeneration()` menandai pembatalan, memanggil `ModelServiceNotifier.stopGeneration()`
+(`InferenceChat.stopGeneration()` pada mode Lokal atau `CancellationToken.cancel()` + penutupan
+HTTP client pada mode Cloud), lalu menunggu generasi + antrean post-process selesai.
 
-`ModelServiceNotifier` membuat satu `InferenceChat` per permintaan (`openChat`) dan menutupnya
-di `finally`, sehingga tidak ada state percakapan yang bocor antar-request. `randomSeed`
-diacak per permintaan dan `maxOutputTokens` dibatasi 512 agar jawaban tidak berjalan tanpa batas.
+Pada mode Lokal, `ModelServiceNotifier` membuat satu `InferenceChat` per permintaan (`openChat`)
+dan menutupnya di `finally`, dengan `randomSeed` acak dan `maxOutputTokens: 512`. Pada mode
+Cloud BYOK, aktivasi profil menutup model lokal native agar RAM bebas dan meneruskan seluruh
+parameter profil ke `GenkitCloudClient`.
 
 ## 6. Service & lifetime
 
 | Service | Lifetime | Catatan |
 | --- | --- | --- |
-| `ObjectBoxService` | singleton proses | `close()` tidak dipanggil (proses = lifetime app) |
-| `ModelServiceNotifier` | provider | memegang `InferenceModel` aktif, `InferenceChat` aktif, `CancelToken` download; FIFO `AsyncFifoLock` + serialisasi `_engineTransition` saat switch/dispose |
-| `SttService` | singleton (`factory`) | `AudioRecorder` + `SpeechToText` hidup sepanjang proses |
-| `TtsService` | singleton (`factory`) | `FlutterTts` + `FlutterPcmSound` dilepas di `stop()` |
+| `ObjectBoxService` | singleton proses | 7 box; `close()` tidak dipanggil (proses = lifetime app) |
+| `SecretStore` | provider (`SecureSecretStore`) | enkripsi API key BYOK via `flutter_secure_storage` (Keystore/Keychain) |
+| `GenkitCloudClient` | provider | membangun instance `Genkit(isDevEnv: false, promptDir: null)` per panggilan untuk Google, Anthropic, OpenAI, dan `ElevenLabsGenkitPlugin` |
+| `ModelServiceNotifier` | provider | orkestrator hybrid Lokal (`InferenceModel`/`InferenceChat`/`CancelToken`) & Cloud BYOK (`CancellationToken`); FIFO `AsyncFifoLock` + serialisasi `_engineTransition` |
+| `SttService` | singleton (`factory`) | `AudioRecorder` + `SpeechToText` + transkripsi Cloud via `GenkitCloudClient` |
+| `TtsService` | singleton (`factory`) | `FlutterTts` + `FlutterPcmSound` + `AudioPlayer` (`audioplayers`) untuk Cloud TTS dengan cleanup file sementara |
 | `NotificationService` | singleton (`factory`) | plugin, zona waktu, `StreamController` broadcast tap |
-| `AppLogger` | static | hanya mencetak di debug build |
+| `AppLogger` | static | hanya mencetak di debug build; tidak pernah mencetak API key |
 
 ## 7. Aturan layer
 

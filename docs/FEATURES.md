@@ -43,26 +43,27 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
   `id` yang sama (tidak membuat duplikat).
 - Ref: `lib/features/persona/`, `lib/models/persona_config.dart`.
 
-### FR-04 — Model Install & Katalog — `Implemented`
+### FR-04 — Mesin AI (Model Lokal & Cloud BYOK) — `Implemented`
 
-- 5 model (Qwen 2.5 1.5B default, Qwen 2.5 0.5B, SmolLM 135M, DeepSeek R1 1.5B, Gemma 3 1B)
-  diunduh dari HuggingFace dengan progress dan tombol batal, **atau** file `.litertlm`/`.task`
-  di-upload dari perangkat.
+- Layar `/model-download` memiliki dua tab: **Lokal** (on-device) dan **Cloud BYOK** (lihat
+  FR-28 & FR-29).
+- Tab Lokal menyediakan 5 model (Qwen 2.5 1.5B default, Qwen 2.5 0.5B, SmolLM 135M, DeepSeek R1
+  1.5B, Gemma 3 1B) diunduh dari HuggingFace dengan progress dan tombol batal, **atau** file
+  `.litertlm`/`.task` di-upload dari perangkat.
 - Token HuggingFace opsional (model gated) disimpan di `SharedPreferences`.
 - Setelah sukses: `modelVariant` = nama file, `modelSource` = `network`/`file`, `modelUrl` = URL.
-- Restart: model terpasang dikenali lewat `isModelInstalled(nama file)`. **Tidak ada**
-  auto-download saat pertama buka — pengguna memilih model (atau satu-satunya model terpasang
-  dipakai otomatis).
-- Ganti model kapan saja lewat Settings → Model AI atau `/model-download` (ada tombol kembali,
-  badge "Aktif", label tombol Pakai/Aktif, dan tombol Coba Lagi saat gagal).
-- Error instalasi dipetakan ke kind (`network`/`auth`/`notFound`/`rateLimited`/`storage`/
-  `invalidFile`/`engine`/`unknown`) dan ditampilkan lewat `AppStrings`; batal unduhan memulihkan
-  status sebelumnya tanpa banner error.
-- ⚠️ Belum ada preflight ruang penyimpanan/peringatan RAM rendah (KI-09).
-- Edge case: file kustom tetap dikenali (identitas = nama file); ekstensi lain, file kosong, atau
-  pemilihan jenis model yang dibatalkan tidak memulai instalasi.
-- Ref: `lib/features/model/model_download_screen.dart`, `lib/services/ai/model_service.dart`,
-  `lib/services/ai/model_catalog.dart`.
+- Restart: mode aktif (`AppSettings.aiMode`) dipulihkan — bila `cloud`, profil BYOK aktif langsung
+  siap tanpa memuat model lokal; bila `local`, model terpasang dikenali lewat
+  `isModelInstalled(nama file)`. **Tidak ada** auto-download saat pertama buka.
+- Ganti model lokal atau beralih ke/dari profil Cloud BYOK kapan saja lewat Settings → Model AI
+  atau `/model-download`. Aktivasi profil Cloud menutup model lokal native agar RAM bebas.
+- Error instalasi & koneksi cloud dipetakan ke kind (`network`/`auth`/`notFound`/`rateLimited`/
+  `timeout`/`invalidConfig`/`storage`/`invalidFile`/`engine`/`unknown`) dan ditampilkan lewat
+  `AppStrings`; batal unduhan memulihkan status sebelumnya tanpa banner error.
+- ⚠️ Belum ada preflight ruang penyimpanan/peringatan RAM rendah untuk model lokal (KI-09).
+- Ref: `lib/features/model/model_download_screen.dart`,
+  `lib/features/model/cloud_provider_editor_sheet.dart`,
+  `lib/services/ai/model_service.dart`, `lib/services/ai/model_catalog.dart`.
 
 ---
 
@@ -70,11 +71,15 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
 
 ### FR-05 — Chat Streaming — `Implemented`
 
-- Input maksimum 2000 karakter (counter muncul di atas 1800); pesan user dipersist setelah gate
-  keamanan dan langsung tampil.
-- Token AI muncul bertahap (bubble streaming), `TypingIndicator` sebelum token pertama.
-- Tombol stop menggantikan tombol kirim selama generasi; jawaban parsial disimpan dan banner
-  "Jawaban terhenti" muncul. Kegagalan generasi menampilkan error terlokalisasi + Coba Lagi.
+- Batas input dinamis: 2000 karakter pada mode Lokal, atau hingga 64.000 karakter (default 12.000)
+  mengikuti `AiProviderProfile.maxInputChars` pada mode Cloud BYOK (counter muncul pada 90%
+  batas); pesan user dipersist setelah gate keamanan dan langsung tampil.
+- Token AI muncul bertahap (bubble streaming, lokal maupun cloud multi-turn via Genkit),
+  `TypingIndicator` sebelum token pertama.
+- Tombol stop menggantikan tombol kirim selama generasi (membatalkan inferensi lokal maupun stream
+  HTTP cloud); jawaban parsial disimpan dan banner "Jawaban terhenti" muncul. Kegagalan generasi
+  menampilkan error terlokalisasi (`authError`, `rateLimited`, `timeout`, `invalidConfig`,
+  `contextLimit`, `generationFailed`) + Coba Lagi.
 - Riwayat lengkap dipersist di ObjectBox, diurutkan `(timestamp, id)`, dimuat ulang saat app
   dibuka, dan langsung menggulir ke pesan terbaru; auto-scroll hanya saat pengguna berada di
   bawah. Teks bubble bisa diseleksi.
@@ -84,27 +89,34 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
 
 ### FR-06 — Voice Input (STT) — `Partial`
 
-- Dua backend: on-device (Moonshine, rekam WAV 16 kHz mono) dan sistem (`speech_to_text`).
-- Transkrip masuk ke input untuk diedit, lalu terkirim dengan `Message.isVoice = true`.
+- Lima backend independen (terpisah dari TTS): sistem (`speech_to_text`), on-device (Moonshine,
+  rekam WAV 16 kHz mono), **ElevenLabs Scribe**, **OpenAI-compatible / Groq Whisper**, dan
+  **Google Gemini** multimodal audio (lihat FR-30).
+- Transkrip masuk ke input untuk diedit, lalu terkirim dengan `Message.isVoice = true`. Saat
+  transkripsi cloud berlangsung, `InputBar` menampilkan indikator `isTranscribing`.
 - Izin mikrofon diminta saat dipakai; penolakan → SnackBar `chatMicPermission` dengan aksi
   "Buka Pengaturan". Transkrip disisipkan di posisi kursor, bukan menimpa teks yang ada.
 - TTS dihentikan sebelum mikrofon aktif; sesi ganda ditolak (`busy`).
-- ⚠️ `Partial`: tidak ada visualisasi waveform/progress transkripsi.
-- Edge case: rekaman tanpa akhir → `stopListening` mengembalikan string kosong (tanpa error ke
-  UI); WAV tanpa chunk `data` ditolak parser (`FormatException`) dan sesi dianggap gagal.
+- ⚠️ `Partial`: tidak ada visualisasi waveform selama perekaman.
+- Edge case: rekaman tanpa akhir → `stopListening` mengembalikan string kosong; WAV tanpa chunk
+  `data` ditolak parser (`FormatException`); file WAV sementara selalu dihapus di `finally`.
 - Ref: `lib/services/stt_service.dart`, `lib/core/utils/wav_pcm.dart`,
   `lib/features/chat/widgets/input_bar.dart`.
 
 ### FR-07 — Voice Output (TTS) — `Partial`
 
-- Dua backend: on-device (Inflect default, Matcha, Qwen3) dan suara sistem (`flutter_tts`).
+- Lima backend independen (terpisah dari STT): suara sistem (`flutter_tts`), on-device (Inflect
+  default, Matcha, Qwen3), **ElevenLabs** (browser suara akun + voice settings), **OpenAI /
+  compatible**, dan **Google Gemini** (lihat FR-30).
 - Play/stop per bubble AI (tombol disembunyikan saat TTS mati); auto-play opsional setelah
   jawaban selesai, hanya jika layar chat sedang aktif.
 - Bahasa TTS mengikuti `AppSettings.language` (`id-ID`/`en-US`) dan diteruskan ke engine.
-- Ganti model benar-benar memasang/mengaktifkan model yang dipilih; status "Terpasang" hanya
-  muncul bila model benar-benar aktif. Utterance baru membatalkan yang lama.
-- ⚠️ `Partial`: selesai playback diperkirakan dari durasi PCM (bukan callback plugin).
-- Edge case: model belum tersedia → SnackBar `chatTtsUnavailable`, chat tetap jalan; meninggalkan
+- Utterance baru membatalkan yang lama (termasuk membatalkan HTTP request Cloud TTS & membersihkan
+  file audio sementara).
+- ⚠️ `Partial`: pemilihan suara masih global (belum per persona, KI-05), dan selesai playback
+  on-device PCM (`gemma`) masih diperkirakan via timer (KI-08); Cloud TTS sudah memakai callback
+  akurat `AudioPlayer.onPlayerComplete`.
+- Edge case: model/key belum tersedia → SnackBar terlokalisasi, chat tetap jalan; meninggalkan
   layar chat menghentikan audio.
 - Ref: `lib/services/tts_service.dart`, `lib/features/chat/widgets/chat_bubble.dart`.
 
@@ -126,7 +138,7 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
   panggilan, kartu mood (emoji + intensitas), chip hobi, kartu kepribadian, tombol Edit.
 - `CompanionHubScreen` (`/hub`) menjadi tab beranda default pasca-setup dengan status pendamping,
   3 conversation starters (mengisi `pendingChatDraftProvider` lalu membuka `/chat`), serta snapshot
-  Memori dan Mesin Lokal.
+  Memori dan Mesin AI (menampilkan status Lokal atau Cloud BYOK + profil aktif).
 - Edit membuka `PersonaEditSheet` (bukan route), perubahan langsung terlihat.
 - Ref: `lib/features/hub/companion_hub_screen.dart`,
   `lib/features/persona/persona_profile_sheet.dart`,
@@ -207,36 +219,97 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
 
 - Section: Persona (ringkasan + edit + reset), Tampilan (mode kecerahan light/dark/system +
   4 preset gaya tema Editorial/Romantic/Classic/Botanical), Bahasa (ID/EN/mixed), **Model AI**
-  (model aktif + Ganti Model), Suara (TTS on/off, auto-play, backend, model), Notifikasi
-  (morning message, jam, check-in + interval, izin), Data & Privasi.
+  (badge Lokal / Cloud BYOK, profil/model aktif, akses cepat **Parameter Cloud**, tombol Ganti
+  Model), **Suara** (TTS on/off, auto-play, pilihan backend TTS dan STT terpisah, konfigurasi
+  provider Cloud Speech, model lokal), Notifikasi (morning message, jam, check-in + interval,
+  izin), Data & Privasi.
 - Izin ditampilkan apa adanya: tile izin tidak memunculkan dialog saat layar dibuka, dan sakelar
   notifikasi menolak aktif tanpa izin OS (SnackBar panduan).
-- Section memakai warna `ColorScheme` (kontras AA di light & dark) dan tidak overflow pada 320 dp.
+- Section dan bottom sheet memakai warna `ColorScheme` (kontras AA di light & dark) dan tidak
+  overflow pada 320 dp.
 - Ref: `lib/features/settings/`.
 
 ### FR-19 — Data & Privasi — `Implemented`
 
 - Hapus semua percakapan (+ ringkasan + counter) dalam satu transaksi → `chatProvider` disegarkan.
 - Ekspor riwayat chat ke `.txt` lewat dialog simpan OS (`FilePicker.saveFile`) dengan header
-  terlokalisasi; platform tanpa dialog simpan memakai dokumen aplikasi + path lengkap di SnackBar.
+  terlokalisasi; API key BYOK tidak pernah masuk ekspor.
 - Reset persona: persona, memori, mood, **percakapan**, ringkasan dihapus; kembali ke
   `/persona-setup`.
-- Reset semua data: persona, memori, mood, pesan, settings, token HuggingFace, dan file ekspor
-  dihapus; notifikasi dibatalkan; kembali ke `/age-gate`. File model + identitasnya dipertahankan.
+- Reset semua data: persona, memori, mood, pesan, settings, **seluruh profil Cloud BYOK**,
+  **konfigurasi Cloud Speech**, **seluruh API key terenkripsi di `SecretStore`**, token
+  HuggingFace, dan file ekspor dihapus; notifikasi dibatalkan; kembali ke `/age-gate`. File model
+  lokal + identitasnya dipertahankan (mode kembali ke Lokal).
 - Aksi destruktif menunggu generasi/unduhan berhenti dan memakai dialog konfirmasi terlokalisasi.
-- Kebijakan privasi bisa dibaca di aplikasi (`/privacy`) dari age gate maupun Settings.
+- Kebijakan privasi hybrid bisa dibaca di aplikasi (`/privacy`) dari age gate maupun Settings.
 - Ref: `lib/features/settings/widgets/data_privacy_section.dart`,
   `lib/features/settings/widgets/persona_section.dart`,
-  `lib/services/settings/settings_service.dart`.
+  `lib/services/settings/settings_service.dart`, `lib/services/ai/secret_store.dart`.
 
 ### FR-20 — Bahasa (Indonesia / English / Mixed) — `Implemented`
 
 - `AppSettings.language` mengatur: string UI (`AppStrings`), locale Material
   (`GlobalMaterialLocalizations`), bahasa keluaran AI (instruksi di system prompt), bahasa
-  TTS/STT, body notifikasi, deflection safety, error model, header ekspor, dan kebijakan privasi.
+  TTS/STT, body notifikasi, deflection safety, error model/cloud, header ekspor, dan kebijakan
+  privasi.
 - Tag hobi disimpan dalam bahasa Inggris di `PersonaConfig.hobbies`, sedangkan label UI
   dilokalisasi ke ID/EN lewat `AppStrings.personaHobbyLabel`.
 - Ref: `lib/core/l10n/app_strings.dart`, `lib/services/ai/prompt_builder.dart`, `lib/app.dart`.
+
+---
+
+## Cloud AI BYOK & Cloud Speech (Genkit)
+
+### FR-28 — Cloud AI Multi-Provider (BYOK via Genkit) — `Implemented`
+
+- Mendukung multi-profil persisten untuk protokol **Google AI (Gemini)** (`genkit_google_genai`),
+  **Anthropic & Anthropic-compatible** (`genkit_anthropic`), dan **OpenAI & OpenAI-compatible**
+  (`genkit_openai`), dengan preset cepat (Google Gemini, Anthropic Claude, OpenAI, OpenRouter,
+  Groq, DeepSeek, xAI Grok, Together, Ollama/LM Studio lokal, Custom Proxy).
+- Custom `baseUrl` (tervalidasi & dinormalisasi) serta `customHeaders` JSON per profil.
+- API key disimpan terenkripsi lewat `SecretStore` (`flutter_secure_storage`), opsional untuk
+  endpoint jaringan lokal (`localhost` / RFC1918).
+- Aksi **Test Connection** (probe dengan latensi ms) dan **Fetch Models** (daftar model langsung
+  dari endpoint provider).
+- Beralih 1-ketuk antar profil Cloud maupun kembali ke mode Lokal; verifikasi live API pihak ketiga
+  tercatat `unverified` di `KNOWN_ISSUES` KI-25.
+- Ref: `lib/models/ai_provider_profile.dart`, `lib/services/ai/genkit/`,
+  `lib/services/ai/ai_provider_controller.dart`, `lib/features/model/cloud_provider_editor_sheet.dart`.
+
+### FR-29 — Parameter Generasi & Kebebasan Konteks Cloud — `Implemented`
+
+- Setiap profil Cloud BYOK memiliki parameter independen: `temperature`, `topP`, `topK`,
+  `maxOutputTokens` (256–32768), `presencePenalty`, `frequencyPenalty`, `stopSequences`, `seed`,
+  `reasoningEffort` / `thinkingBudgetTokens`, `geminiSafetyLevel`, `stripStreamOptions`, dan
+  `timeoutSeconds` (15–300 detik).
+- Sanitizer provider mencegah kombinasi parameter ilegal (misalnya Claude 4.5+ `temperature` + `topP`
+  bersamaan atau sampling saat extended thinking aktif).
+- Kebebasan konteks per profil: `maxHistoryMessages` (10–200), `maxMemoryFacts` (5–100),
+  `maxInputChars` (2000–64000), `maxPromptChars` (6000–256000), toggle `enforceShortReply`,
+  `customSystemPrompt`, serta `enableBackgroundTasks` + `backgroundModelId` lebih hemat untuk
+  ekstraksi memori & ringkasan.
+- Ref: `lib/services/ai/genkit/provider_config_builder.dart`, `lib/services/ai/prompt_builder.dart`,
+  `lib/features/model/cloud_provider_editor_sheet.dart`.
+
+### FR-30 — Cloud Voice (ElevenLabs, OpenAI-Compatible & Google Gemini TTS/STT) — `Implemented`
+
+- Pemilihan backend TTS dan STT terpisah; mendukung `elevenlabs`, `openai` (termasuk preset Groq
+  Whisper untuk STT), dan `google` selain `system` dan `gemma`.
+- **ElevenLabs** melalui `ElevenLabsGenkitPlugin`: browser suara akun (`/v1/voices`) + preset
+  suara, slider `stability`, `similarity_boost`, `style`, `speed`, toggle `use_speaker_boost`,
+  pilihan format audio (default `mp3_44100_128`), serta STT `scribe_v2`/`scribe_v1` dengan
+  `tag_audio_events` & `diarize`.
+- **OpenAI & Compatible**: TTS (`gpt-4o-mini-tts` + `instructions`, `tts-1`, `tts-1-hd`, 11 suara)
+  dan STT (`gpt-4o-mini-transcribe`, `whisper-1`, preset Groq `whisper-large-v3-turbo`), dengan
+  opsi pakai ulang API key dari profil LLM OpenAI.
+- **Google Gemini**: TTS (`gemini-2.5-flash-preview-tts` / `pro`, suara prebuilt + style prompt,
+  PCM L16 → WAV) dan multimodal STT (`gemini-2.5-flash` / `pro`), dengan opsi pakai ulang API key
+  dari profil LLM Google.
+- Tombol **Tes Suara** di sheet konfigurasi; verifikasi live API & perangkat fisik tercatat di
+  `KNOWN_ISSUES` KI-25.
+- Ref: `lib/models/cloud_speech_config.dart`, `lib/services/ai/genkit/elevenlabs_plugin.dart`,
+  `lib/features/settings/widgets/cloud_speech_sheet.dart`, `lib/services/tts_service.dart`,
+  `lib/services/stt_service.dart`.
 
 ---
 
@@ -290,5 +363,8 @@ Format rujukan: path relatif terhadap root repo. ID FR unik dan dipakai lintas d
 | FR-16 | `features/notifications/app_lifecycle_observer.dart` | `services/notification_service.dart` |
 | FR-17 | — (belum ada UI) | `services/notification_service.dart` |
 | FR-18 | `features/settings/settings_screen.dart` | `AppSettings` |
-| FR-19 | `features/settings/widgets/data_privacy_section.dart`, `features/settings/privacy_screen.dart` | ObjectBox (semua box), `SharedPreferences` |
+| FR-19 | `features/settings/widgets/data_privacy_section.dart`, `features/settings/privacy_screen.dart` | ObjectBox (7 box), `SecretStore`, `SharedPreferences` |
 | FR-20 | `features/settings/widgets/language_section.dart` | `core/l10n/app_strings.dart`, `AppLanguage` |
+| FR-28 | `features/model/model_download_screen.dart`, `features/model/cloud_provider_editor_sheet.dart` | `AiProviderProfile`, `SecretStore`, `services/ai/genkit/` |
+| FR-29 | `features/model/cloud_provider_editor_sheet.dart`, `features/settings/widgets/model_section.dart` | `provider_config_builder.dart`, `PromptLimits` |
+| FR-30 | `features/settings/widgets/voice_section.dart`, `features/settings/widgets/cloud_speech_sheet.dart` | `CloudSpeechConfig`, `ElevenLabsGenkitPlugin`, `TtsService`, `SttService` |

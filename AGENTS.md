@@ -5,9 +5,11 @@ Aturan di sini menang atas dokumen lain. Semua path relatif terhadap root repo.
 
 ## 1. Identitas & Lingkup
 
-VirtualHeart adalah aplikasi pendamping romantis **on-device**: inferensi LLM, STT, dan TTS
-berjalan di perangkat pengguna memakai `flutter_edge_ai`. Tidak ada server aplikasi, tidak ada
-akun, tidak ada telemetri.
+VirtualHeart adalah aplikasi pendamping romantis **hybrid on-device & Cloud BYOK**:
+- **Mode Lokal (default)**: inferensi LLM, STT, dan TTS berjalan di perangkat pengguna memakai `flutter_edge_ai`.
+- **Mode Cloud BYOK (opsional)**: inferensi LLM (Google Gemini, Anthropic & Anthropic-compatible, OpenAI & OpenAI-compatible) serta suara Cloud STT/TTS (ElevenLabs, OpenAI-compatible/Groq, Google Gemini) diorkestrasi memakai **Genkit Dart/Flutter** langsung dari perangkat ke endpoint provider pilihan pengguna dengan API key milik pengguna sendiri.
+
+Tidak ada server aplikasi VirtualHeart, tidak ada akun, tidak ada telemetri.
 
 | Platform | Status |
 | --- | --- |
@@ -40,7 +42,7 @@ Aturan tunggal: **jika kode berubah, dokumen yang relevan ikut berubah di commit
 
 ## 3. Toolchain & Command
 
-Flutter **3.47.1** / Dart **3.13.1** (lihat `.fvmrc`). **Jangan** menaikkan/menurunkan versi SDK
+Flutter **3.50.1** / Dart **3.14.0** (lihat `.fvmrc`). **Jangan** menaikkan/menurunkan versi SDK
 sebagai bagian dari perubahan fitur; itu perubahan tersendiri.
 
 ```bash
@@ -84,10 +86,15 @@ Aturan dependensi:
    Warna/ukuran/durasi memakai token `AppColors`, `AppSizes`, `AppDurations`, `AppTextStyles`.
 4. **String user-facing lewat `AppStrings`** (implementasi ID + EN). Bila belum terlokalisasi,
    catat di `docs/KNOWN_ISSUES.md` — jangan diam-diam menambah hardcode baru.
-5. **Panggilan engine AI hanya di** `services/ai/`, `services/tts_service.dart`,
-   `services/stt_service.dart`. Widget tidak pernah memanggil engine/plugin AI langsung.
-6. **Jaringan hanya untuk**: unduhan model (HuggingFace), unduhan font Google Fonts.
-   Chat, memori, persona, dan mood **tidak boleh** dikirim keluar.
+5. **Panggilan engine AI & Genkit hanya di** `services/ai/`, `services/tts_service.dart`,
+   `services/stt_service.dart`. Widget tidak pernah memanggil engine/plugin AI, Genkit, atau HTTP
+   langsung.
+6. **Jaringan hanya untuk**: unduhan model lokal (HuggingFace), unduhan font Google Fonts, serta
+   — secara opsional bila pengguna mengaktifkan mode Cloud BYOK atau Cloud Speech — permintaan
+   langsung dari perangkat ke endpoint provider BYOK yang dikonfigurasi pengguna. Pada mode Lokal
+   penuh, chat, memori, persona, dan mood **tidak boleh** dikirim keluar. Seluruh API key BYOK
+   disimpan terenkripsi lewat `SecretStore` (`flutter_secure_storage`) dan tidak boleh di-log atau
+   masuk ekspor chat.
 7. **Error lewat `AppLogger`.** Tidak ada `print`/`debugPrint` di luar `core/errors/app_logger.dart`.
 8. **Test wajib** untuk perilaku baru (fungsi murni/controller/router/DB); `make check` harus
    lulus sebelum PR. Jangan menambah test yang hanya menguji wiring/mock echo.

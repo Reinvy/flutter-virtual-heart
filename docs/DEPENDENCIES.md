@@ -8,8 +8,8 @@ akhir dokumen bersifat mesin-terbaca: `tool/check_docs.dart` membandingkannya de
 
 | Komponen | Versi | Catatan |
 | --- | --- | --- |
-| Flutter | **3.47.1** (`.fvmrc`) | jangan diubah tanpa task tersendiri |
-| Dart | **3.13.1** | dibawa Flutter 3.47.1 |
+| Flutter | **3.50.1** (`.fvmrc`) | jangan diubah tanpa task tersendiri |
+| Dart | **3.14.0** | dibawa Flutter 3.50.1 |
 | Android Gradle Plugin | **9.1.0** | lihat catatan pin di §5 |
 | Gradle wrapper | **9.3.1** | |
 | Kotlin plugin | **2.4.0** | `org.jetbrains.kotlin.android`, `android.newDsl=false` |
@@ -28,6 +28,13 @@ akhir dokumen bersifat mesin-terbaca: `tool/check_docs.dart` membandingkannya de
 | `flutter_edge_ai_litertlm` | `^1.20.0` | engine `.litertlm` | `LiteRtLmEngine` |
 | `flutter_edge_ai_mediapipe` | `^1.3.0` | engine `.task` | `MediaPipeEngine` |
 | `flutter_edge_ai_speech` | `^0.6.0` | STT/TTS on-device | `LiteRtSttBackend`, `LiteRtTtsBackend` |
+| `genkit` | `^1.0.3` | orkestrasi AI Cloud BYOK | dijalankan dengan `isDevEnv: false, promptDir: null` |
+| `genkit_google_genai` | `^1.2.0` | plugin Google Gemini (LLM, TTS, STT) | mendukung custom `baseUrl`, thinking & safety settings |
+| `genkit_anthropic` | `^1.0.3` | plugin Anthropic & Anthropic-compatible | mendukung extended/adaptive thinking & custom `baseUrl` |
+| `genkit_openai` | `^1.0.3` | plugin OpenAI & OpenAI-compatible (LLM, TTS, STT) | mendukung OpenRouter, Groq, DeepSeek, xAI, Ollama/LM Studio, custom endpoint |
+| `flutter_secure_storage` | `^11.2.0` | penyimpanan API key BYOK terenkripsi | Keystore/Keychain OS (`allowBackup="false"` di Android, non-DP keychain di macOS) |
+| `http` | `^1.6.0` | HTTP client kustom & ElevenLabs REST | `CompatHttpClient` (strip `stream_options`, custom headers, cooperative cancellation) |
+| `audioplayers` | `^6.8.1` | pemutar audio Cloud TTS | MP3/WAV/AAC/Opus dari temp file dengan callback `onPlayerComplete` akurat |
 | `flutter_riverpod` | `^3.5.0` | state management | provider manual, tanpa codegen |
 | `objectbox` / `objectbox_flutter_libs` | `^5.3.2` | database lokal | binding generated |
 | `path_provider` | `^2.1.6` | direktori app | |
@@ -107,13 +114,20 @@ dan dependency androidx-nya menuntut 34+. Hapus blok tersebut bila plugin sudah 
 
 <!-- BEGIN DEPENDENCY FACTS
 ```yaml
-flutter: 3.47.1
+flutter: 3.50.1
 dependencies:
   material_ui: ^1.10.0
   flutter_edge_ai: ^2.6.0
   flutter_edge_ai_litertlm: ^1.20.0
   flutter_edge_ai_mediapipe: ^1.3.0
   flutter_edge_ai_speech: ^0.6.0
+  genkit: ^1.0.3
+  genkit_google_genai: ^1.2.0
+  genkit_anthropic: ^1.0.3
+  genkit_openai: ^1.0.3
+  flutter_secure_storage: ^11.2.0
+  http: ^1.6.0
+  audioplayers: ^6.8.1
   flutter_riverpod: ^3.5.0
   objectbox: ^5.3.2
   objectbox_flutter_libs: ^5.3.2

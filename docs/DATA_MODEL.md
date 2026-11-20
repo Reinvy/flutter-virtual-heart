@@ -15,24 +15,26 @@ fvm dart run build_runner build --delete-conflicting-outputs
 
 ## 1. Entity
 
-### `AppSettings` (22 field)
+### `AppSettings` (24 field)
 
 | Field | Tipe | Default | Catatan |
 | --- | --- | --- | --- |
 | `id` | int | 0 | `@Id` |
 | `ttsEnabled` | bool | `false` | FR-07 |
 | `ttsAutoPlay` | bool | `false` | auto-play jawaban AI |
-| `ttsBackend` | String | `'system'` | `'gemma'` = on-device, `'system'` |
-| `sttBackend` | String | `'system'` | idem |
-| `ttsModel` | String | `'inflect'` | `inflect`/`matcha`/`qwen3` |
-| `sttModel` | String | `'moonshine'` | |
+| `ttsBackend` | String | `'system'` | `'system'` / `'gemma'` / `'elevenlabs'` / `'openai'` / `'google'` |
+| `sttBackend` | String | `'system'` | independen dari `ttsBackend` (nilai yang sama) |
+| `ttsModel` | String | `'inflect'` | `inflect`/`matcha`/`qwen3` (untuk backend `'gemma'`) |
+| `sttModel` | String | `'moonshine'` | (untuk backend `'gemma'`) |
 | `notificationMorningEnabled` | bool | `false` | FR-15 |
 | `notificationMorningTime` | String | `'08:00'` | `HH:mm` |
 | `notificationCheckinEnabled` | bool | `false` | FR-16 |
 | `notificationCheckinHours` | int | `6` | 1/3/6/12 (dipilih di Settings) |
-| `modelVariant` | String | `''` | **nama file** model; kosong = belum dipilih |
+| `modelVariant` | String | `''` | **nama file** model lokal; kosong = belum dipilih |
 | `modelSource` | String | `''` | `''`/`network`/`file` |
 | `modelUrl` | String | `''` | URL asal (kosong untuk upload file) |
+| `aiModeIndex` | int | `0` | backing field `AiMode {local, cloud}` |
+| `activeCloudProfileId` | int | `0` | ID `AiProviderProfile` aktif saat `aiMode == AiMode.cloud` |
 | `isAgeVerified` | bool | `false` | FR-01 |
 | `isOnboardingDone` | bool | `false` | FR-02 |
 | `isPersonaSetup` | bool | `false` | FR-03 |
@@ -42,11 +44,59 @@ fvm dart run build_runner build --delete-conflicting-outputs
 | `themeStyleIndex` | int | `0` | backing field `AppThemeStyle {editorial, romantic, classic, botanical}` |
 | `languageIndex` | int | `0` | backing field `AppLanguage {indonesian, english, mixed}` |
 
-`theme`/`themeStyle`/`language` diekspos sebagai getter/setter di atas backing index-nya
+`theme`/`themeStyle`/`language`/`aiMode` diekspos sebagai getter/setter di atas backing index-nya
 (enum tidak disimpan langsung — ObjectBox melewati properti bertipe enum). Getter meng-clamp
-index pada seluruh entity (`AppSettings`, `Message`, `PersonaConfig`, `MoodState`, `MemoryFact`)
-sehingga baris rusak tidak melempar `RangeError`, dan `normalized()` memperbaiki nilai
-string/int yang tidak valid saat boot (backend suara, model, jam pagi, interval check-in).
+index pada seluruh entity (`AppSettings`, `Message`, `PersonaConfig`, `MoodState`, `MemoryFact`,
+`AiProviderProfile`) sehingga baris rusak tidak melempar `RangeError`, dan `normalized()`
+memperbaiki nilai string/int yang tidak valid saat boot.
+
+### `AiProviderProfile` (BYOK Cloud LLM)
+
+Menyimpan profil provider Cloud BYOK (non-rahasia; API key **tidak** disimpan di ObjectBox):
+
+- **Identitas & koneksi**: `id`, `profileKey` (kunci stabil untuk `SecretStore`), `name`,
+  `providerTypeIndex` (`LlmProviderType {google, anthropic, openai}`), `baseUrl`, `modelId`,
+  `customHeadersJson`, `createdAt`, `updatedAt`.
+- **Parameter generasi**: `temperature` (`double?`, 0.0–2.0; maks 1.0 di Anthropic), `topP`
+  (`double?`), `topK` (`int?`), `maxOutputTokens` (`int`, 256–32768, default 2048),
+  `presencePenalty` (`double?`, -2.0–2.0), `frequencyPenalty` (`double?`, -2.0–2.0),
+  `stopSequencesCsv`, `seed` (`int?`), `reasoningEffort` (`''`/`'none'`/`'minimal'`/`'low'`/
+  `'medium'`/`'high'`/`'max'`/`'adaptive'`), `thinkingBudgetTokens` (`int?`),
+  `geminiSafetyLevel` (`'default'`/`'block_only_high'`/`'block_none'`),
+  `stripStreamOptions` (`bool`), `timeoutSeconds` (`int`, 15–300, default 60).
+- **Kebebasan konteks & background**: `maxHistoryMessages` (10–200, default 40),
+  `maxMemoryFacts` (5–100, default 30), `maxInputChars` (2000–64000, default 12000),
+  `maxPromptChars` (6000–256000, default 64000), `enforceShortReply` (`bool`, default `false`),
+  `customSystemPrompt` (`String`), `enableBackgroundTasks` (`bool`, default `true`),
+  `backgroundModelId` (`String`).
+
+### `CloudSpeechConfig` (single-row)
+
+Menyimpan konfigurasi non-rahasia untuk Cloud TTS & Cloud STT:
+
+- **ElevenLabs**: `elevenLabsBaseUrl`, `elevenLabsVoiceId`, `elevenLabsVoiceName`,
+  `elevenLabsTtsModel` (`eleven_multilingual_v2`), `elevenLabsStability`,
+  `elevenLabsSimilarityBoost`, `elevenLabsStyle`, `elevenLabsSpeed`,
+  `elevenLabsUseSpeakerBoost`, `elevenLabsOutputFormat` (`mp3_44100_128`),
+  `elevenLabsSttModel` (`scribe_v2`), `elevenLabsSttTagAudioEvents`, `elevenLabsSttDiarize`.
+- **OpenAI & OpenAI-compatible (termasuk Groq Whisper)**: `openaiTtsReuseLlmKey`,
+  `openaiTtsBaseUrl`, `openaiTtsModel` (`gpt-4o-mini-tts`), `openaiTtsVoice` (`coral`),
+  `openaiTtsSpeed`, `openaiTtsInstructions`, `openaiTtsFormat` (`mp3`), `openaiSttReuseLlmKey`,
+  `openaiSttBaseUrl`, `openaiSttModel` (`gpt-4o-mini-transcribe`), `openaiSttPrompt`,
+  `openaiSttTemperature`.
+- **Google Gemini Speech**: `googleSpeechReuseLlmKey`, `googleSpeechBaseUrl`,
+  `googleTtsModel` (`gemini-2.5-flash-preview-tts`), `googleTtsVoiceName` (`Aoede`),
+  `googleTtsStylePrompt`, `googleSttModel` (`gemini-2.5-flash`).
+- **Umum**: `timeoutSeconds` (10–120, default 45).
+
+### Penyimpanan API Key (`SecretStore`)
+
+Seluruh API key BYOK disimpan terenkripsi lewat `flutter_secure_storage`
+(`lib/services/ai/secret_store.dart`), bukan di ObjectBox maupun `SharedPreferences`:
+
+- LLM per profil: `byok_llm_<profileKey>`
+- Speech: `byok_speech_elevenlabs`, `byok_speech_openai_tts`, `byok_speech_openai_stt`,
+  `byok_speech_google`
 ### `PersonaConfig`
 
 `id`, `name`, `nicknameForUser`, `avatarId`, `createdAt` (`PropertyType.date`),
@@ -81,10 +131,13 @@ ekstraksi memori, maupun skoring mood.
 | `messageBox` | `Message` |
 | `memoryFactBox` | `MemoryFact` |
 | `moodStateBox` | `MoodState` |
+| `aiProviderProfileBox` | `AiProviderProfile` |
+| `cloudSpeechConfigBox` | `CloudSpeechConfig` |
 
-- **Single-row convention**: `AppSettings`, `PersonaConfig`, `MoodState` dibaca dengan memilih
-  baris **id terkecil** lalu menghapus duplikat (`getOrCreateSettings`, `PersonaNotifier.build`,
-  `MoodService.getCurrentMood`). Tidak ada `@Unique`, jadi kanonikalisasi dilakukan di kode.
+- **Single-row convention**: `AppSettings`, `PersonaConfig`, `MoodState`, `CloudSpeechConfig`
+  dibaca dengan memilih baris **id terkecil** lalu menghapus duplikat (`getOrCreateSettings`,
+  `getOrCreateCloudSpeechConfig`, `PersonaNotifier.build`, `MoodService.getCurrentMood`). Tidak
+  ada `@Unique`, jadi kanonikalisasi dilakukan di kode.
 - Tidak ada relasi ObjectBox; seluruh asosiasi dilakukan lewat query/box langsung.
 - Store dibuka di `getApplicationDocumentsDirectory()/virtualheartdb`.
 
@@ -92,15 +145,17 @@ ekstraksi memori, maupun skoring mood.
 
 | Aksi | Yang dihapus | Yang dipertahankan |
 | --- | --- | --- |
-| Hapus semua percakapan (`AppSettingsNotifier.deleteAllConversations`) | semua `Message` + `conversationSummary` + `summaryMessageCount=0` (satu transaksi) | persona, memori, mood, settings lain |
-| Reset persona (`AppSettingsNotifier.resetPersonaData`) | `personaBox`, `memoryFactBox`, `moodStateBox`, `messageBox`; `isPersonaSetup=false`; `conversationSummary=''`; `summaryMessageCount=0` (satu transaksi) | model + settings lain (tema/bahasa/suara/notifikasi) |
-| Reset semua data (`AppSettingsNotifier.resetAllData`) | persona, memori, mood, pesan, settings, token `hf_token`, file `virtualheart_*.txt` (satu transaksi untuk box) | **file model** + identitas model (`modelVariant`/`modelSource`/`modelUrl` disalin ke settings baru) |
+| Hapus semua percakapan (`AppSettingsNotifier.deleteAllConversations`) | semua `Message` + `conversationSummary` + `summaryMessageCount=0` (satu transaksi) | persona, memori, mood, profil cloud, settings lain |
+| Reset persona (`AppSettingsNotifier.resetPersonaData`) | `personaBox`, `memoryFactBox`, `moodStateBox`, `messageBox`; `isPersonaSetup=false`; `conversationSummary=''`; `summaryMessageCount=0` (satu transaksi) | model + profil cloud + settings lain (tema/bahasa/suara/notifikasi) |
+| Reset semua data (`AppSettingsNotifier.resetAllData`) | persona, memori, mood, pesan, settings, `aiProviderProfileBox`, `cloudSpeechConfigBox`, seluruh API key BYOK di `SecretStore`, token `hf_token`, file `virtualheart_*.txt` | **file model lokal** + identitas model (`modelVariant`/`modelSource`/`modelUrl` disalin ke settings baru, `aiMode=local`) |
 
-`resetAllData` mempertahankan identitas model agar model 1–2 GB yang sudah diunduh tidak perlu
-diunduh ulang. Aksi destruktif menunggu `ChatNotifier.cancelGeneration()` (generasi +
-post-process) dan `ModelServiceNotifier.cancelDownload()` selesai, lalu meng-invalidate provider
-terkait di UI (`chatProvider`, `pendingChatDraftProvider`, `memoryFactsProvider`, `personaProvider`,
-`moodProvider`, `modelServiceProvider`, `modelReadyProvider`, `notificationProvider`).
+`resetAllData` mempertahankan identitas model lokal agar model 1–2 GB yang sudah diunduh tidak perlu
+diunduh ulang, sekaligus menghapus seluruh profil Cloud BYOK dan seluruh API key terenkripsi. Aksi
+destruktif menunggu `ChatNotifier.cancelGeneration()` (generasi + post-process) dan
+`ModelServiceNotifier.cancelDownload()` selesai, lalu meng-invalidate provider terkait di UI
+(`chatProvider`, `pendingChatDraftProvider`, `memoryFactsProvider`, `personaProvider`,
+`moodProvider`, `aiProviderProfilesProvider`, `cloudSpeechConfigProvider`, `modelServiceProvider`,
+`modelReadyProvider`, `notificationProvider`).
 
 ## 4. Pemulihan store korup
 

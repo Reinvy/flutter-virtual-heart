@@ -30,9 +30,14 @@ Catatan:
   (`BLUETOOTH`, `BLUETOOTH_ADMIN`, `BLUETOOTH_CONNECT`), `FOREGROUND_SERVICE`,
   `FOREGROUND_SERVICE_DATA_SYNC`. WorkManager `SystemForegroundService` di-override ke
   `dataSync` untuk unduhan model besar.
-- Penyimpanan model: direktori aplikasi milik `flutter_edge_ai` (bukan `assets/`), diunduh dari
+- `AndroidManifest.xml` menetapkan `android:allowBackup="false"` untuk keamanan
+  `flutter_secure_storage` (mencegah kegagalan dekripsi Keystore setelah Android Auto Backup).
+- Pemutaran audio Cloud TTS memakai `audioplayers` (`DeviceFileSource` dari file temp) dengan
+  cleanup otomatis setelah selesai atau dibatalkan.
+- Penyimpanan model lokal: direktori aplikasi milik `flutter_edge_ai` (bukan `assets/`), diunduh dari
   HuggingFace atau di-upload pengguna.
-- Build: `make apk` atau `fvm flutter build apk --debug`.
+- Build: `make apk` (atau `fvm flutter build apk --debug --android-skip-build-dependency-validation`
+  pada Flutter 3.50.1 selama AGP masih dipin `9.1.0`; lihat `KNOWN_ISSUES.md` KI-26).
 - Application ID masih `com.example.edge_chat` dan release memakai signing debug — lihat
   `KNOWN_ISSUES.md`.
 
@@ -43,6 +48,7 @@ Catatan:
 - `ios/Runner/Runner.entitlements`: `extended-virtual-addressing`, `increased-memory-limit`,
   `increased-debugging-memory-limit`; dirujuk lewat `CODE_SIGN_ENTITLEMENTS` di tiga konfigurasi.
 - `Info.plist`: `NSMicrophoneUsageDescription`, `NSSpeechRecognitionUsageDescription` sudah ada.
+- `flutter_secure_storage` memakai Keychain iOS dengan `KeychainAccessibility.first_unlock_this_device`.
 - Plugin dapat memakai Swift Package Manager (Flutter) atau CocoaPods; keduanya butuh Xcode.
 - **Belum diverifikasi**: tidak ada Xcode/CocoaPods di lingkungan build saat ini. Jangan
   mengklaim `flutter build ios` lulus.
@@ -52,6 +58,8 @@ Catatan:
 - `MACOSX_DEPLOYMENT_TARGET = 14.0` (tiga konfigurasi).
 - Entitlements (`DebugProfile.entitlements`, `Release.entitlements`): sandbox,
   `network.client`, `device.audio-input` (+ `network.server`/`allow-jit` di debug).
+- `flutter_secure_storage` memakai `MacOsOptions(usesDataProtectionKeychain: false)` agar build
+  lokal tanpa provisioning profile berbayar tidak gagal dengan kode Keychain `-34018`.
 - `Info.plist`: `NSMicrophoneUsageDescription`, `NSSpeechRecognitionUsageDescription`.
 - Belum ada Podfile (Flutter mengelola SPM/CocoaPods); bila build meminta, pakai
   `platform :osx, '14.0'`.
@@ -72,9 +80,12 @@ Catatan:
 
 ## 6. Kebutuhan jaringan & penyimpanan
 
-- Unduhan model: 135 MB – 1.7 GB per model (default 1.6 GB). Butuh internet sekali; setelah itu
-  inferensi berjalan offline.
+- **Mode Lokal**: unduhan model 135 MB – 1.7 GB per model (default 1.6 GB); butuh internet sekali,
+  setelah itu inferensi berjalan offline.
+- **Mode Cloud BYOK & Cloud Speech (opsional)**: butuh koneksi internet ke endpoint provider yang
+  dikonfigurasi pengguna (atau LAN untuk Ollama/LM Studio lokal), tanpa perlu mengunduh bobot model
+  gigabyte ke perangkat.
 - Font Google Fonts diambil saat runtime (cache OS/browser); tanpa jaringan font jatuh ke
   fallback.
-- Token HuggingFace opsional, hanya untuk model *gated* (Gemma 3 1B). Disimpan di
-  `SharedPreferences`.
+- Token HuggingFace opsional untuk model lokal *gated* (Gemma 3 1B) disimpan di `SharedPreferences`;
+  seluruh API key Cloud BYOK disimpan terenkripsi di `flutter_secure_storage`.

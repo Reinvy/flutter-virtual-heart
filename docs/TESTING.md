@@ -36,28 +36,33 @@ diam-diam.
 | `test/core/content_safety_test.dart` | gate input/output, `SafetyRedirect`, kategori `personaBreak` |
 | `test/core/design_contrast_test.dart` | kontras token ≥ 4.5:1 di seluruh 8 palet (4 tema × light/dark) |
 | `test/core/double_back_exit_scope_test.dart` | `DoubleBackExitScope`: tekan back 2x untuk keluar, kadaluarsa jendela, intersep, `canPop` |
-| `test/core/entity_enum_clamp_test.dart` | clamping index enum rusak pada semua entity ObjectBox + `AppSettings.hasSameValues` |
+| `test/core/entity_enum_clamp_test.dart` | clamping index enum rusak pada semua entity ObjectBox (termasuk `AiProviderProfile`, `CloudSpeechConfig`, `AppSettings.aiMode`) + `normalized()` & `hasSameValues` |
 | `test/core/memory_fact_merger_test.dart` | `mergeFacts`: key case-insensitive, refresh `lastReferencedAt`, duplikat batch, batas panjang, eviksi disjoint |
 | `test/core/model_catalog_test.dart` | katalog LLM, `modelOptionByFileName`, pemetaan tipe engine, katalog speech |
-| `test/core/model_error_test.dart` | `classifyModelError` (404/401/429/cancel/storage/engine/network) |
+| `test/core/model_error_test.dart` | `classifyModelError` (404/401/429/timeout/invalidConfig/cancel/storage/engine/network + `GenkitException`) |
 | `test/core/model_service_lock_test.dart` | `AsyncFifoLock` serialisasi FIFO dan pelepasan kunci saat error |
 | `test/core/notification_time_test.dart` | `nextInstanceOf` (hari ini/besok/akhir bulan, `Asia/Jakarta`) |
-| `test/core/objectbox_settings_test.dart` | persistensi **semua** field `AppSettings` + `normalized()` |
-| `test/core/prompt_builder_test.dart` | batas karakter prompt, 12 fakta, sanitasi, pesan blokir, `selectMemoryFacts` |
+| `test/core/objectbox_settings_test.dart` | persistensi **semua** field `AppSettings` (termasuk `aiMode`, `activeCloudProfileId`, Cloud speech backends) + `normalized()` |
+| `test/core/prompt_builder_test.dart` | batas karakter prompt Lokal & `PromptLimits.forCloud`, `buildCloudMessages` turn alternation, 12–100 fakta, sanitasi, pesan blokir, `selectMemoryFacts` |
 | `test/core/router_guard_test.dart` | matriks `resolveRedirect` (gate, `/privacy`, `/model-download`, `/hub`) |
 | `test/core/wav_pcm_test.dart` | parser WAV: chunk `LIST`/`JUNK`, padding ganjil, tanpa `data` |
+| `test/services/provider_config_builder_test.dart` | normalisasi URL Anthropic/Google, sanitizer opsi Anthropic/Gemini/OpenAI, speech options |
+| `test/services/elevenlabs_plugin_test.dart` | `ElevenLabsGenkitPlugin` TTS/STT via Genkit + `MockClient`, `fetchVoices`, `wrapPcmAsWav`, pemetaan HTTP 401/429 |
+| `test/services/genkit_cloud_client_test.dart` | `GenkitCloudClient` streaming SSE & unary (OpenAI/Anthropic/Google), `stripStreamOptions`, `testConnection`, `fetchAvailableModels`, Cloud TTS/STT |
 | `test/features/chat/chat_bubble_test.dart` | kapsul user solid, editorial thread AI, timestamp, speaker, gambar disanitasi |
-| `test/features/chat/chat_flow_test.dart` | `InputBar` `isVoice`, `retryLastResponse` hapus parsial lama, `summaryMessageCount`, `cancelGeneration` |
-| `test/features/chat/input_bar_test.dart` | hint, kirim, batas 2000 karakter, counter, tombol stop |
+| `test/features/chat/chat_flow_test.dart` | `InputBar` `isVoice`, `retryLastResponse`, `summaryMessageCount`, `cancelGeneration`, mode Cloud BYOK multi-turn & `enableBackgroundTasks=false` & HTTP 401 |
+| `test/features/chat/input_bar_test.dart` | hint, kirim, batas 2000 & `maxLength` dinamis Cloud, counter, tombol stop, indikator `isTranscribing` |
+| `test/features/hub/companion_hub_screen_test.dart` | status persona, memori, starter → input chat |
 | `test/features/memory/memory_screen_test.dart` | empty state, grouping kategori, pencarian |
-| `test/features/model/model_error_text_test.dart` | setiap `ModelErrorKind` punya pesan ID/EN |
+| `test/features/model/model_error_text_test.dart` | setiap `ModelErrorKind` (termasuk `timeout`/`invalidConfig`) punya pesan ID/EN |
 | `test/features/navigation/main_shell_test.dart` | 4-tab `MainShellScaffold` tanpa overflow di 320 dp, sinkron `activeShellTabProvider`, & back navigation |
 | `test/features/onboarding/age_gate_test.dart` | teks ID/EN, konfirmasi menyimpan `isAgeVerified`, tautan privasi, & double-back exit |
-| `test/features/settings/privacy_screen_test.dart` | judul/kebijakan/tombol kembali (ID + EN) |
-| `test/features/settings/section_overflow_test.dart` | Appearance (termasuk pilih `themeStyle`)/Language/Model tidak overflow di 320 dp |
-**Gap yang diketahui** (lihat `KNOWN_ISSUES.md`): tidak ada test untuk `ChatNotifier`
-end-to-end (butuh engine), `TtsService`/`SttService` (butuh plugin native), widget notifikasi,
-dan `ModelServiceNotifier` (butuh file model).
+| `test/features/settings/privacy_screen_test.dart` | judul/kebijakan hybrid/tombol kembali (ID + EN) |
+| `test/features/settings/section_overflow_test.dart` | Appearance/Language/Model (Lokal & Cloud BYOK)/Voice (ElevenLabs + OpenAI)/`CloudProviderEditorSheet`/`CloudSpeechConfigSheet` tidak overflow di 320 dp |
+
+**Gap yang diketahui** (lihat `KNOWN_ISSUES.md`): inferensi lokal end-to-end (butuh file model),
+panggilan API live ke server pihak ketiga dengan key asli (Google/Anthropic/OpenAI/ElevenLabs),
+playback/rekaman audio plugin native, dan notifikasi OS tetap butuh verifikasi di perangkat nyata.
 
 ## 3. Apa yang harus dites saat mengubah sesuatu
 
@@ -107,8 +112,13 @@ test gagal (bukan skip). `make check` menjalankan langkah yang sama secara lokal
 - [ ] Tap notifikasi saat app tertutup → langsung ke chat (setelah setup selesai).
 - [ ] Dark/light/system theme tanpa warna token yang salah.
 - [ ] Memori: fakta baru muncul, edit/hapus berfungsi, `lastReferencedAt` bertambah.
-- [ ] Reset persona mengosongkan memori/mood; Reset semua data kembali ke gerbang usia dan
-      model tetap terpasang.
+- [ ] Reset persona mengosongkan memori/mood; Reset semua data menghapus profil Cloud BYOK & API
+      key terenkripsi, kembali ke gerbang usia, dan model lokal tetap terpasang.
+- [ ] Cloud BYOK LLM: tambah profil Google Gemini / Anthropic-compatible / OpenAI-compatible, uji
+      **Test Connection** + **Fetch Models**, aktifkan, kirim chat streaming, tekan stop saat
+      streaming, dan ubah parameter (temperature/maxOutputTokens/customSystemPrompt).
+- [ ] Cloud Speech: konfigurasi ElevenLabs (muat suara akun, tes suara, playback TTS + STT Scribe),
+      OpenAI-compatible / Groq Whisper STT, serta Google Gemini TTS/STT secara independen.
 - [ ] Rotasi/keluar-masuk layar memory/settings menghentikan audio yang sedang diputar.
 
 iOS, macOS, dan desktop **belum** masuk checklist ini karena belum terverifikasi di lingkungan

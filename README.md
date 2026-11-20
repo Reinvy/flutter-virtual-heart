@@ -1,15 +1,15 @@
 <h1 align="center">💖 VirtualHeart</h1>
 
 <p align="center">
-  <em>On-device AI romantic companion powered by a Small Language Model (SLM)</em>
+  <em>Hybrid On-Device &amp; Cloud BYOK AI romantic companion powered by Flutter, flutter_edge_ai &amp; Genkit</em>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Flutter-3.47.1-02569B?style=flat-square&logo=flutter&logoColor=white" alt="Flutter Version"/>
-  <img src="https://img.shields.io/badge/Dart-3.13.1-0175C2?style=flat-square&logo=dart&logoColor=white" alt="Dart Version"/>
+  <img src="https://img.shields.io/badge/Flutter-3.50.1-02569B?style=flat-square&logo=flutter&logoColor=white" alt="Flutter Version"/>
+  <img src="https://img.shields.io/badge/Dart-3.14.0-0175C2?style=flat-square&logo=dart&logoColor=white" alt="Dart Version"/>
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License"/>
   <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS-lightgrey?style=flat-square" alt="Platform"/>
-  <img src="https://img.shields.io/badge/AI-On--Device-orange?style=flat-square" alt="On-Device AI"/>
+  <img src="https://img.shields.io/badge/AI-On--Device%20%2B%20Cloud%20BYOK-orange?style=flat-square" alt="Hybrid AI"/>
 </p>
 
 ---
@@ -17,12 +17,21 @@
 ## 📖 About
 
 **VirtualHeart** is a privacy-first AI companion app built with Flutter. Users create a
-personalized virtual partner and talk to it while a Small Language Model runs **on the device**
-via [`flutter_edge_ai`](https://pub.dev/packages/flutter_edge_ai) — no application server, no
-account, no telemetry.
+personalized virtual partner and choose between:
 
-Network is used for exactly two things: downloading the model file from HuggingFace (once) and
-fetching Google Fonts at runtime. Chat, memory, persona, and mood never leave the device.
+- **Local On-Device AI**: Small Language Models & local speech running offline via
+  [`flutter_edge_ai`](https://pub.dev/packages/flutter_edge_ai).
+- **Cloud BYOK AI (optional)**: Bring Your Own Key across **Google Gemini**, **Anthropic &
+  Anthropic-compatible**, and **OpenAI & OpenAI-compatible** providers (OpenRouter, Groq,
+  DeepSeek, xAI, Together, Ollama/LM Studio, custom endpoints), plus Cloud STT & TTS
+  (**ElevenLabs**, **OpenAI-compatible / Groq Whisper**, **Google Gemini**) orchestrated via
+  [**Genkit Dart/Flutter**](https://pub.dev/packages/genkit) — with full per-profile parameter
+  and context freedom.
+
+There is **no VirtualHeart application server, no account, and no telemetry**. In Local mode,
+chat, memory, persona, and mood never leave your device. In Cloud BYOK mode, requests go
+directly from your device to the provider endpoints you configure, and API keys are stored
+encrypted in OS secure storage.
 
 ## ✨ Features (current state)
 
@@ -31,30 +40,35 @@ fetching Google Fonts at runtime. Chat, memory, persona, and mood never leave th
 | Age gate (13+) | ✅ Implemented | persisted in `AppSettings.isAgeVerified` |
 | Onboarding (3 pages) | ✅ Implemented | |
 | Persona setup & edit | ✅ Implemented | gender, name, nickname, personality, hobbies, avatar; editing reuses the same form |
-| Model catalog & install | ✅ Implemented | 5 models (`.litertlm`/`.task`), explicit model choice, download with progress + cancel, upload your own file, switch anytime from Settings |
-| Streaming chat | ✅ Implemented | token streaming, typing indicator, stop-generation, partial-reply persistence, localized error banner + retry |
-| Conversation summary | ✅ Implemented | every 30 messages, injected as context |
-| Memory extraction | ✅ Implemented | facts merged by key, source snippet kept, last-referenced timestamp |
+| Local model catalog & install | ✅ Implemented | 5 models (`.litertlm`/`.task`), explicit model choice, download with progress + cancel, upload your own file, switch anytime from Settings |
+| Cloud BYOK multi-provider (Genkit) | ✅ Implemented | Google Gemini, Anthropic/compat, OpenAI/compat (presets + custom Base URL/headers), multi-profile switch, Test Connection, Fetch Models, encrypted key storage |
+| Cloud parameters & context freedom | ✅ Implemented | per-profile temperature, topP, topK, maxOutputTokens (up to 32k), penalties, stop sequences, seed, reasoning/thinking budget, Gemini safety, history up to 200 msgs, memory up to 100 facts, input up to 64k chars, custom system prompt, optional cheaper background model |
+| Streaming chat | ✅ Implemented | token streaming (local & cloud multi-turn), typing indicator, stop-generation, dynamic input limit, partial-reply persistence, localized error banner + retry |
+| Conversation summary | ✅ Implemented | every 30 messages (optional in Cloud mode), injected as context |
+| Memory extraction | ✅ Implemented | facts merged by key, source snippet kept, last-referenced timestamp (optional in Cloud mode) |
 | Dynamic mood engine | ✅ Implemented | 5 moods, intensity 0–1, idle decay |
 | Content safety | ✅ Implemented | input + output gates with warm in-character deflections |
-| Voice input (STT) | ⚠️ Partial | on-device Moonshine or OS dictation; no waveform UI |
-| Voice output (TTS) | ⚠️ Partial | on-device (Inflect/Matcha/Qwen3) or OS voice; completion estimated by timer |
-| Persona profile sheet | ✅ Implemented | avatar, mood, hobbies, personality, edit |
+| Voice input (STT) | ⚠️ Partial | independent backend: System, On-device Moonshine, **ElevenLabs Scribe**, **OpenAI-compatible / Groq Whisper**, **Google Gemini**; transcribing state in input bar; no waveform UI |
+| Voice output (TTS) | ⚠️ Partial | independent backend: System, On-device (Inflect/Matcha/Qwen3), **ElevenLabs** (account voices browser + stability/similarity/style/speed/speaker boost), **OpenAI-compatible**, **Google Gemini**; accurate completion callback for Cloud TTS (`audioplayers`), timer-estimated for on-device PCM |
+| Persona profile sheet & Hub | ✅ Implemented | Companion Hub (`/hub`) with status, starters, memory snapshot, Local/Cloud engine badge, profile sheet |
 | Notifications | ⚠️ Partial | morning message + check-in (1/3/6/12 h), localized copy, permission-aware, tap opens chat; special-day API has no UI |
-| Settings | ✅ Implemented | theme light/dark/system, language (ID/EN/mixed), AI model, voice, notifications, data & privacy |
-| Data privacy | ✅ Implemented | delete conversations/memory, reset persona, reset all data (also clears HF token + exports), in-app privacy policy, export chat via the OS save dialog |
+| Settings | ✅ Implemented | 4 theme presets × light/dark/system, language (ID/EN/mixed), AI engine (Local + Cloud BYOK + quick parameters), independent TTS/STT voice, notifications, data & privacy |
+| Data privacy | ✅ Implemented | delete conversations/memory, reset persona, reset all data (clears cloud profiles, encrypted BYOK keys, HF token + exports), in-app hybrid privacy policy, export chat via OS save dialog |
 
-Voice selection is **global**, not per-persona. Known gaps are tracked in
-[`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md).
+Voice selection is **global**, not per-persona. Known gaps & live-device unverified items are
+tracked in [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md).
 
 ## 🏗️ Tech Stack
 
-- **Flutter 3.47.1 / Dart 3.13.1** — SDK version is pinned in `.fvmrc`
+- **Flutter 3.50.1 / Dart 3.14.0** — SDK version is pinned in `.fvmrc`
 - **flutter_edge_ai** family — LiteRT-LM (`.litertlm`), MediaPipe (`.task`), on-device speech
+- **Genkit Dart/Flutter** (`genkit`, `genkit_google_genai`, `genkit_anthropic`, `genkit_openai` + custom `ElevenLabsGenkitPlugin`) — Cloud BYOK LLM, TTS & STT orchestration
+- **flutter_secure_storage** — OS-encrypted storage for BYOK API keys
+- **audioplayers** — accurate Cloud TTS audio playback (MP3/WAV/AAC/Opus)
 - **Riverpod 3** — manual `Notifier`/`AsyncNotifier` providers (no codegen)
-- **ObjectBox** — local-first storage for chat, memory, persona, mood, settings
+- **ObjectBox** — local-first storage for chat, memory, persona, mood, settings, cloud profiles, cloud speech config
 - **go_router** — declarative routing with a pure redirect guard
-- **material_ui** — Material widgets; custom Sakura Dusk design system
+- **material_ui** — Material widgets; Multi-Theme Atelier design system (4 themes × light/dark)
 - Exact versions and pinned transitive dependencies: [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md)
 
 Architecture:
@@ -63,9 +77,9 @@ Architecture:
 lib/
 ├── main.dart, app.dart        # engine + notifications + DB init, MaterialApp.router
 ├── core/                      # design system, l10n, router, logger, pure utils
-├── models/                     # ObjectBox entities (+ generated bindings)
-├── services/                   # ai/, database/, mood, notification, stt, tts
-└── features/                   # onboarding, persona, model, chat, memory, settings
+├── models/                    # ObjectBox entities (+ generated bindings)
+├── services/                  # ai/ (local + genkit/), database/, mood, notification, stt, tts
+└── features/                  # hub, onboarding, persona, model, chat, memory, settings
 ```
 
 Details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
@@ -74,7 +88,7 @@ Details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ### Prerequisites
 
-- Flutter **3.47.1** (recommended via [FVM](https://fvm.app))
+- Flutter **3.50.1** (recommended via [FVM](https://fvm.app))
 - JDK 17+ for Android builds
 - An Android device/emulator with **arm64-v8a** (minSdk 30), or an iOS 16+ device
 
@@ -88,16 +102,15 @@ fvm flutter run                                                 # or `make apk`
 
 Or: `make setup && make gen && make apk`.
 
-### Model
+### AI Engine Setup (Local or Cloud BYOK)
 
-The model is **not bundled**. On first launch the app opens the model screen and either:
+No local model is bundled. On first launch the AI Engine screen lets you choose either:
 
-1. downloads a model from HuggingFace (135 MB – 1.7 GB; internet required once), or
-2. installs a local `.litertlm` / `.task` file you provide.
+1. **Local tab**: download an on-device model from HuggingFace (135 MB – 1.7 GB; offline after install) or upload a local `.litertlm` / `.task` file. Gated models (Gemma 3 1B) accept a HuggingFace token.
+2. **Cloud BYOK tab**: add one or more provider profiles (Google Gemini, Anthropic / compatible, OpenAI / compatible presets or custom endpoint), test connection, customize generation & context parameters, and activate immediately without downloading gigabytes of local weights.
 
-Gated models (Gemma 3 1B) need a HuggingFace token entered on that screen. After installation,
-inference is fully offline. Make sure you have enough free storage and RAM — see
-[`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md).
+Switch between Local and any saved Cloud profile anytime from **Settings → AI Model**. See
+[`docs/AI_PIPELINE.md`](docs/AI_PIPELINE.md) and [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md).
 
 ## 🖥️ Platform Support
 
@@ -113,18 +126,18 @@ Setup details per platform: [`docs/PLATFORM_SETUP.md`](docs/PLATFORM_SETUP.md).
 
 ## 🎨 Design System
 
-Sakura Dusk: warm ivory paper, plum ink, rose + lavender accents, Fraunces headings and Plus
-Jakarta Sans body text, light/dark/system modes. Tokens live in
-`lib/core/design/tokens/` (`AppColors`, `AppGradients`, `AppShadows`, `AppSizes`,
-`AppDurations`, `AppTextStyles`). Every screen shares `AppScaffold`/`AppBackground`.
-See [`docs/DESIGN.md`](docs/DESIGN.md).
+Multi-Theme Atelier (Editorial, Romantic, Classic, Botanical — each with Light & Dark palettes
+verified ≥ 4.5:1 contrast). Tokens live in `lib/core/design/tokens/` (`AppColors`, `AppEffects`,
+`AppSizes`, `AppDurations`, `AppTextStyles`). See [`docs/DESIGN.md`](docs/DESIGN.md).
 
 ## 🔐 Privacy
 
-All data is stored locally (ObjectBox). The only outbound requests are model downloads from
-HuggingFace and Google Fonts at runtime. There is no analytics, no account, and no server-side
-processing. Read [`docs/PRIVACY.md`](docs/PRIVACY.md) for permissions, data deletion, and
-limitations.
+All conversations, memories, persona, mood, settings, and cloud profiles are stored locally in
+ObjectBox, while BYOK API keys are stored encrypted via OS secure storage (`flutter_secure_storage`).
+There are no VirtualHeart servers, no accounts, and no analytics/telemetry. Outbound network calls
+occur only for HuggingFace model downloads, Google Fonts, and — optionally when you opt in to Cloud
+BYOK or Cloud Speech — direct device-to-provider requests to the endpoints you configure. Read
+[`docs/PRIVACY.md`](docs/PRIVACY.md) for full details.
 
 ## 📚 Documentation
 
