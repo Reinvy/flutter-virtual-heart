@@ -1,5 +1,6 @@
 // Unit test — PromptBuilder (FR-05, FR-13)
 import 'package:flutter_test/flutter_test.dart';
+import 'package:virtual_heart/models/ai_provider_profile.dart';
 import 'package:virtual_heart/models/app_settings.dart';
 import 'package:virtual_heart/models/memory_fact.dart';
 import 'package:virtual_heart/models/message.dart';
@@ -241,6 +242,66 @@ void main() {
       final prompt = PromptBuilder.buildSummarizationPrompt(messages);
       expect(prompt.length, lessThanOrEqualTo(PromptBuilder.maxPromptChars));
       expect(prompt, endsWith('Summary:'));
+    });
+  });
+
+  group('PromptBuilder Cloud (multi-turn & freedom limits)', () {
+    test('buildSystemPrompt cloud mendukung enforceShortReply=false, customSystemPrompt, dan banyak fakta', () {
+      final persona = PersonaConfig(name: 'Luna', nicknameForUser: 'Kai');
+      final facts = [
+        for (var i = 0; i < 35; i++) MemoryFact(key: 'fakta$i', value: 'nilai$i'),
+      ];
+      final profile = AiProviderProfile(
+        maxMemoryFacts: 30,
+        maxPromptChars: 64000,
+        enforceShortReply: false,
+        customSystemPrompt: 'Gunakan gaya puitis dan hangat.',
+      );
+      final limits = PromptLimits.fromCloudProfile(profile);
+
+      final prompt = PromptBuilder.buildSystemPrompt(
+        persona,
+        MoodState(),
+        facts,
+        'Ringkasan panjang',
+        limits: limits,
+        enforceShortReply: profile.enforceShortReply,
+        customSystemPrompt: profile.customSystemPrompt,
+      );
+
+      expect(prompt, isNot(contains('1–3 short')));
+      expect(prompt, contains('whatever length fits'));
+      expect(prompt, contains('[USER STYLE INSTRUCTIONS]'));
+      expect(prompt, contains('Gunakan gaya puitis dan hangat.'));
+      final factLines = prompt.split('\n').where((l) => l.startsWith('- ')).length;
+      expect(factLines, 30);
+    });
+
+    test('buildCloudMessages menegakkan pergantian user/assistant ketat dan melewatkan isBlocked', () {
+      final history = [
+        Message(role: MessageRole.assistant, content: 'Pembuka yatim'),
+        Message(role: MessageRole.user, content: 'Pesan 1'),
+        Message(role: MessageRole.user, content: 'Pesan 2'),
+        Message(role: MessageRole.user, content: 'Diblokir', isBlocked: true),
+        Message(role: MessageRole.assistant, content: 'Balasan 1'),
+        Message(role: MessageRole.assistant, content: 'Balasan 2'),
+      ];
+
+      final turns = PromptBuilder.buildCloudMessages(
+        history,
+        'Pesan terbaru',
+        limits: PromptLimits.fromCloudProfile(AiProviderProfile()),
+      );
+
+      expect(turns.length, 3);
+      expect(turns[0].role, MessageRole.user);
+      expect(turns[0].content, 'Pesan 1\n\nPesan 2');
+      expect(turns[1].role, MessageRole.assistant);
+      expect(turns[1].content, 'Balasan 1\n\nBalasan 2');
+      expect(turns[2].role, MessageRole.user);
+      expect(turns[2].content, 'Pesan terbaru');
+      expect(turns.any((t) => t.content.contains('Diblokir')), isFalse);
+      expect(turns.any((t) => t.content.contains('Pembuka yatim')), isFalse);
     });
   });
 }

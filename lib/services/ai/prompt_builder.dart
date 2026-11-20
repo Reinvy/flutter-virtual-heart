@@ -1,10 +1,73 @@
 import 'dart:math' as math;
 
+import '../../models/ai_provider_profile.dart';
 import '../../models/app_settings.dart';
 import '../../models/memory_fact.dart';
 import '../../models/message.dart';
 import '../../models/mood_state.dart';
 import '../../models/persona_config.dart';
+
+/// Anggaran panjang prompt & konteks untuk satu sesi inferensi.
+///
+/// Mode lokal memakai [PromptLimits.local] (ketat demi context window 2048 token),
+/// sedangkan mode Cloud BYOK memakai [PromptLimits.fromCloudProfile] yang jauh
+/// lebih leluasa dan dapat diatur pengguna per profil.
+class PromptLimits {
+  final int maxPromptChars;
+  final int maxHistoryMessages;
+  final int maxHistoryMessageChars;
+  final int maxSystemChars;
+  final int maxMemoryFacts;
+  final int maxFactChars;
+  final int maxSummaryChars;
+  final int maxLatestUserChars;
+
+  const PromptLimits({
+    required this.maxPromptChars,
+    required this.maxHistoryMessages,
+    required this.maxHistoryMessageChars,
+    required this.maxSystemChars,
+    required this.maxMemoryFacts,
+    required this.maxFactChars,
+    required this.maxSummaryChars,
+    required this.maxLatestUserChars,
+  });
+
+  /// Batas ketat on-device (identik dengan konstanta statis [PromptBuilder]).
+  static const PromptLimits local = PromptLimits(
+    maxPromptChars: PromptBuilder.maxPromptChars,
+    maxHistoryMessages: PromptBuilder.maxHistoryMessages,
+    maxHistoryMessageChars: PromptBuilder.maxHistoryMessageChars,
+    maxSystemChars: PromptBuilder.maxSystemChars,
+    maxMemoryFacts: PromptBuilder.maxMemoryFacts,
+    maxFactChars: PromptBuilder.maxFactChars,
+    maxSummaryChars: PromptBuilder.maxSummaryChars,
+    maxLatestUserChars: PromptBuilder.maxLatestUserChars,
+  );
+
+  /// Batas longgar berbasis konfigurasi [AiProviderProfile].
+  factory PromptLimits.fromCloudProfile(AiProviderProfile profile) {
+    final p = profile.normalized();
+    return PromptLimits(
+      maxPromptChars: p.maxPromptChars,
+      maxHistoryMessages: p.maxHistoryMessages,
+      maxHistoryMessageChars: math.max(4000, p.maxInputChars),
+      maxSystemChars: math.min(16000, math.max(4000, p.maxPromptChars ~/ 3)),
+      maxMemoryFacts: p.maxMemoryFacts,
+      maxFactChars: 240,
+      maxSummaryChars: 1500,
+      maxLatestUserChars: p.maxInputChars,
+    );
+  }
+}
+
+/// Satu giliran percakapan terstruktur untuk panggilan multi-turn Genkit Cloud.
+class CloudChatTurn {
+  final MessageRole role;
+  final String content;
+
+  const CloudChatTurn({required this.role, required this.content});
+}
 
 /// Assembles LLM prompt strings from current app state.
 ///
@@ -81,28 +144,39 @@ class PromptBuilder {
 
   /// Picks the memory facts that deserve prompt space: most recently
   /// referenced first, then newest.
-  static List<MemoryFact> selectMemoryFacts(List<MemoryFact> facts) {
+  static List<MemoryFact> selectMemoryFacts(
+    List<MemoryFact> facts, {
+    int maxFacts = maxMemoryFacts,
+  }) {
     final sorted = List<MemoryFact>.of(facts)
       ..sort((a, b) {
         final byReference = b.lastReferencedAt.compareTo(a.lastReferencedAt);
         if (byReference != 0) return byReference;
         return b.createdAt.compareTo(a.createdAt);
       });
-    if (sorted.length <= maxMemoryFacts) return sorted;
-    return sorted.sublist(0, maxMemoryFacts);
+    final cap = maxFacts < 0 ? 0 : maxFacts;
+    if (sorted.length <= cap) return sorted;
+    return sorted.sublist(0, cap);
   }
 
   /// Builds the `[SYSTEM]` + optional `[CONTEXT SUMMARY]` block.
   ///
-  /// Pass the returned string as the first argument of [buildFullPrompt].
+  /// Pass the returned string as the first argument of [buildFullPrompt]
+  /// (lokal) atau parameter `system` pada Genkit multi-turn (cloud).
   static String buildSystemPrompt(
     PersonaConfig persona,
     MoodState mood,
     List<MemoryFact> memoryFacts,
     String conversationSummary, {
     AppLanguage language = AppLanguage.indonesian,
+    PromptLimits limits = PromptLimits.local,
+    bool enforceShortReply = true,
+    String customSystemPrompt = '',
   }) {
-    final facts = selectMemoryFacts(memoryFacts);
+    final facts = selectMemoryFacts(
+      memoryFacts,
+      maxFacts: limits.maxMemoryFacts,
+    );
     final genderDesc = persona.gender == PersonaGender.girlfriend ? 'female' : 'male';
     final personalityDesc =
         _personalityDesc[persona.personalityPreset] ?? _personalityDesc[PersonalityPreset.gentle]!;
@@ -127,13 +201,28 @@ class PromptBuilder {
       'Never acknowledge that you are an AI unless the user explicitly '
       'forces you to.',
     );
-    buf.writeln(
-      'Respond in 1–3 short, warm, and intimate paragraphs. '
-      'Do not give medical, legal, or financial advice.',
-    );
+    if (enforceShortReply) {
+      buf.writeln(
+        'Respond in 1–3 short, warm, and intimate paragraphs. '
+        'Do not give medical, legal, or financial advice.',
+      );
+    } else {
+      buf.writeln(
+        'Respond warmly, naturally, and expressively at whatever length fits '
+        'the conversation. Do not give medical, legal, or financial advice.',
+      );
+    }
     buf.write(
       _languageInstruction[language] ?? _languageInstruction[AppLanguage.indonesian]!,
     );
+
+    final custom = customSystemPrompt.trim();
+    if (custom.isNotEmpty) {
+      buf.writeln();
+      buf.writeln();
+      buf.writeln('[USER STYLE INSTRUCTIONS]');
+      buf.write(truncate(custom, 2000));
+    }
 
     if (facts.isNotEmpty) {
       buf.writeln();
@@ -141,19 +230,80 @@ class PromptBuilder {
       buf.writeln('Information about ${_asDataLine(persona.nicknameForUser)}:');
       for (final fact in facts) {
         final line = '${_asDataLine(fact.key)}: ${_asDataLine(fact.value)}';
-        buf.writeln('- ${truncate(line, maxFactChars)}');
+        buf.writeln('- ${truncate(line, limits.maxFactChars)}');
       }
       buf.writeln(factsAreData);
     }
 
-    final summary = truncate(_asDataLine(conversationSummary), maxSummaryChars).trim();
+    final summary =
+        truncate(_asDataLine(conversationSummary), limits.maxSummaryChars).trim();
     if (summary.isNotEmpty) {
       buf.writeln();
       buf.writeln();
       buf.writeln('[CONTEXT SUMMARY]');
       buf.write(summary);
     }
-    return buf.toString().trimRight();
+    return truncate(buf.toString().trimRight(), limits.maxSystemChars);
+  }
+
+  /// Membangun daftar giliran terstruktur (`user` / `assistant`) untuk Genkit
+  /// Cloud multi-turn dengan jaminan:
+  /// - Pesan `isBlocked` dan pesan kosong dilewati.
+  /// - Total karakter tetap dalam anggaran [limits.maxPromptChars].
+  /// - Giliran selalu dimulai dari `user` dan ber-selang-seling ketat (pesan
+  ///   berurutan dengan role sama digabung `\n\n`) agar diterima Anthropic & Gemini.
+  /// - Giliran terakhir selalu berisi [latestUserInput] (dipotong ke
+  ///   [limits.maxLatestUserChars]).
+  static List<CloudChatTurn> buildCloudMessages(
+    List<Message> recentMessages,
+    String latestUserInput, {
+    PromptLimits limits = PromptLimits.local,
+  }) {
+    final latest = truncate(latestUserInput.trim(), limits.maxLatestUserChars);
+    var budget = math.max(0, limits.maxPromptChars - latest.length);
+
+    final selected = <CloudChatTurn>[];
+    final visible = recentMessages
+        .where((m) => !m.isBlocked && m.content.trim().isNotEmpty)
+        .toList();
+
+    for (var i = visible.length - 1;
+        i >= 0 && selected.length < limits.maxHistoryMessages;
+        i--) {
+      final msg = visible[i];
+      final content = truncate(msg.content.trim(), limits.maxHistoryMessageChars);
+      if (content.isEmpty) continue;
+      if (content.length > budget) break;
+      budget -= content.length;
+      selected.add(CloudChatTurn(role: msg.role, content: content));
+    }
+
+    final chronological = <CloudChatTurn>[
+      ...selected.reversed,
+      if (latest.isNotEmpty)
+        CloudChatTurn(role: MessageRole.user, content: latest),
+    ];
+
+    // Gabungkan giliran berurutan dengan role sama & pastikan tidak diawali assistant.
+    final normalized = <CloudChatTurn>[];
+    for (final turn in chronological) {
+      if (normalized.isEmpty && turn.role == MessageRole.assistant) {
+        continue;
+      }
+      if (normalized.isNotEmpty && normalized.last.role == turn.role) {
+        final prev = normalized.removeLast();
+        normalized.add(
+          CloudChatTurn(
+            role: turn.role,
+            content: '${prev.content}\n\n${turn.content}',
+          ),
+        );
+      } else {
+        normalized.add(turn);
+      }
+    }
+
+    return normalized;
   }
 
   /// Builds the full prompt from [systemPrompt], conversation history, and the
