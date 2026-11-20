@@ -6,21 +6,21 @@
 
 #include "generated_plugin_registrant.h"
 
-#include <flutter_edge_ai/flutter_edge_ai_plugin.h>
 #include <flutter_timezone/flutter_timezone_plugin_c_api.h>
 #include <flutter_tts/flutter_tts_plugin.h>
+#include <flutter_edge_ai/flutter_edge_ai_plugin.h>
 #include <objectbox_flutter_libs/objectbox_flutter_libs_plugin.h>
 #include <permission_handler_windows/permission_handler_windows_plugin.h>
 #include <record_windows/record_windows_plugin_c_api.h>
 #include <speech_to_text_windows/speech_to_text_windows.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
-  FlutterEdgeAiPluginRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("FlutterEdgeAiPlugin"));
   FlutterTimezonePluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FlutterTimezonePluginCApi"));
   FlutterTtsPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FlutterTtsPlugin"));
+  FlutterEdgeAiPluginRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("FlutterEdgeAiPlugin"));
   ObjectboxFlutterLibsPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("ObjectboxFlutterLibsPlugin"));
   PermissionHandlerWindowsPluginRegisterWithRegistrar(

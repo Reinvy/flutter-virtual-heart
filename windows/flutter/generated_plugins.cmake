@@ -3,9 +3,9 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  flutter_edge_ai
   flutter_timezone
   flutter_tts
+  flutter_edge_ai
   objectbox_flutter_libs
   permission_handler_windows
   record_windows
